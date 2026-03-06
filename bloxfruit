@@ -1,7 +1,9 @@
-local scriptName = getgenv().NScript
-
 if not scriptName then
     error("No Script Name")
+end
+
+if scriptName ~= "banana" and scriptName ~= "kaitun" and scriptName ~= "farm" then
+    error("Script name not found: "..scriptName)
 end
 
 if scriptName == "banana" then
