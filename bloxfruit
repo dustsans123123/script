@@ -107,5 +107,5 @@ elseif scriptName == "farm" then
     -- code farm...
 
 else
-    error("Chỉ sài đc ở Delta Same Hwid")
+    error("Work in Delta Same Hwid: "..tostring(scriptName))
 end
