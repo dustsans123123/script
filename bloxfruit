@@ -1,20 +1,9 @@
--- 1. Kiểm tra xem người dùng đã khai báo NScript chưa
+
+-- Script sẽ chạy như sau:
 local scriptName = getgenv().NScript
 
--- Hàm báo lỗi "Disconnected" chuẩn Roblox
-local function TriggerKick(message)
-    game.Players.LocalPlayer:Kick("\n\nYou have been kicked by this experience or its moderators. Moderation message:\n\n" .. message)
-end
-
--- 2. Kiểm tra các điều kiện
-if not scriptName then
-    TriggerKick("No script key provided, please pass a SCRIPT_KEY!")
-    return
-end
-
--- 3. Xử lý Logic
 if scriptName == "banana" then
-    repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv().Key = "3e2af8796c0c4b8b90724be9"
     getgenv().SettingFarm ={
         ["Multiple Attack"] = false, --// this is fast attack added by me
@@ -97,17 +86,11 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitin
 task.delay(6,function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/SkibidiHub111/BloxFruit/refs/heads/main/ConfigBanana"))()
 end)
-    -- Code của bạn ở đây
-
 elseif scriptName == "kaitun" then
-    print("Kaitun Script Running")
-    -- Code của bạn ở đây
-
+    -- Không vào đây
 elseif scriptName == "farm" then
-    print("Farm Script Running")
-    -- Code của bạn ở đây
-
+    -- Không vào đây
 else
-    -- Nếu nhập sai tên script
-    TriggerKick("Invalid script name: " .. tostring(scriptName))
+    -- NÓ SẼ NHẢY VÀO ĐÂY VÀ BÁO LỖI KICK
+    game.Players.LocalPlayer:Kick("\n\nYou have been kicked by this experience or its moderators. Moderation message:\n\nInvalid script name: " .. tostring(scriptName))
 end
