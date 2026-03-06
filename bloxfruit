@@ -1,7 +1,7 @@
 local scriptName = getgenv().NScript
 
 if not scriptName then
-    warn("ERROR: No Script Name")
+    error("No Script Name")
     return
 end
 
@@ -108,9 +108,6 @@ elseif scriptName == "farm" then
     -- code farm...
 
 else
-    game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "Error",
-        Text = "Script name not found: "..scriptName,
-        Duration = 5
-    })
+    error("Script name not found: "..scriptName)
+    return
 end
