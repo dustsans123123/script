@@ -108,6 +108,3 @@ elseif scriptName == "farm" then
     print("Farm Script Running")
     -- code farm...
 
-else
-    error("Work in Delta Same Hwid: "..tostring(scriptName))
-end
