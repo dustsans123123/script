@@ -1,9 +1,12 @@
-if not scriptName then
-    error("No Script Name")
-end
+local scriptName = getgenv().NScript
 
-if scriptName ~= "banana" and scriptName ~= "kaitun" and scriptName ~= "farm" then
-    error("Script name not found: "..scriptName)
+if not scriptName then
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "Error",
+        Text = "No Script Name",
+        Duration = 5
+    })
+    return
 end
 
 if scriptName == "banana" then
@@ -108,3 +111,10 @@ elseif scriptName == "farm" then
     print("Farm Script Running")
     -- code farm...
 
+else
+    game:GetService("StarterGui"):SetCore("SendNotification",{
+        Title = "Error",
+        Text = "Script name not found: "..scriptName,
+        Duration = 5
+    })
+end
