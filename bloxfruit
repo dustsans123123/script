@@ -1,11 +1,7 @@
 local scriptName = getgenv().NScript
 
 if not scriptName then
-    game:GetService("StarterGui"):SetCore("SendNotification",{
-        Title = "Error",
-        Text = "No Script Name",
-        Duration = 5
-    })
+    warn("ERROR: No Script Name")
     return
 end
 
