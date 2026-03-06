@@ -1,5 +1,12 @@
 local scriptName = getgenv().NScript
 
+-- check key
+if _G.SCRIPT_KEY == nil or _G.SCRIPT_KEY == "" then
+    error("No script key provided, please pass a SCRIPT_KEY!")
+    return
+end
+
+-- check script name
 if not scriptName then
     error("No Script Name")
     return
@@ -7,15 +14,7 @@ end
 
 if scriptName == "banana" then
     
-    -- dán script banana ở đây
-repeat wait() until game:IsLoaded() and game.Players.LocalPlayer 
-getgenv().Key = "3e2af8796c0c4b8b90724be9" 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/main/BananaHub.lua"))()
-    -- code banana...
-
-elseif scriptName == "kaitun" then
-    
-    -- dán script kaitun ở đây
+    -- script banana
     repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv().Key = "3e2af8796c0c4b8b90724be9"
     getgenv().SettingFarm ={
@@ -99,15 +98,17 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitin
 task.delay(6,function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/SkibidiHub111/BloxFruit/refs/heads/main/ConfigBanana"))()
 end)
-    -- code kaitun...
+
+elseif scriptName == "kaitun" then
+    
+    -- script kaitun
+    print("Kaitun Script Running")
 
 elseif scriptName == "farm" then
     
-    -- dán script farm ở đây
+    -- script farm
     print("Farm Script Running")
-    -- code farm...
 
 else
     error("Script name not found: "..scriptName)
-    return
 end
