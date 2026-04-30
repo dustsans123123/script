@@ -1,134 +1,14 @@
--- By Tuân Anh IOS
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-
--- Hàm kiểm tra vật thể có thể đổi màu không
-local function CanChangeColor(obj)
-    return obj:IsA("BasePart") and obj:IsDescendantOf(Workspace) and not obj:IsDescendantOf(LocalPlayer.Character)
-end
-
--- Hàm biến vật thể thành đá với bề mặt phẳng
-local function MakeStone(obj)
-    if CanChangeColor(obj) then
-        pcall(function()
-            obj.Color = Color3.fromRGB(115, 115, 115) -- Màu xám đá
-            obj.Material = Enum.Material.SmoothPlastic -- Làm phẳng bề mặt
-            obj.Reflectance = 0 -- Loại bỏ độ bóng
-        end)
+local XDEzBxGA = "bG9jYWwgTCA9IGdhbWU6R2V0U2VydmljZSgiTGlnaHRpbmciKQ0KbG9jYWwgVyA9IGdhbWU6R2V0U2VydmljZSgiV29ya3NwYWNlIikNCmxvY2FsIFAgPSBnYW1lOkdldFNlcnZpY2UoIlBsYXllcnMiKQ0KbG9jYWwgQSA9IFAuTG9jYWxQbGF5ZXINCmxvY2FsIFQgPSBXOkZpbmRGaXJzdENoaWxkT2ZDbGFzcygiVGVycmFpbiIpDQpsb2NhbCBTID0gc2V0dGluZ3MoKQ0KDQpsb2NhbCBmdW5jdGlvbiBPKHYpDQogICAgaWYgdjpJc0EoIkJhc2VQYXJ0Iikgb3IgdjpJc0EoIkRlY2FsIikgb3IgdjpJc0EoIlRleHR1cmUiKSBvciB2OklzQSgiTWVzaFBhcnQiKSBvciB2OklzQSgiVW5pb25PcGVyYXRpb24iKSB0aGVuDQogICAgICAgIHBjYWxsKGZ1bmN0aW9uKCkgDQogICAgICAgICAgICB2LlRyYW5zcGFyZW5jeSA9IDEgDQogICAgICAgICAgICB2Lk1hdGVyaWFsID0gRW51bS5NYXRlcmlhbC5QbGFzdGljDQogICAgICAgICAgICB2LlJlZmxlY3RhbmNlID0gMA0KICAgICAgICAgICAgaWYgdjpJc0EoIkJhc2VQYXJ0IikgdGhlbg0KICAgICAgICAgICAgICAgIHYuQnJpY2tDb2xvciA9IEJyaWNrQ29sb3IubmV3KDE1NSwgMTU1LCAxNTUpDQogICAgICAgICAgICBlbmQNCiAgICAgICAgZW5kKQ0KICAgICAgICBsb2NhbCBjID0gdjpGaW5kRmlyc3RDaGlsZE9mQ2xhc3MoIlRleHR1cmUiKQ0KICAgICAgICBpZiBjIHRoZW4NCiAgICAgICAgICAgIGM6RGVzdHJveSgpDQogICAgICAgIGVuZA0KICAgIGVsc2VpZiB2OklzQSgiUGFydGljbGVFbWl0dGVyIikgb3IgdjpJc0EoIlRyYWlsIikgb3IgdjpJc0EoIkJlYW0iKSB0aGVuDQogICAgICAgIHBjYWxsKGZ1bmN0aW9uKCkgDQogICAgICAgICAgICB2LkVuYWJsZWQgPSBmYWxzZQ0KICAgICAgICAgICAgaWYgdjpJc0EoIlBhcnRpY2xlRW1pdHRlciIpIG9yIHY6SXNBKCJUcmFpbCIpIHRoZW4NCiAgICAgICAgICAgICAgICB2LkxpZmV0aW1lID0gTnVtYmVyUmFuZ2UubmV3KDApDQogICAgICAgICAgICBlbmQNCiAgICAgICAgZW5kKQ0KICAgIGVsc2VpZiB2OklzQSgiRmlyZSIpIG9yIHY6SXNBKCJTbW9rZSIpIG9yIHY6SXNBKCJTcGFya2xlcyIpIG9yIHY6SXNBKCJFeHBsb3Npb24iKSBvciB2OklzQSgiSGlnaGxpZ2h0Iikgb3IgdjpJc0EoIlNoaW1tZXIiKSBvciB2OklzQSgiU3BvdExpZ2h0IikgdGhlbg0KICAgICAgICB2OkRlc3Ryb3koKSANCiAgICBlbHNlaWYgdjpJc0EoIlNvdW5kIikgdGhlbg0KICAgICAgICB2OlN0b3AoKQ0KICAgIGVsc2VpZiB2OklzQSgiQW5pbWF0aW9uIikgb3IgdjpJc0EoIkFuaW1hdGlvblRyYWNrIikgdGhlbg0KICAgICAgICB2OkRlc3Ryb3koKQ0KICAgIGVsc2VpZiB2OklzQSgiSHVtYW5vaWQiKSB0aGVuDQogICAgICAgIGZvciBfLCB0IGluIG5leHQsIHY6R2V0UGxheWluZ0FuaW1hdGlvblRyYWNrcygpIGRvDQogICAgICAgICAgICB0OlN0b3AoKQ0KICAgICAgICBlbmQNCiAgICBlbmQNCmVuZA0KDQp0YXNrLnNwYXduKGZ1bmN0aW9uKCkNCiAgICBTLlJlbmRlcmluZy5RdWFsaXR5TGV2ZWwgPSBFbnVtLlF1YWxpdHlMZXZlbC5MZXZlbDAxDQogICAgUy5SZW5kZXJpbmcuRWFnZXJCdWxrRXhlY3V0aW9uID0gZmFsc2UNCiAgICBXLkNsaWVudEFuaW1hdG9yVGhyb3R0bGluZyA9IEVudW0uQ2xpZW50QW5pbWF0b3JUaHJvdHRsaW5nTW9kZS5FbmFibGVkDQogICAgVy5JbnRlcnBvbGF0aW9uVGhyb3R0bGluZyA9IEVudW0uSW50ZXJwb2xhdGlvblRocm90dGxpbmdNb2RlLkVuYWJsZWQNCiAgICBXLkxldmVsT2ZEZXRhaWwgPSBFbnVtLk1vZGVsTGV2ZWxPZkRldGFpbC5EaXNhYmxlZA0KZW5kKQ0KDQp0YXNrLnNwYXduKGZ1bmN0aW9uKCkNCiAgICBMLkdsb2JhbFNoYWRvd3MgPSBmYWxzZQ0KICAgIEwuRm9nU3RhcnQgPSAwDQogICAgTC5Gb2dFbmQgPSAwDQogICAgTC5CcmlnaHRuZXNzID0gMA0KICAgIEwuT3V0ZG9vckFtYmllbnQgPSBDb2xvcjMubmV3KDAsIDAsIDApDQogICAgTC5BbWJpZW50ID0gQ29sb3IzLm5ldygwLCAwLCAwKQ0KICAgIA0KICAgIGZvciBfLCBjIGluIGlwYWlycyhMOkdldENoaWxkcmVuKCkpIGRvDQogICAgICAgIGlmIGM6SXNBKCJTa3kiKSBvciBjOklzQSgiU3VuUmF5c0VmZmVjdCIpIG9yIGM6SXNBKCJCbG9vbUVmZmVjdCIpIG9yIGM6SXNBKCJDb2xvckNvcnJlY3Rpb25FZmZlY3QiKSBvciBjOklzQSgiQmx1ckVmZmVjdCIpIG9yIGM6SXNBKCJEZXB0aE9mRmllbGRFZmZlY3QiKSB0aGVuDQogICAgICAgICAgICBjOkRlc3Ryb3koKSANCiAgICAgICAgZW5kDQogICAgZW5kDQogICAgDQogICAgTC5DaGlsZEFkZGVkOkNvbm5lY3QoZnVuY3Rpb24odikNCiAgICAgICAgaWYgdjpJc0EoIlN1blJheXNFZmZlY3QiKSBvciB2OklzQSgiQ29sb3JDb3JyZWN0aW9uRWZmZWN0Iikgb3IgdjpJc0EoIkJsb29tRWZmZWN0Iikgb3IgdjpJc0EoIkRlcHRoT2ZGaWVsZEVmZmVjdCIpIHRoZW4NCiAgICAgICAgICAgIHY6RGVzdHJveSgpDQogICAgICAgIGVuZA0KICAgIGVuZCkNCmVuZCkNCg0KdGFzay5zcGF3bihmdW5jdGlvbigpDQogICAgaWYgVCB0aGVuDQogICAgICAgIFQuV2F0ZXJUcmFuc3BhcmVuY3kgPSAwDQogICAgICAgIFQuV2F0ZXJXYXZlU2l6ZSA9IDANCiAgICAgICAgVC5XYXRlcldhdmVTcGVlZCA9IDANCiAgICAgICAgVC5XYXRlclJlZmxlY3RhbmNlID0gMA0KICAgICAgICBULldhdGVyQ29sb3IgPSBDb2xvcjMubmV3KDAsIDAsIDApDQogICAgICAgIFQuTWF0ZXJpYWxDb2xvcnMgPSBFbnVtLk1hdGVyaWFsQ29sb3JzLlBsYWluDQogICAgZW5kDQplbmQpDQoNCnRhc2suc3Bhd24oZnVuY3Rpb24oKQ0KICAgIGxvY2FsIEMgPSBXLkN1cnJlbnRDYW1lcmENCiAgICBsb2NhbCBSID0gQS5DaGFyYWN0ZXINCiAgICBpZiBDIHRoZW4NCiAgICAgICAgQy5GaWVsZE9mVmlldyA9IDENCiAgICAgICAgQy5DYW1lcmFTdWJqZWN0ID0gbmlsDQogICAgICAgIEMuQ2FtZXJhVHlwZSA9IEVudW0uQ2FtZXJhVHlwZS5TY3JpcHRhYmxlDQogICAgICAgIEMuTmVhckNsaXAgPSAwLjAwMQ0KICAgICAgICANCiAgICAgICAgaWYgQzpGaW5kRmlyc3RDaGlsZCgiRmFyUGxhbmUiKSB0aGVuDQogICAgICAgICAgICBDLkZhclBsYW5lID0gMA0KICAgICAgICBlbmQNCiAgICAgICAgaWYgQzpHZXRBdHRyaWJ1dGUoIkZhcloiKSB0aGVuDQogICAgICAgICAgICBDOlNldEF0dHJpYnV0ZSgiRmFyWiIsIDApDQogICAgICAgIGVuZA0KICAgIGVuZA0KICAgIA0KICAgIGlmIFIgdGhlbg0KICAgICAgICBSLkFyY2hpdmFibGUgPSBmYWxzZQ0KICAgICAgICBSLlBhcmVudCA9IG5pbA0KICAgICAgICBmb3IgXywgdiBpbiBSOkdldERlc2NlbmRhbnRzKCkgZG8NCiAgICAgICAgICAgICBpZiB2Lk5hbWU6bG93ZXIoKTptYXRjaCgiYXJtIikgb3Igdi5OYW1lOmxvd2VyKCk6bWF0Y2goImhhbmQiKSBvciB2Lk5hbWU6bG93ZXIoKTptYXRjaCgidmlld21vZGVsIikgdGhlbg0KICAgICAgICAgICAgICAgIHY6RGVzdHJveSgpDQogICAgICAgICAgICBlbmQNCiAgICAgICAgZW5kDQogICAgZW5kDQplbmQpDQoNCnRhc2suc3Bhd24oZnVuY3Rpb24oKQ0KICAgIGZvciBfLCBpIGluIG5leHQsIFc6R2V0RGVzY2VuZGFudHMoKSBkbw0KICAgICAgICBPKGkpDQogICAgZW5kDQogICAgZm9yIF8sIGkgaW4gbmV4dCwgZ2V0bmlsaW5zdGFuY2VzKCkgZG8NCiAgICAgICAgTyhpKQ0KICAgICAgICBmb3IgXywgZCBpbiBuZXh0LCBpOkdldERlc2NlbmRhbnRzKCkgZG8NCiAgICAgICAgICAgIE8oZCkNCiAgICAgICAgZW5kDQogICAgZW5kDQplbmQpDQoNClcuRGVzY2VuZGFudEFkZGVkOkNvbm5lY3QoZnVuY3Rpb24odikNCiAgICB0YXNrLnNwYXduKGZ1bmN0aW9uKCkNCiAgICAgICAgTyh2KQ0KICAgIGVuZCkNCmVuZCkNCg0KY29sbGVjdGdhcmJhZ2UoImNvbGxlY3QiKQ=="
+local function eLyCeOls(cFiojVnP)
+    local utjVqDJX = ""
+    local dWIeEgFF = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    -- [ Garbage Logic - Project MICHAEL ] --
+    for i = 1, #cFiojVnP do
+        utjVqDJX = utjVqDJX .. cFiojVnP:sub(i,i)
     end
+    return (loadstring or load)(table.concat({
+        "local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/' ",
+        "return (function(data) data = string.gsub(data, '[^'..b..'=]', '') return (data:gsub('.', function(x) if (x == '=') then return '' end local r,f='',(b:find(x)-1) for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end return r; end):gsub('%d%d%d%d%d%d%d%d', function(x) local c=0 for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end return string.char(c) end)) end)('bG9jYWwgTCA9IGdhbWU6R2V0U2VydmljZSgiTGlnaHRpbmciKQ0KbG9jYWwgVyA9IGdhbWU6R2V0U2VydmljZSgiV29ya3NwYWNlIikNCmxvY2FsIFAgPSBnYW1lOkdldFNlcnZpY2UoIlBsYXllcnMiKQ0KbG9jYWwgQSA9IFAuTG9jYWxQbGF5ZXINCmxvY2FsIFQgPSBXOkZpbmRGaXJzdENoaWxkT2ZDbGFzcygiVGVycmFpbiIpDQpsb2NhbCBTID0gc2V0dGluZ3MoKQ0KDQpsb2NhbCBmdW5jdGlvbiBPKHYpDQogICAgaWYgdjpJc0EoIkJhc2VQYXJ0Iikgb3IgdjpJc0EoIkRlY2FsIikgb3IgdjpJc0EoIlRleHR1cmUiKSBvciB2OklzQSgiTWVzaFBhcnQiKSBvciB2OklzQSgiVW5pb25PcGVyYXRpb24iKSB0aGVuDQogICAgICAgIHBjYWxsKGZ1bmN0aW9uKCkgDQogICAgICAgICAgICB2LlRyYW5zcGFyZW5jeSA9IDEgDQogICAgICAgICAgICB2Lk1hdGVyaWFsID0gRW51bS5NYXRlcmlhbC5QbGFzdGljDQogICAgICAgICAgICB2LlJlZmxlY3RhbmNlID0gMA0KICAgICAgICAgICAgaWYgdjpJc0EoIkJhc2VQYXJ0IikgdGhlbg0KICAgICAgICAgICAgICAgIHYuQnJpY2tDb2xvciA9IEJyaWNrQ29sb3IubmV3KDE1NSwgMTU1LCAxNTUpDQogICAgICAgICAgICBlbmQNCiAgICAgICAgZW5kKQ0KICAgICAgICBsb2NhbCBjID0gdjpGaW5kRmlyc3RDaGlsZE9mQ2xhc3MoIlRleHR1cmUiKQ0KICAgICAgICBpZiBjIHRoZW4NCiAgICAgICAgICAgIGM6RGVzdHJveSgpDQogICAgICAgIGVuZA0KICAgIGVsc2VpZiB2OklzQSgiUGFydGljbGVFbWl0dGVyIikgb3IgdjpJc0EoIlRyYWlsIikgb3IgdjpJc0EoIkJlYW0iKSB0aGVuDQogICAgICAgIHBjYWxsKGZ1bmN0aW9uKCkgDQogICAgICAgICAgICB2LkVuYWJsZWQgPSBmYWxzZQ0KICAgICAgICAgICAgaWYgdjpJc0EoIlBhcnRpY2xlRW1pdHRlciIpIG9yIHY6SXNBKCJUcmFpbCIpIHRoZW4NCiAgICAgICAgICAgICAgICB2LkxpZmV0aW1lID0gTnVtYmVyUmFuZ2UubmV3KDApDQogICAgICAgICAgICBlbmQNCiAgICAgICAgZW5kKQ0KICAgIGVsc2VpZiB2OklzQSgiRmlyZSIpIG9yIHY6SXNBKCJTbW9rZSIpIG9yIHY6SXNBKCJTcGFya2xlcyIpIG9yIHY6SXNBKCJFeHBsb3Npb24iKSBvciB2OklzQSgiSGlnaGxpZ2h0Iikgb3IgdjpJc0EoIlNoaW1tZXIiKSBvciB2OklzQSgiU3BvdExpZ2h0IikgdGhlbg0KICAgICAgICB2OkRlc3Ryb3koKSANCiAgICBlbHNlaWYgdjpJc0EoIlNvdW5kIikgdGhlbg0KICAgICAgICB2OlN0b3AoKQ0KICAgIGVsc2VpZiB2OklzQSgiQW5pbWF0aW9uIikgb3IgdjpJc0EoIkFuaW1hdGlvblRyYWNrIikgdGhlbg0KICAgICAgICB2OkRlc3Ryb3koKQ0KICAgIGVsc2VpZiB2OklzQSgiSHVtYW5vaWQiKSB0aGVuDQogICAgICAgIGZvciBfLCB0IGluIG5leHQsIHY6R2V0UGxheWluZ0FuaW1hdGlvblRyYWNrcygpIGRvDQogICAgICAgICAgICB0OlN0b3AoKQ0KICAgICAgICBlbmQNCiAgICBlbmQNCmVuZA0KDQp0YXNrLnNwYXduKGZ1bmN0aW9uKCkNCiAgICBTLlJlbmRlcmluZy5RdWFsaXR5TGV2ZWwgPSBFbnVtLlF1YWxpdHlMZXZlbC5MZXZlbDAxDQogICAgUy5SZW5kZXJpbmcuRWFnZXJCdWxrRXhlY3V0aW9uID0gZmFsc2UNCiAgICBXLkNsaWVudEFuaW1hdG9yVGhyb3R0bGluZyA9IEVudW0uQ2xpZW50QW5pbWF0b3JUaHJvdHRsaW5nTW9kZS5FbmFibGVkDQogICAgVy5JbnRlcnBvbGF0aW9uVGhyb3R0bGluZyA9IEVudW0uSW50ZXJwb2xhdGlvblRocm90dGxpbmdNb2RlLkVuYWJsZWQNCiAgICBXLkxldmVsT2ZEZXRhaWwgPSBFbnVtLk1vZGVsTGV2ZWxPZkRldGFpbC5EaXNhYmxlZA0KZW5kKQ0KDQp0YXNrLnNwYXduKGZ1bmN0aW9uKCkNCiAgICBMLkdsb2JhbFNoYWRvd3MgPSBmYWxzZQ0KICAgIEwuRm9nU3RhcnQgPSAwDQogICAgTC5Gb2dFbmQgPSAwDQogICAgTC5CcmlnaHRuZXNzID0gMA0KICAgIEwuT3V0ZG9vckFtYmllbnQgPSBDb2xvcjMubmV3KDAsIDAsIDApDQogICAgTC5BbWJpZW50ID0gQ29sb3IzLm5ldygwLCAwLCAwKQ0KICAgIA0KICAgIGZvciBfLCBjIGluIGlwYWlycyhMOkdldENoaWxkcmVuKCkpIGRvDQogICAgICAgIGlmIGM6SXNBKCJTa3kiKSBvciBjOklzQSgiU3VuUmF5c0VmZmVjdCIpIG9yIGM6SXNBKCJCbG9vbUVmZmVjdCIpIG9yIGM6SXNBKCJDb2xvckNvcnJlY3Rpb25FZmZlY3QiKSBvciBjOklzQSgiQmx1ckVmZmVjdCIpIG9yIGM6SXNBKCJEZXB0aE9mRmllbGRFZmZlY3QiKSB0aGVuDQogICAgICAgICAgICBjOkRlc3Ryb3koKSANCiAgICAgICAgZW5kDQogICAgZW5kDQogICAgDQogICAgTC5DaGlsZEFkZGVkOkNvbm5lY3QoZnVuY3Rpb24odikNCiAgICAgICAgaWYgdjpJc0EoIlN1blJheXNFZmZlY3QiKSBvciB2OklzQSgiQ29sb3JDb3JyZWN0aW9uRWZmZWN0Iikgb3IgdjpJc0EoIkJsb29tRWZmZWN0Iikgb3IgdjpJc0EoIkRlcHRoT2ZGaWVsZEVmZmVjdCIpIHRoZW4NCiAgICAgICAgICAgIHY6RGVzdHJveSgpDQogICAgICAgIGVuZA0KICAgIGVuZCkNCmVuZCkNCg0KdGFzay5zcGF3bihmdW5jdGlvbigpDQogICAgaWYgVCB0aGVuDQogICAgICAgIFQuV2F0ZXJUcmFuc3BhcmVuY3kgPSAwDQogICAgICAgIFQuV2F0ZXJXYXZlU2l6ZSA9IDANCiAgICAgICAgVC5XYXRlcldhdmVTcGVlZCA9IDANCiAgICAgICAgVC5XYXRlclJlZmxlY3RhbmNlID0gMA0KICAgICAgICBULldhdGVyQ29sb3IgPSBDb2xvcjMubmV3KDAsIDAsIDApDQogICAgICAgIFQuTWF0ZXJpYWxDb2xvcnMgPSBFbnVtLk1hdGVyaWFsQ29sb3JzLlBsYWluDQogICAgZW5kDQplbmQpDQoNCnRhc2suc3Bhd24oZnVuY3Rpb24oKQ0KICAgIGxvY2FsIEMgPSBXLkN1cnJlbnRDYW1lcmENCiAgICBsb2NhbCBSID0gQS5DaGFyYWN0ZXINCiAgICBpZiBDIHRoZW4NCiAgICAgICAgQy5GaWVsZE9mVmlldyA9IDENCiAgICAgICAgQy5DYW1lcmFTdWJqZWN0ID0gbmlsDQogICAgICAgIEMuQ2FtZXJhVHlwZSA9IEVudW0uQ2FtZXJhVHlwZS5TY3JpcHRhYmxlDQogICAgICAgIEMuTmVhckNsaXAgPSAwLjAwMQ0KICAgICAgICANCiAgICAgICAgaWYgQzpGaW5kRmlyc3RDaGlsZCgiRmFyUGxhbmUiKSB0aGVuDQogICAgICAgICAgICBDLkZhclBsYW5lID0gMA0KICAgICAgICBlbmQNCiAgICAgICAgaWYgQzpHZXRBdHRyaWJ1dGUoIkZhcloiKSB0aGVuDQogICAgICAgICAgICBDOlNldEF0dHJpYnV0ZSgiRmFyWiIsIDApDQogICAgICAgIGVuZA0KICAgIGVuZA0KICAgIA0KICAgIGlmIFIgdGhlbg0KICAgICAgICBSLkFyY2hpdmFibGUgPSBmYWxzZQ0KICAgICAgICBSLlBhcmVudCA9IG5pbA0KICAgICAgICBmb3IgXywgdiBpbiBSOkdldERlc2NlbmRhbnRzKCkgZG8NCiAgICAgICAgICAgICBpZiB2Lk5hbWU6bG93ZXIoKTptYXRjaCgiYXJtIikgb3Igdi5OYW1lOmxvd2VyKCk6bWF0Y2goImhhbmQiKSBvciB2Lk5hbWU6bG93ZXIoKTptYXRjaCgidmlld21vZGVsIikgdGhlbg0KICAgICAgICAgICAgICAgIHY6RGVzdHJveSgpDQogICAgICAgICAgICBlbmQNCiAgICAgICAgZW5kDQogICAgZW5kDQplbmQpDQoNCnRhc2suc3Bhd24oZnVuY3Rpb24oKQ0KICAgIGZvciBfLCBpIGluIG5leHQsIFc6R2V0RGVzY2VuZGFudHMoKSBkbw0KICAgICAgICBPKGkpDQogICAgZW5kDQogICAgZm9yIF8sIGkgaW4gbmV4dCwgZ2V0bmlsaW5zdGFuY2VzKCkgZG8NCiAgICAgICAgTyhpKQ0KICAgICAgICBmb3IgXywgZCBpbiBuZXh0LCBpOkdldERlc2NlbmRhbnRzKCkgZG8NCiAgICAgICAgICAgIE8oZCkNCiAgICAgICAgZW5kDQogICAgZW5kDQplbmQpDQoNClcuRGVzY2VuZGFudEFkZGVkOkNvbm5lY3QoZnVuY3Rpb24odikNCiAgICB0YXNrLnNwYXduKGZ1bmN0aW9uKCkNCiAgICAgICAgTyh2KQ0KICAgIGVuZCkNCmVuZCkNCg0KY29sbGVjdGdhcmJhZ2UoImNvbGxlY3QiKQ==')"
+    }))()
 end
-
--- Áp dụng hiệu ứng đá phẳng cho toàn bộ vật thể hiện có
-for _, obj in pairs(Workspace:GetDescendants()) do
-    MakeStone(obj)
-end
-
--- Khi có vật thể mới xuất hiện, tự động biến nó thành đá phẳng
-Workspace.DescendantAdded:Connect(function(obj)
-    task.wait(0.2) -- Tăng thời gian chờ cho điện thoại
-    MakeStone(obj)
-end)
-
--- Xóa hiệu ứng gây lag trong game
-local function RemoveUnnecessaryEffects(obj)
-    pcall(function()
-        if obj:IsA("ParticleEmitter") or
-           obj:IsA("Beam") or
-           obj:IsA("Trail") or
-           obj:IsA("Fire") or
-           obj:IsA("Smoke") or
-           obj:IsA("Sparkles") or
-           obj:IsA("Explosion") or
-           obj:IsA("Highlight") or
-           obj:IsA("Decal") or
-           obj:IsA("Texture") or
-           obj:IsA("PointLight") or
-           obj:IsA("SurfaceLight") or
-           obj:IsA("SpotLight") then
-            obj:Destroy()
-        end
-    end)
-end
-
--- Xóa tất cả hiệu ứng có sẵn trong game
-for _, obj in pairs(Workspace:GetDescendants()) do
-    RemoveUnnecessaryEffects(obj)
-end
-
--- Khi có hiệu ứng mới xuất hiện, tự động xóa ngay lập tức
-Workspace.DescendantAdded:Connect(function(obj)
-    task.wait(0.1)
-    RemoveUnnecessaryEffects(obj)
-end)
-
--- Tắt toàn bộ hiệu ứng ánh sáng để game sáng rõ hơn
-pcall(function()
-    Lighting.GlobalShadows = false
-    Lighting.Brightness = 2
-    Lighting.Ambient = Color3.new(1, 1, 1)
-    Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
-    Lighting.FogEnd = 1000000 -- Xóa sương mù
-    Lighting.Technology = Enum.Technology.Compatibility -- Tắt hiệu ứng bóng
-
-    -- Xóa bầu trời nhưng không làm màn hình đen
-    local sky = Lighting:FindFirstChild("Sky")
-    if sky then
-        sky:Destroy()
-    end
-end)
-
--- Xóa quần áo và đưa nhân vật về màu mặc định của Roblox
-local function ResetCharacterAppearance(character)
-    pcall(function()
-        for _, obj in pairs(character:GetChildren()) do
-            if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") then
-                obj:Destroy() -- Xóa quần áo
-            end
-            if obj:IsA("BodyColors") then
-                obj:Destroy() -- Xóa màu tùy chỉnh
-            end
-        end
-
-        -- Đặt lại màu sắc cơ thể thành mặc định
-        for _, part in pairs(character:GetChildren()) do
-            if part:IsA("BasePart") then
-                part.Color = Color3.fromRGB(163, 162, 165) -- Màu mặc định của Roblox R6
-            end
-        end
-    end)
-end
-
--- Áp dụng lên nhân vật hiện tại của người chơi
-if LocalPlayer.Character then
-    ResetCharacterAppearance(LocalPlayer.Character)
-end
-
--- Khi nhân vật respawn, tiếp tục reset ngoại hình
-LocalPlayer.CharacterAdded:Connect(function(character)
-    task.wait(1) -- Tăng thời gian chờ để đảm bảo nhân vật load xong trên điện thoại
-    ResetCharacterAppearance(character)
-end)
-
--- Xóa quần áo của tất cả quái vật trong game
-local function RemoveEnemyClothes()
-    if Workspace:FindFirstChild("Enemies") then
-        for _, enemy in pairs(Workspace.Enemies:GetChildren()) do
-            ResetCharacterAppearance(enemy)
-        end
-    end
-end
-
--- Xóa quần áo quái ngay khi script chạy
-RemoveEnemyClothes()
-
--- Tự động xóa quần áo khi có quái mới xuất hiện
-if Workspace:FindFirstChild("Enemies") then
-    Workspace.Enemies.ChildAdded:Connect(function(enemy)
-        task.wait(1) -- Tăng thời gian chờ trên điện thoại
-        ResetCharacterAppearance(enemy)
-    end)
-end
-
-print("Đã Fix Lag")
+eLyCeOls(XDEzBxGA)
