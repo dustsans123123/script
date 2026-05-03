@@ -7475,22 +7475,33 @@ _modules["main"] = function()
             -- FRUIT CONFIGS — HARDCODED
             -- ============================================
             local FruitConfigs = {
-                ["Dragon"] = { ToolName = "Dragon-Dragon", RemoteName = "LeftClickRemote", Args = function(direction) return {
-                        Vector3.new(direction.X, direction.Y, direction.Z), 1 } end },
-                ["T-Rex"] = { ToolName = "T-Rex-T-Rex", RemoteName = "LeftClickRemote", Args = function(direction) return {
-                        Vector3.new(direction.X, direction.Y, direction.Z), 3 } end },
-                ["Empyrean"] = { ToolName = "Empyrean (Kitsune)-Empyrean (Kitsune)", RemoteName = "LeftClickRemote", Args = function(
-                    direction) return { Vector3.new(direction.X, direction.Y, direction.Z), 1 } end },
-                ["Kitsune"] = { ToolName = "Kitsune-Kitsune", RemoteName = "LeftClickRemote", Args = function(direction) return {
-                        Vector3.new(direction.X, direction.Y, direction.Z), 1 } end },
-                ["Pain"] = { ToolName = "Pain-Pain", RemoteName = "LeftClickRemote", Args = function(direction) return {
-                        Vector3.new(direction.X, direction.Y, direction.Z), 1 } end },
-                ["Control"] = { ToolName = "Control-Control", RemoteName = "LeftClickRemote", Args = function(direction) return {
-                        Vector3.new(direction.X, direction.Y, direction.Z), 1 } end }
+                ["Dragon"]   = { ToolName = "Dragon-Dragon",                         RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
+                ["T-Rex"]    = { ToolName = "T-Rex-T-Rex",                           RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 3 } end },
+                ["Empyrean"] = { ToolName = "Empyrean (Kitsune)-Empyrean (Kitsune)", RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
+                ["Kitsune"]  = { ToolName = "Kitsune-Kitsune",                       RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
+                ["Pain"]     = { ToolName = "Pain-Pain",                              RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
+                ["Control"]  = { ToolName = "Control-Control",                        RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
+                ["Mammoth"]  = { ToolName = "Mammoth-Mammoth",                        RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
             }
+
+            -- Auto-detect: scan backpack/character for any known fruit tool
+            local function ResolveFruitConfig()
+                if SELECTED_FRUIT ~= "Auto" then
+                    return FruitConfigs[SELECTED_FRUIT]
+                end
+                local containers = { lp.Character, lp.Backpack }
+                for _, cfg in pairs(FruitConfigs) do
+                    for _, container in ipairs(containers) do
+                        if container and container:FindFirstChild(cfg.ToolName) then
+                            return cfg
+                        end
+                    end
+                end
+                return nil
+            end
     
             local function EquipFruit()
-                local config = FruitConfigs[SELECTED_FRUIT]
+                local config = ResolveFruitConfig()
                 if not config then return false end
                 local character = lp.Character
                 local backpack = lp.Backpack
@@ -7507,13 +7518,24 @@ _modules["main"] = function()
             end
     
             local function FruitAttackPlayer()
-                local config = FruitConfigs[SELECTED_FRUIT]
+                local config = ResolveFruitConfig()
                 if not config then return end
                 local myChar = lp.Character
                 if not myChar then return end
                 local myHRP = myChar:FindFirstChild("HumanoidRootPart")
                 if not myHRP then return end
-                local direction = Vector3.new(0, -0.9, 0.03)
+
+                -- Calculate direction toward current target
+                local direction = Vector3.new(0, -0.9, 0.03) -- fallback
+                pcall(function()
+                    if CurrentTargetPlayer and CurrentTargetPlayer.Character then
+                        local targetHRP = CurrentTargetPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if targetHRP then
+                            direction = (targetHRP.Position - myHRP.Position).Unit
+                        end
+                    end
+                end)
+
                 local tool = myChar:FindFirstChild(config.ToolName)
                 if not tool then
                     EquipFruit()
