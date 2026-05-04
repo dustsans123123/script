@@ -1,5 +1,5 @@
 -- local function scary()
---     warn("❌ This script must only be executed from the offical Bear hud loader")
+--     warn("❌ This script must only be executed from the offical Michael Hub loader")
 --         return
 --     end
 
@@ -36,7 +36,7 @@
 -- end
 -- _G._secondaryData = nil
 -- _G.__userKey = nil
-print("✅ Security verification passed. Loading Bear hud...")
+print("✅ Security verification passed. Loading Michael Hub...")
 -- FIX XÁC ĐỊNH SEA CHO CẢ SERVER THƯỜNG VÀ VIP
 local function detectSea()
     local placeId = game.PlaceId
@@ -120,7 +120,7 @@ spawn(function()
     wait(3)
     local sea = World1 and "Biển 1" or World2 and "Biển 2" or World3 and "Biển 3" or "Không xác định"
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Bear Hub",
+        Title = "Michael Hub",
         Text = "Đang chạy ở " .. sea,
         Duration = 3
     })
@@ -137,7 +137,7 @@ if Update:LoadAnimation() then
 	Update:Loaded();
 end;
 local Library = Update:Window({
-	SubTitle = "by Quang Huy",
+	SubTitle = "by Michael",
 	Size = UDim2.new(0, 450, 0, 300),
 	TabWidth = 140
 });
@@ -441,16 +441,16 @@ _G.Settings = {
 };
 (getgenv()).Load = function()
 	if readfile and writefile and isfile and isfolder then
-		if not isfolder("Bear hud") then
-			makefolder("Bear hud");
+		if not isfolder("Michael Hub") then
+			makefolder("Michael Hub");
 		end;
-		if not isfolder("Bear hud/Blox Fruits/") then
-			makefolder("Bear hud/Blox Fruits/");
+		if not isfolder("Michael Hub/Blox Fruits/") then
+			makefolder("Michael Hub/Blox Fruits/");
 		end;
 		if not isfile(("Bear Hud/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json")) then
-			writefile("Bear hud/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json", (game:GetService("HttpService")):JSONEncode(_G.Settings));
+			writefile("Michael Hub/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json", (game:GetService("HttpService")):JSONEncode(_G.Settings));
 		else
-			local Decode = (game:GetService("HttpService")):JSONDecode(readfile("Bear hud/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json"));
+			local Decode = (game:GetService("HttpService")):JSONDecode(readfile("Michael Hub/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json"));
 			for i, v in pairs(Decode) do
 				_G.Settings[i] = v;
 			end;
@@ -463,15 +463,15 @@ end;
 (getgenv()).SaveSetting = function()
 	if Update:SaveSettings() then
 		if readfile and writefile and isfile and isfolder then
-			if not isfile(("Bear hud/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json")) then
+			if not isfile(("Michael Hub/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json")) then
 				(getgenv()).Load();
 			else
-				local Decode = (game:GetService("HttpService")):JSONDecode(readfile("Bear hud/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json"));
+				local Decode = (game:GetService("HttpService")):JSONDecode(readfile("Michael Hub/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json"));
 				local Array = {};
 				for i, v in pairs(_G.Settings) do
 					Array[i] = v;
 				end;
-				writefile("Bear hud/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json", (game:GetService("HttpService")):JSONEncode(Array));
+				writefile("Michael Hub/Blox Fruits/" .. game.Players.LocalPlayer.Name .. ".json", (game:GetService("HttpService")):JSONEncode(Array));
 			end;
 		else
 			return warn("Status : Undetected Executor");
@@ -3628,27 +3628,28 @@ MainTab:Toggle("Auto Farm Mob", _G.Settings.Main["Auto Farm Mob"], "Auto Kill Mo
 	(getgenv()).SaveSetting();
 end);
 spawn(function()
-while wait(0.2) do
-    if _G.Settings.Main["Auto Farm Mob"] then
-        pcall(function()
-            local mob = (game:GetService("Workspace")).Enemies:FindFirstChild(_G.Settings.Main["Selected Mob"]);
-            if mob and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                local distance = (mob.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
-                if distance <= 15 then -- phạm vi attack (có thể chỉnh lại phù hợp)
-                    repeat
-                        (game:GetService("RunService")).Heartbeat:wait();
-                        AutoHaki();
-                        EquipWeapon(_G.Settings.Main["Selected Weapon"]);
-                        mob.HumanoidRootPart.CanCollide = false;
-                        mob.Humanoid.WalkSpeed = 0;
-                        topos(mob.HumanoidRootPart.CFrame * Pos);
-                        Attack(); -- gọi attack
-                    until not _G.Settings.Main["Auto Farm Mob"] or (not mob.Parent) or mob.Humanoid.Health <= 0;
-                end;
-            end;
-        end);
-    end;
-end
+	while wait(0.2) do
+		if _G.Settings.Main["Auto Farm Mob"] then
+			pcall(function()
+				local mob = (game:GetService("Workspace")).Enemies:FindFirstChild(_G.Settings.Main["Selected Mob"]);
+				if mob and mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
+					local distance = (mob.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude;
+					if distance <= _G.Settings.Setting["Farm Distance"] then
+						repeat
+							(game:GetService("RunService")).Heartbeat:wait();
+							AutoHaki();
+							EquipWeapon(_G.Settings.Main["Selected Weapon"]);
+							mob.HumanoidRootPart.CanCollide = false;
+							mob.Humanoid.WalkSpeed = 0;
+							PosMon = mob.HumanoidRootPart.CFrame;
+							MonFarm = mob.Name;
+							mob.HumanoidRootPart.Size = Vector3.new(1, 1, 1);
+							topos(mob.HumanoidRootPart.CFrame * Pos);
+							Attack();
+						until not _G.Settings.Main["Auto Farm Mob"] or (not mob.Parent) or mob.Humanoid.Health <= 0;
+					end;
+				end;
+			end);
 		end;
 	end;
 end);
