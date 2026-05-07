@@ -8156,6 +8156,45 @@ print("[NexusBounty] Initializing UI...")
 -- Init UI first so Key System shows up
 UI.init(Utils, Config, Auth)
 
+-- Auto-apply L (large) size as soon as UI is ready
+task.spawn(function()
+    task.wait(0.8)
+    pcall(function()
+        -- Try clicking the SizeL button if it exists (mobile)
+        if UI.DynamicIsland then
+            local resizeBtns = UI.DynamicIsland:FindFirstChild("ResizeButtons")
+            if resizeBtns then
+                local sizeL = resizeBtns:FindFirstChild("SizeL")
+                if sizeL then
+                    sizeL:Activate()
+                    return
+                end
+            end
+        end
+        -- Fallback: apply L scale directly to MainFrame
+        if UI.MainFrame then
+            local scale = 0.80
+            local baseW, baseH = 550, 380
+            local newW = math.floor(baseW * scale)
+            local newH = math.floor(baseH * scale)
+            local newLeftW = math.max(80, math.floor(180 * scale))
+            UI.MainFrame.Size = UDim2.new(0, newW, 0, newH)
+            local leftPanel = UI.MainFrame:FindFirstChild("LeftPanel")
+            if leftPanel then leftPanel.Size = UDim2.new(0, newLeftW, 1, 0) end
+            local rightPanel = UI.MainFrame:FindFirstChild("RightPanel")
+            if rightPanel then
+                rightPanel.Position = UDim2.new(0, newLeftW, 0, 0)
+                rightPanel.Size = UDim2.new(1, -newLeftW, 1, 0)
+            end
+            local dragHandle = UI.MainFrame:FindFirstChild("DragHandle")
+            if dragHandle then
+                dragHandle.Position = UDim2.new(0, newLeftW, 0, 0)
+                dragHandle.Size = UDim2.new(1, -newLeftW, 0, 40)
+            end
+        end
+    end)
+end)
+
 print("[NexusBounty] UI ready! Waiting for authentication...")
 
 -- ============================================
