@@ -6974,7 +6974,71 @@ _modules["main"] = function()
     
     Main.Running = false
     Main.Connections = {}
-    
+
+    -- ============================================
+    -- EVENT WEBHOOKS (tích hợp từ teleport.txt)
+    -- Điền webhook Discord của bạn vào đây
+    -- ============================================
+    local EVENT_WEBHOOKS = {
+        FullMoon     = "", -- Webhook nhận thông báo Full Moon
+        Boss         = "", -- Webhook nhận thông báo Boss (Rip Indra / Cake Prince)
+        MirageIsland = "", -- Webhook nhận thông báo Mirage Island
+        CastleRaid   = "", -- Webhook nhận thông báo Castle Raid
+    }
+
+    local _eventNotifiedThisServer = {}
+
+    local function SendEventNotify(url, title)
+        if not url or url == "" then return end
+        if _eventNotifiedThisServer[title] then return end -- chỉ gửi 1 lần/server
+        _eventNotifiedThisServer[title] = true
+        local JobId = game.JobId
+        local HttpService = game:GetService("HttpService")
+        local data = {
+            ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. JobId .. "\")`",
+            ["username"] = "Nexus Event Monitor"
+        }
+        pcall(function()
+            local reqFn = request or http_request or (syn and syn.request) or (http and http.request)
+            if reqFn then
+                reqFn({
+                    Url = url,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = HttpService:JSONEncode(data)
+                })
+            end
+        end)
+    end
+
+    local function CheckGameEvents()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        -- Check Full Moon
+        pcall(function()
+            local state = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState")
+            if state and state.MoonProgress and state.MoonProgress >= 5 then
+                SendEventNotify(EVENT_WEBHOOKS.FullMoon, "Full Moon")
+            end
+        end)
+        -- Check Mirage Island
+        pcall(function()
+            if workspace.Map:FindFirstChild("Mirage Island") then
+                SendEventNotify(EVENT_WEBHOOKS.MirageIsland, "Mirage Island")
+            end
+        end)
+        -- Check Boss
+        pcall(function()
+            local enemies = workspace:FindFirstChild("Enemies")
+            if enemies then
+                for _, v in pairs(enemies:GetChildren()) do
+                    if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
+                        SendEventNotify(EVENT_WEBHOOKS.Boss, v.Name)
+                    end
+                end
+            end
+        end)
+    end
+
     -- ============================================
     -- UI GETTERS (for UI module to poll)
     -- ============================================
@@ -7083,38 +7147,95 @@ _modules["main"] = function()
     
             print("[NexusBounty] [HYPER] Stats synced")
     
-            -- Kick detection / auto-rejoin
-            pcall(function()
-                CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
-                    if child.Name == 'ErrorPrompt' and child:FindFirstChild('MessageArea') and child.MessageArea:FindFirstChild("ErrorFrame") then
-                        if not getgenv().IsServerHopping then
-                            task.wait(2)
-                            TeleportService:TeleportToPlaceInstance(CurrentPlaceId, CurrentJobId, lp)
+            -- ============================================
+            -- KICK / ERROR 773 DETECTION — Auto hop server mới
+            -- Không rejoin server cũ, tìm server khác luôn
+            -- ============================================
+            local function AutoHopOnKick()
+                if getgenv().IsServerHopping then return end
+                print("[NexusBounty] [!] Bị kick/error — đang tự động hop server mới...")
+                if Utils then pcall(function() Utils.notify("NexusBounty", "[!] Bị kick! Đang hop server mới...", "warning", 4) end) end
+
+                -- Cách 1: Dùng __ServerBrowser teleport trực tiếp
+                local hopDone = false
+                pcall(function()
+                    local HttpService = game:GetService("HttpService")
+                    local PlaceId = game.PlaceId
+                    local JobId   = game.JobId
+                    local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+                    local ok, result = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
+                    if ok and result and result.data then
+                        for _, s in pairs(result.data) do
+                            if s.playing < s.maxPlayers and s.id ~= JobId then
+                                pcall(function()
+                                    ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
+                                end)
+                                hopDone = true
+                                task.wait(3)
+                                break
+                            end
                         end
                     end
                 end)
-            end)
 
-            -- GuiService error message (disconnect/kick) → auto-rejoin
+                -- Cách 2: Fallback TeleportService nếu cách 1 thất bại
+                if not hopDone then
+                    pcall(function()
+                        local HttpService = game:GetService("HttpService")
+                        local PlaceId = game.PlaceId
+                        local JobId   = game.JobId
+                        local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+                        local ok, result = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
+                        if ok and result and result.data then
+                            for _, s in pairs(result.data) do
+                                if s.playing < s.maxPlayers and s.id ~= JobId then
+                                    TeleportService:TeleportToPlaceInstance(PlaceId, s.id, lp)
+                                    task.wait(3)
+                                    break
+                                end
+                            end
+                        end
+                    end)
+                end
+            end
+
             pcall(function()
-                local GuiService = game:GetService("GuiService")
-                GuiService.ErrorMessageChanged:Connect(function(msg)
-                    if msg and msg ~= "" and not getgenv().IsServerHopping then
-                        task.wait(2)
-                        pcall(function()
-                            TeleportService:TeleportToPlaceInstance(CurrentPlaceId, CurrentJobId, lp)
-                        end)
+                -- Bắt ErrorPrompt (kick thường / security kick)
+                CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
+                    if child.Name == "ErrorPrompt" and child:FindFirstChild("MessageArea") and child.MessageArea:FindFirstChild("ErrorFrame") then
+                        task.spawn(AutoHopOnKick)
                     end
                 end)
-            end)
 
-            -- Player removed from game → auto-rejoin
-            pcall(function()
-                lp.AncestryChanged:Connect(function(_, parent)
-                    if not parent and not getgenv().IsServerHopping then
+                -- Bắt thêm error 773 (Reconnect was unsuccessful) qua label text
+                task.spawn(function()
+                    while not getgenv().NexusShuttingDown do
                         task.wait(2)
                         pcall(function()
-                            TeleportService:TeleportToPlaceInstance(CurrentPlaceId, CurrentJobId, lp)
+                            for _, gui in ipairs(CoreGui:GetDescendants()) do
+                                if gui:IsA("TextLabel") and (
+                                    gui.Text:find("773") or
+                                    gui.Text:lower():find("reconnect was unsuccessful") or
+                                    gui.Text:lower():find("please rejoin") or
+                                    gui.Text:lower():find("security") or
+                                    gui.Text:lower():find("kicked")
+                                ) then
+                                    task.spawn(AutoHopOnKick)
+                                    -- Tự động bấm nút Leave/OK nếu có
+                                    pcall(function()
+                                        for _, btn in ipairs(CoreGui:GetDescendants()) do
+                                            if btn:IsA("TextButton") and (
+                                                btn.Text:lower():find("leave") or
+                                                btn.Text:lower():find("ok") or
+                                                btn.Text:lower():find("close")
+                                            ) then
+                                                btn:Activate()
+                                            end
+                                        end
+                                    end)
+                                    break
+                                end
+                            end
                         end)
                     end
                 end)
@@ -7456,34 +7577,6 @@ _modules["main"] = function()
             end)
     
             -- ============================================
-            -- SERVER HOP HELPERS
-            -- ============================================
-
-            -- HTTP-based server list fetch (fallback when ServerBrowser is unavailable)
-            local function fetchServerList()
-                local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&limit=100"):format(CurrentPlaceId)
-                local body = nil
-                local methods = {
-                    function() return game:HttpGet(url, true) end,
-                    function()
-                        local req = (syn and syn.request) or request or (http and http.request)
-                        if req then
-                            local res = req({ Url = url, Method = "GET" })
-                            return res and res.Body
-                        end
-                    end,
-                }
-                for _, fn in ipairs(methods) do
-                    local ok, result = pcall(fn)
-                    if ok and result and #result > 10 then body = result; break end
-                end
-                if not body then return nil end
-                local ok2, decoded = pcall(function() return HttpService:JSONDecode(body) end)
-                if ok2 and decoded and decoded.data then return decoded.data end
-                return nil
-            end
-
-            -- ============================================
             -- SERVER HOP (with stats)
             -- ============================================
             function Main.serverHop()
@@ -7528,24 +7621,8 @@ _modules["main"] = function()
     
                 local PlayerGui = lp.PlayerGui
                 if not PlayerGui:FindFirstChild("ServerBrowser") then
-                    -- ServerBrowser not available — fall back to HTTP server list
-                    task.spawn(function()
-                        local serverList = fetchServerList()
-                        if serverList then
-                            local currentJobId = game.JobId
-                            for _, server in ipairs(serverList) do
-                                local jobId = server.id
-                                if jobId and jobId ~= currentJobId
-                                    and (server.playing or 0) > 1 then
-                                    local ok2 = pcall(function()
-                                        TeleportService:TeleportToPlaceInstance(game.PlaceId, jobId)
-                                    end)
-                                    if ok2 then task.wait(10); break end
-                                end
-                            end
-                        end
-                        getgenv().IsServerHopping = false
-                    end)
+                    local _env2 = getgenv()
+                    _env2.IsServerHopping = false
                     return
                 end
                 PlayerGui.ServerBrowser.Enabled = true
@@ -7559,22 +7636,14 @@ _modules["main"] = function()
                     return
                 end
                 TextBox.Text = Selected_Region
-                task.wait(2.5)
+                task.wait(3)
                 local ScrollingFrame = PlayerGui.ServerBrowser.Frame.ScrollingFrame
                 local FakeScroll = PlayerGui.ServerBrowser.Frame.FakeScroll
-                local Inside = FakeScroll and FakeScroll:FindFirstChild("Inside")
-                if ScrollingFrame then
-                    local maxScroll = ScrollingFrame.CanvasSize.Y.Offset - ScrollingFrame.AbsoluteSize.Y
-                    if maxScroll > 0 then
-                        ScrollingFrame.CanvasPosition = Vector2.new(0, math.random(0, maxScroll))
-                    else
-                        ScrollingFrame.CanvasPosition = Vector2.new(0, math.random(100, 4000))
-                    end
-                    task.wait(1)
-                end
+                local Inside = FakeScroll.Inside
+                ScrollingFrame.CanvasPosition = Vector2.new(0, math.random(100, 4000))
+                task.wait(0.1)
                 local currentJobId = game.JobId
 
-                -- Auto-dismiss teleport error popups (Error 773, etc.)
                 task.spawn(function()
                     while _env.IsServerHopping do
                         task.wait(0.3)
@@ -7594,31 +7663,46 @@ _modules["main"] = function()
                                     end
                                 end
                             end
+                            -- Also check via VirtualInputManager clicking screen center on error
+                            local teleportFailed = game:GetService("CoreGui"):FindFirstChildWhichIsA("ScreenGui", true)
+                            if teleportFailed then
+                                for _, lbl in ipairs(teleportFailed:GetDescendants()) do
+                                    if lbl:IsA("TextLabel") and lbl.Text:find("773") then
+                                        for _, btn in ipairs(teleportFailed:GetDescendants()) do
+                                            if btn:IsA("TextButton") then btn:Activate() end
+                                        end
+                                    end
+                                end
+                            end
                         end)
                     end
                 end)
 
-                -- Find priority (high-bounty server) and backup join buttons
-                local priorityButton = nil
-                local backupButton = nil
+                -- Track failed jobs to skip them
+                local failedJobs = {}
 
-                if Inside then
-                    for _, row in pairs(Inside:GetChildren()) do
-                        if row:IsA("GuiObject") and row.Visible then
-                            local btn = row:FindFirstChild("Join")
-                            if btn and btn:IsA("TextButton") then
-                                local jobId = btn:GetAttribute("Job")
-                                if jobId and tostring(jobId) ~= currentJobId then
-                                    if not backupButton then backupButton = btn end
-                                    -- Prefer servers with high bounty players
-                                    local rowLabel = row:FindFirstChildOfClass("TextLabel")
-                                    if rowLabel and not priorityButton then
-                                        local bStr = rowLabel.Text:match("Bounty:%s*([%d,]+)")
-                                        if bStr then
-                                            local bounty = tonumber((bStr:gsub(",", ""))) or 0
-                                            if bounty >= 20000000 then
-                                                priorityButton = btn
-                                            end
+                while true do
+                    task.wait(0.5)
+                    for _, template in ipairs(Inside:GetChildren()) do
+                        if template.Name == "Template" then
+                            local joinButton = template:FindFirstChild("Join")
+                            if joinButton then
+                                local job = joinButton:GetAttribute("Job")
+                                if job and tostring(job):find("-", 1, true) then
+                                    job = tostring(job)
+                                    if job ~= currentJobId and not failedJobs[job] then
+                                        local success = pcall(function()
+                                            TeleportService:TeleportToPlaceInstance(game.PlaceId, job)
+                                        end)
+                                        if not success then
+                                            pcall(function()
+                                                TeleportService:TeleportToServer(job)
+                                            end)
+                                        end
+                                        task.wait(5)
+                                        -- If still here after 5s, server was restricted — skip it
+                                        if game.JobId == currentJobId then
+                                            failedJobs[job] = true
                                         end
                                     end
                                 end
@@ -7626,67 +7710,6 @@ _modules["main"] = function()
                         end
                     end
                 end
-
-                -- Also search Template-named rows as fallback
-                if not backupButton and Inside then
-                    for _, template in ipairs(Inside:GetChildren()) do
-                        if template.Name == "Template" then
-                            local joinButton = template:FindFirstChild("Join")
-                            if joinButton then
-                                local job = joinButton:GetAttribute("Job")
-                                if job and tostring(job) ~= currentJobId then
-                                    backupButton = joinButton
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
-
-                local joinBtn = priorityButton or backupButton
-                if joinBtn then
-                    local jobId = joinBtn:GetAttribute("Job")
-                    pcall(function()
-                        -- firesignal is the most reliable method
-                        if firesignal then
-                            firesignal(joinBtn.MouseButton1Click)
-                            firesignal(joinBtn.Activated)
-                        end
-                        -- Try __ServerBrowser remote (Blox Fruits native)
-                        local sbRemote = game:GetService("ReplicatedStorage"):FindFirstChild("__ServerBrowser")
-                        if sbRemote and jobId then
-                            sbRemote:InvokeServer("teleport", tostring(jobId))
-                        else
-                            -- Direct TeleportService fallback
-                            local ok2 = pcall(function()
-                                TeleportService:TeleportToPlaceInstance(game.PlaceId, tostring(jobId))
-                            end)
-                            if not ok2 then
-                                pcall(function()
-                                    TeleportService:TeleportToServer(tostring(jobId))
-                                end)
-                            end
-                        end
-                    end)
-                    task.wait(10)
-                else
-                    -- No servers in ServerBrowser — try HTTP API
-                    PlayerGui.ServerBrowser.Enabled = false
-                    local serverList = fetchServerList()
-                    if serverList then
-                        for _, server in ipairs(serverList) do
-                            local jobId = server.id
-                            if jobId and jobId ~= currentJobId
-                                and (server.playing or 0) > 1 then
-                                local ok2 = pcall(function()
-                                    TeleportService:TeleportToPlaceInstance(game.PlaceId, jobId)
-                                end)
-                                if ok2 then task.wait(10); break end
-                            end
-                        end
-                    end
-                end
-                _env.IsServerHopping = false
             end
     
             -- ============================================
@@ -8029,6 +8052,16 @@ _modules["main"] = function()
             -- MAIN UTILITY LOOP (PvP, antimover, v4) — keeps thread alive
             -- ============================================
             print("[NexusBounty] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
+
+            -- Event check loop (Full Moon, Mirage, Boss)
+            task.spawn(function()
+                task.wait(10) -- chờ game load xong
+                while not getgenv().NexusShuttingDown do
+                    pcall(CheckGameEvents)
+                    task.wait(30) -- check mỗi 30 giây
+                end
+            end)
+
             while wait(1) do
                 pcall(function()
                     PvpEnable()
@@ -8155,45 +8188,6 @@ print("[NexusBounty] Initializing UI...")
 
 -- Init UI first so Key System shows up
 UI.init(Utils, Config, Auth)
-
--- Auto-apply L (large) size as soon as UI is ready
-task.spawn(function()
-    task.wait(0.8)
-    pcall(function()
-        -- Try clicking the SizeL button if it exists (mobile)
-        if UI.DynamicIsland then
-            local resizeBtns = UI.DynamicIsland:FindFirstChild("ResizeButtons")
-            if resizeBtns then
-                local sizeL = resizeBtns:FindFirstChild("SizeL")
-                if sizeL then
-                    sizeL:Activate()
-                    return
-                end
-            end
-        end
-        -- Fallback: apply L scale directly to MainFrame
-        if UI.MainFrame then
-            local scale = 0.80
-            local baseW, baseH = 550, 380
-            local newW = math.floor(baseW * scale)
-            local newH = math.floor(baseH * scale)
-            local newLeftW = math.max(80, math.floor(180 * scale))
-            UI.MainFrame.Size = UDim2.new(0, newW, 0, newH)
-            local leftPanel = UI.MainFrame:FindFirstChild("LeftPanel")
-            if leftPanel then leftPanel.Size = UDim2.new(0, newLeftW, 1, 0) end
-            local rightPanel = UI.MainFrame:FindFirstChild("RightPanel")
-            if rightPanel then
-                rightPanel.Position = UDim2.new(0, newLeftW, 0, 0)
-                rightPanel.Size = UDim2.new(1, -newLeftW, 1, 0)
-            end
-            local dragHandle = UI.MainFrame:FindFirstChild("DragHandle")
-            if dragHandle then
-                dragHandle.Position = UDim2.new(0, newLeftW, 0, 0)
-                dragHandle.Size = UDim2.new(1, -newLeftW, 0, 40)
-            end
-        end
-    end)
-end)
 
 print("[NexusBounty] UI ready! Waiting for authentication...")
 
