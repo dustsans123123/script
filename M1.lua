@@ -6186,82 +6186,64 @@ _modules["main"] = function()
         CastleRaid        = "https://ptb.discord.com/api/webhooks/1489974864025485322/gREVMfyINYpvqNxovgxLc-jrZ9IRWTj6LJJPG3PcbQUrfRsiK07ZgnWWswdodqXYArHj",
     }
 
-    local _eventNotifiedThisServer = {}
-
-    local function SendEventNotify(url, title)
-        if not url or url == "" then return end
-        if _eventNotifiedThisServer[title] then return end
-        _eventNotifiedThisServer[title] = true
-        local JobId = game.JobId
+    local function SendNotify(url, title)
         local data = {
-            ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. JobId .. "\")`",
+            ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. game.JobId .. "\")`",
             ["username"] = "Michael Monitor"
         }
         pcall(function()
-            local reqFn = request or http_request or (syn and syn.request) or (http and http.request)
-            if reqFn then
-                reqFn({
-                    Url = url,
-                    Method = "POST",
-                    Headers = {["Content-Type"] = "application/json"},
-                    Body = HttpService:JSONEncode(data)
-                })
-            end
+            local response = request or http_request or syn.request
+            response({
+                Url = url,
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = HttpService:JSONEncode(data)
+            })
         end)
     end
 
-    local function CheckGameEvents()
+    local function CheckEvents()
+        local hasEvent = false
+
         pcall(function()
-            local state = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState")
-            if state and state.MoonProgress then
-                if state.MoonProgress >= 5 then
-                    SendEventNotify(WEBHOOKS.FullMoon, "Full Moon")
-                elseif state.MoonProgress >= 3 then
-                    SendEventNotify(WEBHOOKS.NearFullMoon, "Near Full Moon")
+            local moonProgress = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState").MoonProgress
+            if moonProgress >= 5 then
+                SendNotify(WEBHOOKS.FullMoon, "Full Moon")
+                hasEvent = true
+            end
+        end)
+
+        if game.Workspace.Map:FindFirstChild("Mirage Island") then
+            SendNotify(WEBHOOKS.MirageIsland, "Mirage Island")
+            hasEvent = true
+        end
+
+        for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+            if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
+                SendNotify(WEBHOOKS.Boss, v.Name)
+                hasEvent = true
+            end
+        end
+
+        return hasEvent
+    end
+
+    local function Hop()
+        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100&_rnd=" .. math.random(1, 9999)
+        local success, result = pcall(function()
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and result.data then
+            for _, s in pairs(result.data) do
+                if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                    pcall(function()
+                        ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
+                    end)
+                    task.wait(2)
                 end
             end
-        end)
-
-        pcall(function()
-            if workspace.Map:FindFirstChild("Mirage Island") then
-                SendEventNotify(WEBHOOKS.MirageIsland, "Mirage Island")
-            end
-        end)
-
-        pcall(function()
-            if workspace.Map:FindFirstChild("Prehistoric Island") then
-                SendEventNotify(WEBHOOKS.PrehistoricIsland, "Prehistoric Island")
-            end
-        end)
-
-        pcall(function()
-            if workspace.Map:FindFirstChild("Kitsune Island") then
-                SendEventNotify(WEBHOOKS.KitsuneIsland, "Kitsune Island")
-            end
-        end)
-
-        pcall(function()
-            local enemies = workspace:FindFirstChild("Enemies")
-            if enemies then
-                for _, v in pairs(enemies:GetChildren()) do
-                    if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
-                        SendEventNotify(WEBHOOKS.Boss, v.Name .. " Boss")
-                    end
-                end
-            end
-        end)
-
-        pcall(function()
-            local items = workspace:FindFirstChild("_WorldOrigin")
-            if items then
-                for _, v in pairs(items:GetDescendants()) do
-                    if v.Name == "Blox_Fruit" or v.Name == "FruitSpawn" then
-                        SendEventNotify(WEBHOOKS.Fruit, "Fruit Spawn")
-                        break
-                    end
-                end
-            end
-        end)
+        end
     end
 
     function Main.getSessionKills() return TotalKills end
@@ -6760,70 +6742,10 @@ _modules["main"] = function()
                         Utils.saveStats(stats)
                     end)
                 end
-
-                getgenv().IsServerHopping = true
-                if InstaTpConnection then
-                    InstaTpConnection:Disconnect()
-                    InstaTpConnection = nil
-                end
-
-                local flag = Instance.new("BoolValue")
-                flag.Name = "CombatEscape"
-                flag.Parent = workspace
-                task.spawn(function()
-                    while flag.Parent do
-                        local char = lp.Character
-                        if char then
-                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                hrp.CFrame = CFrame.new(hrp.Position.X, hrp.Position.Y + 273861, hrp.Position.Z)
-                            end
-                        end
-                        task.wait(0.05)
-                    end
-                end)
-
-                WaitForCombatEnd(30)
-                task.wait(1)
-
                 if Utils and Utils.flushStats then
                     pcall(Utils.flushStats)
                 end
-
-                local currentJobId = game.JobId
-                local failedJobs = {}
-                local hopped = false
-
-                while not hopped do
-                    local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100&_rnd=" .. math.random(1, 9999)
-                    local ok, result = pcall(function()
-                        return HttpService:JSONDecode(game:HttpGet(url))
-                    end)
-
-                    if ok and result and result.data then
-                        for _, s in pairs(result.data) do
-                            if s.playing < s.maxPlayers and s.id ~= currentJobId and not failedJobs[s.id] then
-                                pcall(function()
-                                    ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
-                                end)
-                                task.wait(5)
-                                if game.JobId ~= currentJobId then
-                                    hopped = true
-                                    break
-                                else
-                                    failedJobs[s.id] = true
-                                end
-                            end
-                        end
-                    end
-
-                    if not hopped then
-                        task.wait(3)
-                    end
-                end
-
-                flag:Destroy()
-                getgenv().IsServerHopping = false
+                Hop()
             end
     
             local FruitConfigs = {
@@ -7077,12 +6999,18 @@ _modules["main"] = function()
             end
     
             local function v4()
-                local args = { true }
-                lp:WaitForChild("Backpack"):WaitForChild("Awakening"):WaitForChild("RemoteFunction"):InvokeServer(unpack(
-                args))
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.05)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                pcall(function()
+                    local backpack = lp:FindFirstChild("Backpack")
+                    if not backpack then return end
+                    local awakening = backpack:FindFirstChild("Awakening")
+                    if not awakening then return end
+                    local remote = awakening:FindFirstChild("RemoteFunction")
+                    if not remote then return end
+                    remote:InvokeServer(true)
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                    task.wait(0.05)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
+                end)
             end
     
             print("[NexusBounty] [HYPER] Starting T-Rex combat loop")
@@ -7139,11 +7067,15 @@ _modules["main"] = function()
     
             print("[NexusBounty] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
 
-            task.spawn(function()
-                task.wait(10) -- chờ game load xong
-                while not getgenv().NexusShuttingDown do
-                    pcall(CheckGameEvents)
-                    task.wait(30) -- check mỗi 30 giây
+            spawn(function()
+                while true do
+                    local found = CheckEvents()
+                    if found then
+                        task.wait(1800)
+                    else
+                        Hop()
+                    end
+                    task.wait(10)
                 end
             end)
 
