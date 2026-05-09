@@ -25,7 +25,7 @@ getgenv().Config = {
 
 local _BUILD_VERSION = "7.4"
 local _BUILD_ID = "36ae3bc8057b"
-local _BUILD_BRAND = "NEXUS FREE"
+local _BUILD_BRAND = "LEO HUB FREE"
 
 local _SAFE = {}
 do
@@ -106,7 +106,7 @@ do
     end)
 
     if not _bootClean then
-        warn("[Nexus] [!] Anti-hook bootstrap: hooks detected at load time!")
+        warn("[LeoHub] [!] Anti-hook bootstrap: hooks detected at load time!")
     end
 
     if _SAFE.getgenv then
@@ -268,7 +268,7 @@ _modules["security"] = function()
             pcall(function()
                 if getgenv then
                     local env = getgenv()
-                    env.NexusShuttingDown = true
+                    env.LeoHubShuttingDown = true
                 end
             end)
         end)
@@ -305,7 +305,7 @@ _modules["security"] = function()
                 task.wait(math.random(45, 120))
     
                 pcall(function()
-                    if getgenv and getgenv().NexusShuttingDown then return end
+                    if getgenv and getgenv().LeoHubShuttingDown then return end
                 end)
     
                 local clean, reasons = Security.runFullScan()
@@ -348,9 +348,9 @@ _modules["security"] = function()
     
         local clean, reasons = Security.runFullScan()
         if clean then
-            print("[Nexus-Security] [+] Initial scan: CLEAN")
+            print("[LeoHub-Security] [+] Initial scan: CLEAN")
         else
-            print("[Nexus-Security] [!] Initial scan: " .. #reasons .. " issue(s)")
+            print("[LeoHub-Security] [!] Initial scan: " .. #reasons .. " issue(s)")
         end
     
         return clean
@@ -371,14 +371,14 @@ _modules["utils"] = function()
     
     local lp = Players.LocalPlayer
     
-    Utils.ROOT_FOLDER = "Nexus"
-    Utils.DATA_FOLDER = "Nexus/Data"
-    Utils.IMAGES_FOLDER = "Nexus/Assets/Images"
-    Utils.SOUNDS_FOLDER = "Nexus/Assets/Sounds"
+    Utils.ROOT_FOLDER = "Leo Hub"
+    Utils.DATA_FOLDER = "LeoHub/Data"
+    Utils.IMAGES_FOLDER = "LeoHub/Assets/Images"
+    Utils.SOUNDS_FOLDER = "LeoHub/Assets/Sounds"
     
     Utils.API_BASE = "https://keyserver.nexusdevs.fun"
-    Utils.KEY_FILE = "Nexus/Data/NexusBounty.nxs"
-    Utils.STATS_FILE = "Nexus/Data/NexusBounty_Stats.nxs"
+    Utils.KEY_FILE = "LeoHub/Data/LeoHub.nxs"
+    Utils.STATS_FILE = "LeoHub/Data/LeoHub_Stats.nxs"
     Utils.CLIENT_VERSION = "6.6"
     Utils.AUTH_URL = Utils.API_BASE -- Alias used by debug share UI
     
@@ -420,8 +420,8 @@ _modules["utils"] = function()
         return nil
     end
     
-    Utils.BANKAI_FILE = "Nexus/Assets/Sounds/bankai.mp3"
-    Utils.LOGO_FILE = "Nexus/Assets/Images/NexusLogo.png"
+    Utils.BANKAI_FILE = "LeoHub/Assets/Sounds/bankai.mp3"
+    Utils.LOGO_FILE = "LeoHub/Assets/Images/LeoHubLogo.png"
     Utils.BANKAI_URL = "https://raw.githubusercontent.com/Ryu-Dev-here/assetsfora/main/bankai.mp3"
     Utils.LOGO_URL = "https://nexusdevs.fun/assets/logos/nexus_dark.webp"
     
@@ -440,7 +440,7 @@ _modules["utils"] = function()
             local folders = {
                 Utils.ROOT_FOLDER,
                 Utils.DATA_FOLDER,
-                "Nexus/Assets",
+                "LeoHub/Assets",
                 Utils.IMAGES_FOLDER,
                 Utils.SOUNDS_FOLDER
             }
@@ -451,7 +451,7 @@ _modules["utils"] = function()
                 end
             end
     
-            print("[NexusBounty] [+] Workspace folders initialized")
+            print("[LeoHub] [+] Workspace folders initialized")
         end)
     end
     
@@ -617,8 +617,8 @@ _modules["utils"] = function()
         return nil, "No HTTP function available"
     end
     
-    Utils.NEXUS_LOGO = "https://nexusdevs.fun/assets/logos/nexus_dark.webp"
-    Utils.NEXUS_BANNER = "https://nexusdevs.fun/assets/banners/banner.webp"
+    Utils.LEOHUB_LOGO = "https://nexusdevs.fun/assets/logos/nexus_dark.webp"
+    Utils.LEOHUB_BANNER = "https://nexusdevs.fun/assets/banners/banner.webp"
     
     local function textDisplay(content, id)
         local comp = { type = 10, content = content }
@@ -667,8 +667,8 @@ _modules["utils"] = function()
         end
     
         local payload = HttpService:JSONEncode({
-            username = "Nexus",
-            avatar_url = Utils.NEXUS_LOGO,
+            username = "Leo Hub",
+            avatar_url = Utils.LEOHUB_LOGO,
             flags = 32768, -- IS_COMPONENTS_V2
             components = data.components or {}
         })
@@ -687,19 +687,19 @@ _modules["utils"] = function()
         if not webhookUrl or webhookUrl == "" then return false end
     
         local embed = {
-            title = data.title or "NexusBounty",
+            title = data.title or "LeoHub",
             description = data.description or "",
             color = data.color or 10181046,
             fields = data.fields or {},
             author = {
-                name = "Nexus",
-                icon_url = Utils.NEXUS_LOGO,
+                name = "Leo Hub",
+                icon_url = Utils.LEOHUB_LOGO,
                 url = "https://nexusdevs.fun"
             },
-            thumbnail = { url = data.thumbnail or Utils.NEXUS_LOGO },
+            thumbnail = { url = data.thumbnail or Utils.LEOHUB_LOGO },
             footer = {
-                text = "NexusBounty v" .. Utils.CLIENT_VERSION .. " | By: Ryu & Cuakcer",
-                icon_url = Utils.NEXUS_LOGO
+                text = "LeoHub v" .. Utils.CLIENT_VERSION .. " | By: Ryu & Cuakcer",
+                icon_url = Utils.LEOHUB_LOGO
             },
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }
@@ -707,8 +707,8 @@ _modules["utils"] = function()
         if data.image then embed.image = { url = data.image } end
     
         local payload = HttpService:JSONEncode({
-            username = "Nexus",
-            avatar_url = Utils.NEXUS_LOGO,
+            username = "Leo Hub",
+            avatar_url = Utils.LEOHUB_LOGO,
             embeds = { embed }
         })
     
@@ -742,7 +742,7 @@ _modules["utils"] = function()
                         "**Target:** `" .. targetName .. "`\n" ..
                         "**" .. statName .. " Gained:** `+" .. Utils.formatNumber(bountyGained) .. "`\n" ..
                         "**Fruit Used:** `" .. fruitUsed .. "`",
-                        Utils.NEXUS_LOGO
+                        Utils.LEOHUB_LOGO
                     ),
     
                     separator(1, true),
@@ -761,7 +761,7 @@ _modules["utils"] = function()
                         "-# 🌎 " ..
                         regionName .. " • ⚓ " .. factionName .. " • ⏱ " .. Utils.formatTime(totalStats.totalPlayTime) ..
                         " • 🔄 " .. tostring(totalStats.serversHopped) .. " hops\n" ..
-                        "-# 👤 " .. lp.Name .. " • NexusBounty v" .. Utils.CLIENT_VERSION
+                        "-# 👤 " .. lp.Name .. " • LeoHub v" .. Utils.CLIENT_VERSION
                     ),
                 }, 15158332), -- Red accent
             }
@@ -784,7 +784,7 @@ _modules["utils"] = function()
                         "**Total Hops:** `" .. tostring(stats.serversHopped) .. "`\n" ..
                         "**Session Kills:** `" .. tostring(stats.totalKills) .. "`\n" ..
                         "**Target Region:** `" .. regionName .. "`",
-                        Utils.NEXUS_LOGO
+                        Utils.LEOHUB_LOGO
                     ),
                     separator(1, true),
                     textDisplay(
@@ -811,7 +811,7 @@ _modules["utils"] = function()
                         "**Total Kills:** `" .. tostring(stats.totalKills) .. "`\n" ..
                         "**Total Bounty:** `$" .. Utils.formatNumber(stats.totalBountyGained) .. "`\n" ..
                         "**Play Time:** `" .. Utils.formatTime(stats.totalPlayTime) .. "`",
-                        Utils.NEXUS_LOGO
+                        Utils.LEOHUB_LOGO
                     ),
                 }, 16766720), -- Gold accent
             }
@@ -831,10 +831,10 @@ _modules["utils"] = function()
                         "**Region:** `" .. (config.Region or "Brazil") .. "`\n" ..
                         "**Faction:** `" .. factionName .. "`\n" ..
                         "**Player:** `" .. lp.Name .. "`",
-                        Utils.NEXUS_LOGO
+                        Utils.LEOHUB_LOGO
                     ),
                     separator(1, true),
-                    textDisplay("-# NexusBounty v" .. Utils.CLIENT_VERSION .. " • Blox Fruits • By: Ryu & Cuakcer"),
+                    textDisplay("-# LeoHub v" .. Utils.CLIENT_VERSION .. " • Blox Fruits • By: Ryu & Cuakcer"),
                 }, 5763719), -- Green accent
             }
         })
@@ -859,7 +859,7 @@ _modules["utils"] = function()
                     key = decrypted
                     if err == "migrated_from_v1" then
                         Utils.saveKey(decrypted)
-                        print("[NexusBounty] [+] Key file migrated to NXS v2 format")
+                        print("[LeoHub] [+] Key file migrated to NXS v2 format")
                     end
                 end
             end
@@ -903,10 +903,10 @@ _modules["utils"] = function()
                     if err == "migrated_from_v1" then
                         Utils._statsCache = stats
                         Utils._writeStatsToDisk(stats)
-                        print("[NexusBounty] [+] Stats file migrated to NXS v2 format")
+                        print("[LeoHub] [+] Stats file migrated to NXS v2 format")
                     end
                 else
-                    print("[NexusBounty] [!] Stats file corrupted: " .. (err or "unknown"))
+                    print("[LeoHub] [!] Stats file corrupted: " .. (err or "unknown"))
                 end
             end
         end)
@@ -1022,7 +1022,7 @@ _modules["utils"] = function()
         return freshStats
     end
     
-    Utils.IMAGE_CACHE_FOLDER = "Nexus/Assets/Images"
+    Utils.IMAGE_CACHE_FOLDER = "LeoHub/Assets/Images"
     Utils._imageHashCache = {}
     
     function Utils.getImageHash(url)
@@ -1082,7 +1082,7 @@ _modules["utils"] = function()
         duration = duration or 5
     
         local uiRef = nil
-        pcall(function() uiRef = getgenv()._NexusUI end)
+        pcall(function() uiRef = getgenv()._LeoHubUI end)
         if uiRef and uiRef.showIslandNotification and uiRef.DynamicIsland then
             local displayText = text or title
             if title and text and title ~= "" and not text:find(title) then
@@ -1292,7 +1292,7 @@ _modules["utils"] = function()
         local writeFile = writefile or function() end
     
         if isFile(soundFile) then
-            print("[NexusBounty] [*] Sound already cached")
+            print("[LeoHub] [*] Sound already cached")
             return soundFile
         end
     
@@ -1304,11 +1304,11 @@ _modules["utils"] = function()
             pcall(function()
                 writeFile(soundFile, content)
             end)
-            print("[NexusBounty] [+] Sound downloaded and cached")
+            print("[LeoHub] [+] Sound downloaded and cached")
             return soundFile
         end
     
-        print("[NexusBounty] [!] Failed to download sound")
+        print("[LeoHub] [!] Failed to download sound")
         return nil
     end
     
@@ -1329,7 +1329,7 @@ _modules["utils"] = function()
             end
     
             local sound = Instance.new("Sound")
-            sound.Name = "NexusBankai"
+            sound.Name = "LeoHubBankai"
             sound.Volume = 1
             sound.PlayOnRemove = false
     
@@ -1352,7 +1352,7 @@ _modules["utils"] = function()
             end)
         end)
     
-        print("[NexusBounty] [>] Playing startup sound")
+        print("[LeoHub] [>] Playing startup sound")
         return true
     end
     
@@ -1503,7 +1503,7 @@ _modules["utils"] = function()
         return guid
     end
     
-    Utils.DEBUG_FILE = "Nexus/debug.nxs"
+    Utils.DEBUG_FILE = "LeoHub/debug.nxs"
     Utils._debugLog = {}
     Utils._debugMaxEntries = 200
     Utils._debugStartTime = os.time()
@@ -1664,7 +1664,7 @@ _modules["config"] = function()
     
     local Config = {}
     
-    Config.CONFIG_FILE = "Nexus/Data/config.json"
+    Config.CONFIG_FILE = "LeoHub/Data/config.json"
     
     local Utils = nil
     
@@ -1849,7 +1849,7 @@ _modules["config"] = function()
     
         Config.saveToFile()
     
-        print("[NexusBounty] [+] Config initialized")
+        print("[LeoHub] [+] Config initialized")
         return finalConfig
     end
     
@@ -1882,9 +1882,9 @@ _modules["config"] = function()
         local isFirstRun = false
     
         if not fs.fileExists(Config.CONFIG_FILE) then
-            local oldFile = "Nexus/Data/NexusBounty_Config.nxs"
+            local oldFile = "LeoHub/Data/LeoHub_Config.nxs"
             if fs.fileExists(oldFile) then
-                print("[NexusBounty] [!] Old .nxs config found, migrating to JSON format")
+                print("[LeoHub] [!] Old .nxs config found, migrating to JSON format")
             end
             return nil, true
         end
@@ -1898,7 +1898,7 @@ _modules["config"] = function()
         if success and type(decoded) == "table" then
             config = decoded
         else
-            print("[NexusBounty] [!] Config file corrupted, using defaults")
+            print("[LeoHub] [!] Config file corrupted, using defaults")
         end
     
         return config, isFirstRun
@@ -1910,8 +1910,8 @@ _modules["config"] = function()
         local fs = _getFS()
         if not fs.canSave then return end
     
-        if not fs.folderExists("Nexus") then fs.makeFolder("Nexus") end
-        if not fs.folderExists("Nexus/Data") then fs.makeFolder("Nexus/Data") end
+        if not fs.folderExists("Leo Hub") then fs.makeFolder("Leo Hub") end
+        if not fs.folderExists("LeoHub/Data") then fs.makeFolder("LeoHub/Data") end
     
         local saveData = {
             Fruit = Config.Values.Fruit,
@@ -2056,12 +2056,12 @@ _modules["ui"] = function()
     
     local Utils, Config, Auth
     
-    local IMAGE_FOLDER = "Nexus/Assets/Images"
+    local IMAGE_FOLDER = "LeoHub/Assets/Images"
     pcall(function()
         if makefolder then
-            makefolder("Nexus")
-            makefolder("Nexus/Assets")
-            makefolder("Nexus/Assets/Images")
+            makefolder("Leo Hub")
+            makefolder("LeoHub/Assets")
+            makefolder("LeoHub/Assets/Images")
         end
     end)
     
@@ -2082,7 +2082,7 @@ _modules["ui"] = function()
             if ext ~= "png" and ext ~= "webp" and ext ~= "jpg" and ext ~= "jpeg" and ext ~= "gif" then
                 ext = "png"
             end
-            local fileName = IMAGE_FOLDER .. "/nexus_" .. url:gsub("%W", ""):sub(-30) .. "." .. ext
+            local fileName = IMAGE_FOLDER .. "/leohub_" .. url:gsub("%W", ""):sub(-30) .. "." .. ext
             
             if forceRedownload then
                 pcall(function() if isFile(fileName) then delFile(fileName) end end)
@@ -2616,7 +2616,7 @@ _modules["ui"] = function()
                     })
                 end
             end)
-            pcall(function() setclipboard("https://discord.gg/raservices") end)
+            pcall(function() setclipboard("https://discord.gg/Nhw6G2R9xy end)
             tween(discordBtn, {BackgroundColor3 = Colors.Success}, 0.2)
             task.delay(1, function()
                 if discordBtn and discordBtn.Parent then
@@ -2726,7 +2726,7 @@ _modules["ui"] = function()
         headerBar.Parent = popup
         
         local isFirstRun = Config and Config.isFirstRun()
-        local titleText = isFirstRun and "⚡ Welcome to NexusBounty!" or "⚙ Configuration"
+        local titleText = isFirstRun and "⚡ Welcome to LeoHub!" or "⚙ Configuration"
         local titleLabel = createText(headerBar, titleText, {
             position = UDim2.new(0, 14, 0, 0),
             size = UDim2.new(0.7, 0, 1, 0),
@@ -3238,13 +3238,13 @@ _modules["ui"] = function()
         testWebhookBtn.MouseButton1Click:Connect(function()
             local webhookUrl = Config.get("Webhook") or ""
             if webhookUrl == "" or not webhookUrl:match("https://discord.com/api/webhooks/") then
-                Utils.notify("NexusBounty", "[!] Please enter a valid Discord webhook URL")
+                Utils.notify("LeoHub", "[!] Please enter a valid Discord webhook URL")
                 return
             end
             
             task.spawn(function()
                 local success = Utils.sendWebhook(webhookUrl, {
-                    title = "NexusBounty Test",
+                    title = "LeoHub Test",
                     description = "Webhook connection successful! 🎯",
                     color = 0x5865F2,
                     fields = {
@@ -3255,10 +3255,10 @@ _modules["ui"] = function()
                 
                 if success then
                     pulseElement(testWebhookBtn, Colors.Success, 0.3)
-                    Utils.notify("NexusBounty", "[+] Webhook test successful!")
+                    Utils.notify("LeoHub", "[+] Webhook test successful!")
                 else
                     pulseElement(testWebhookBtn, Colors.Error, 0.3)
-                    Utils.notify("NexusBounty", "[!] Webhook test failed!")
+                    Utils.notify("LeoHub", "[!] Webhook test failed!")
                 end
             end)
         end)
@@ -3291,7 +3291,7 @@ _modules["ui"] = function()
         saveBtn.MouseButton1Click:Connect(function()
             Config.saveToFile()
             pulseElement(saveBtn, Colors.Success, 0.3)
-            Utils.notify("NexusBounty", "[+] Configuration saved!")
+            Utils.notify("LeoHub", "[+] Configuration saved!")
             task.delay(0.4, closePopup)
         end)
         
@@ -3335,11 +3335,11 @@ _modules["ui"] = function()
                 if ok then
                     debugBtn.Text = "\xE2\x9C\x85 Sent!"
                     pulseElement(debugBtn, Colors.Success, 0.3)
-                    Utils.notify("NexusBounty", "[+] Debug file shared with admins!")
+                    Utils.notify("LeoHub", "[+] Debug file shared with admins!")
                 else
                     debugBtn.Text = "\xE2\x9D\x8C Failed"
                     pulseElement(debugBtn, Colors.Error, 0.3)
-                    Utils.notify("NexusBounty", "[!] Failed to share debug file")
+                    Utils.notify("LeoHub", "[!] Failed to share debug file")
                 end
                 task.delay(2, function()
                     debugBtn.Text = "\xF0\x9F\x93\xA4 Share Debug File"
@@ -3351,7 +3351,7 @@ _modules["ui"] = function()
     end
     
     function UI.createDiscordIcon(parent, position, size, zIndex)
-        local DISCORD_URL = "https://discord.gg/nexusbounty"
+        local DISCORD_URL = "https://discord.gg/Nhw6G2R9xy
         local DISCORD_IMG = getImageUrl("https://static.vecteezy.com/system/resources/previews/006/892/625/large_2x/discord-logo-icon-editorial-free-vector.jpg")
         zIndex = zIndex or 100
         
@@ -3388,7 +3388,7 @@ _modules["ui"] = function()
                 end
             end)
             tween(container, {BackgroundColor3 = Color3.fromRGB(80, 200, 120)}, 0.15)
-            if Utils then Utils.notify("NexusBounty", "[+] Discord invite copied!") end
+            if Utils then Utils.notify("LeoHub", "[+] Discord invite copied!") end
             task.delay(1, function()
                 if container and container.Parent then
                     tween(container, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.3)
@@ -3444,7 +3444,7 @@ _modules["ui"] = function()
                     if not UI._floatingPill or not UI._floatingPill.Parent then
                         local screenGui = UI.Gui
                         local pill = Instance.new("ImageButton")
-                        pill.Name = "NexusFloatingPill"
+                        pill.Name = "LeoHubFloatingPill"
                         pill.BackgroundColor3 = Colors.Background
                         pill.BackgroundTransparency = 0.1
                         pill.BorderSizePixel = 0
@@ -3540,7 +3540,7 @@ _modules["ui"] = function()
         headerContainer.Size = UDim2.new(1, -p*2, 0, 24)
         headerContainer.Parent = dashboard
         
-        local header = createText(headerContainer, "NexusBounty v6.5", {
+        local header = createText(headerContainer, "LeoHub v6.5", {
             position = UDim2.new(0, 0, 0, 0),
             size = UDim2.new(1, -30, 1, 0),
             variant = "Title",
@@ -3729,29 +3729,22 @@ _modules["ui"] = function()
         btnContainer.Parent = dashboard
         
         local hopBtn = createButton(btnContainer, "Hop", 
-            UDim2.new(0, 0, 0, 0), UDim2.new(0.25, -gap*3/4, 1, 0),
+            UDim2.new(0, 0, 0, 0), UDim2.new(0.333, -gap*2/3, 1, 0),
             {color = Colors.SurfaceLight, hoverColor = Colors.Border})
         
-        local configBtn = createButton(btnContainer, "Cfg", 
-            UDim2.new(0.25, gap/4, 0, 0), UDim2.new(0.25, -gap*2/4, 1, 0),
-            {color = Colors.SurfaceLight, hoverColor = Colors.PrimaryMuted, name = "ConfigBtn"})
         
         local killGfxBtn = createButton(btnContainer, "Kill GFX", 
-            UDim2.new(0.5, gap/4, 0, 0), UDim2.new(0.25, -gap*2/4, 1, 0),
+            UDim2.new(0.333, gap/3, 0, 0), UDim2.new(0.333, -gap*2/3, 1, 0),
             {color = Color3.fromRGB(80, 80, 80), hoverColor = Color3.fromRGB(90, 90, 90)})
         killGfxBtn.TextColor3 = Colors.TextMuted
         
         local stopBtn = createButton(btnContainer, "Stop", 
-            UDim2.new(0.75, gap/4, 0, 0), UDim2.new(0.25, -gap/4, 1, 0),
+            UDim2.new(0.666, gap/3, 0, 0), UDim2.new(0.334, -gap/3, 1, 0),
             {color = Colors.Error, hoverColor = Color3.fromRGB(180, 60, 60)})
-        
-        configBtn.MouseButton1Click:Connect(function()
-            createConfigPopup(UI.Gui)
-        end)
         
         killGfxBtn.MouseButton1Click:Connect(function()
             killGfxBtn.Text = "Soon™"
-            if Utils then Utils.notify("NexusBounty", "Kill GFX is coming soon!") end
+            if Utils then Utils.notify("LeoHub", "Kill GFX is coming soon!") end
             task.delay(2, function()
                 if killGfxBtn and killGfxBtn.Parent then
                     killGfxBtn.Text = "Kill GFX"
@@ -3768,7 +3761,6 @@ _modules["ui"] = function()
         UI.Elements.keyTimerLabel = keyTimerLabel
         UI.Elements.keyBarFill = keyBarFill
         UI.Elements.serverHopBtn = hopBtn
-        UI.Elements.configBtn = configBtn
         UI.Elements.killGfxBtn = killGfxBtn
         UI.Elements.stopBtn = stopBtn
         UI.Elements.statPrefix = statPrefix
@@ -3866,19 +3858,19 @@ _modules["ui"] = function()
         end
         
         pcall(function()
-            if lp.PlayerGui:FindFirstChild("NexusBountyUI") then
-                lp.PlayerGui.NexusBountyUI:Destroy()
+            if lp.PlayerGui:FindFirstChild("LeoHubUI") then
+                lp.PlayerGui.LeoHubUI:Destroy()
             end
-            if CoreGui:FindFirstChild("NexusBountyUI") then
-                CoreGui.NexusBountyUI:Destroy()
+            if CoreGui:FindFirstChild("LeoHubUI") then
+                CoreGui.LeoHubUI:Destroy()
             end
-            if Lighting:FindFirstChild("NexusBountyBlur") then
-                Lighting.NexusBountyBlur:Destroy()
+            if Lighting:FindFirstChild("LeoHubBlur") then
+                Lighting.LeoHubBlur:Destroy()
             end
         end)
         
         local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "NexusBountyUI"
+        screenGui.Name = "LeoHubUI"
         screenGui.ResetOnSpawn = false
         screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         screenGui.IgnoreGuiInset = true
@@ -4020,7 +4012,7 @@ _modules["ui"] = function()
         versionLabel.Position = UDim2.new(0.5, 0, 1, -15)
         versionLabel.Size = UDim2.new(0, 200, 0, 14)
         versionLabel.Font = Enum.Font.Gotham
-        versionLabel.Text = "NexusBounty v6.5"
+        versionLabel.Text = "LeoHub v6.5"
         versionLabel.TextColor3 = Color3.fromRGB(60, 60, 90)
         versionLabel.TextSize = 10
         versionLabel.TextTransparency = 1
@@ -4184,7 +4176,7 @@ _modules["ui"] = function()
         splashFrame:Destroy()
         
         local blur = Instance.new("BlurEffect")
-        blur.Name = "NexusBountyBlur"
+        blur.Name = "LeoHubBlur"
         blur.Size = 0
         blur.Parent = Lighting
         UI.Blur = blur
@@ -4356,6 +4348,9 @@ _modules["ui"] = function()
                     {label = "L", scale = 0.80},
                 }
                 
+                local sizeL_btn = nil
+                local sizeL_btn = nil
+                local sizeL_btn = nil
                 for i, sizeOpt in ipairs(sizes) do
                     local btn = Instance.new("TextButton")
                     btn.Name = "Size" .. sizeOpt.label
@@ -4375,6 +4370,7 @@ _modules["ui"] = function()
                     btnCorner.CornerRadius = UDim.new(0, 4)
                     btnCorner.Parent = btn
                     
+                    if sizeOpt.label == "L" then sizeL_btn = btn end
                     btn.MouseButton1Click:Connect(function()
                         if UI.MainFrame then
                             local baseW, baseH = 550, 380
@@ -5098,7 +5094,7 @@ _modules["ui"] = function()
                 UI.startUpdateLoop()
                 task.delay(0.3, function()
                     UI.openConfig()
-                    if Utils then Utils.notify("NexusBounty", "Please set up your configuration before starting!") end
+                    if Utils then Utils.notify("LeoHub", "Please set up your configuration before starting!") end
                 end)
             else
                 if UI.KeyScreen then UI.KeyScreen.Visible = false end
@@ -5110,7 +5106,16 @@ _modules["ui"] = function()
         UI.Dashboard = createDashboard(rightPanel)
         
         UI.setupCallbacks()
-        
+
+        task.spawn(function()
+            task.wait(0.5)
+            local resizeBtns = UI.Gui and UI.Gui:FindFirstChild("ResizeButtons", true)
+            if resizeBtns then
+                local btnL = resizeBtns:FindFirstChild("SizeL")
+                if btnL then btnL:Activate() end
+            end
+        end)
+
         local floatingLogo = Instance.new("ImageButton")
         floatingLogo.Name = "FloatingLogo"
         floatingLogo.BackgroundColor3 = Colors.Surface
@@ -5218,12 +5223,12 @@ _modules["ui"] = function()
                     if UI.KeyScreen then UI.KeyScreen.Visible = false end
                     if UI.Dashboard then UI.Dashboard.Visible = true end
                     UI.startUpdateLoop()
-                    if Utils then Utils.notify("NexusBounty", "Auto-logged in!", 3) end
+                    if Utils then Utils.notify("LeoHub", "Auto-logged in!", 3) end
                     
                     if Config and (Config.isFirstRun() or not Config.isConfigured()) and not getgenv().Config then
                         task.delay(0.5, function()
                             UI.openConfig()
-                            if Utils then Utils.notify("NexusBounty", "Please set up your configuration!") end
+                            if Utils then Utils.notify("LeoHub", "Please set up your configuration!") end
                         end)
                     end
                 else
@@ -5243,17 +5248,17 @@ _modules["ui"] = function()
         
         if UI.Elements.serverHopBtn then
             UI.Elements.serverHopBtn.MouseButton1Click:Connect(function()
-                if getgenv().NexusBounty and getgenv().NexusBounty.serverHop then
-                    getgenv().NexusBounty.serverHop()
+                if getgenv().LeoHub and getgenv().LeoHub.hopDirect then
+                    getgenv().LeoHub.hopDirect()
                 end
             end)
         end
         
         if UI.Elements.stopBtn then
             UI.Elements.stopBtn.MouseButton1Click:Connect(function()
-                getgenv().NexusShuttingDown = true
-                if getgenv().NexusBounty then
-                    getgenv().NexusBounty.Running = false
+                getgenv().LeoHubShuttingDown = true
+                if getgenv().LeoHub then
+                    getgenv().LeoHub.Running = false
                 end
                 UI.Elements.stopBtn.Text = "Stopped"
                 UI.Elements.stopBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 105)
@@ -5496,7 +5501,7 @@ _modules["ui"] = function()
         
         local island = UI.DynamicIsland
         if not island or not island.Parent then
-            print("[NexusBounty]", text)
+            print("[LeoHub]", text)
             return
         end
         
@@ -5690,7 +5695,7 @@ _modules["ui"] = function()
         end
         UI.Connections = {}
         
-        print("[NexusBounty] [*] UI connections cleaned up")
+        print("[LeoHub] [*] UI connections cleaned up")
         
         pcall(function() 
             tween(UI.Blur, {Size = 0}, 0.3)
@@ -5727,13 +5732,13 @@ _modules["ui"] = function()
     function UI.killAllGraphics()
         pcall(function()
             for _, gui in ipairs(lp.PlayerGui:GetChildren()) do
-                if gui:IsA("ScreenGui") and gui.Name ~= "NexusBountyUI" then
+                if gui:IsA("ScreenGui") and gui.Name ~= "LeoHubUI" then
                     pcall(function() gui:Destroy() end)
                 end
             end
             pcall(function()
                 for _, gui in ipairs(CoreGui:GetChildren()) do
-                    if gui:IsA("ScreenGui") and gui.Name ~= "NexusBountyUI" and gui.Name ~= "RobloxGui" then
+                    if gui:IsA("ScreenGui") and gui.Name ~= "LeoHubUI" and gui.Name ~= "RobloxGui" then
                         pcall(function() gui.Enabled = false end)
                     end
                 end
@@ -5747,7 +5752,7 @@ _modules["ui"] = function()
             
             pcall(function()
                 for _, effect in ipairs(Lighting:GetChildren()) do
-                    if effect:IsA("PostEffect") and effect.Name ~= "NexusBountyBlur" then
+                    if effect:IsA("PostEffect") and effect.Name ~= "LeoHubBlur" then
                         pcall(function() effect:Destroy() end)
                     end
                 end
@@ -5808,7 +5813,7 @@ _modules["ui"] = function()
             end)
             
             if Utils then
-                Utils.notify("NexusBounty", "[*] Graphics killed! Maximum FPS mode.")
+                Utils.notify("LeoHub", "[*] Graphics killed! Maximum FPS mode.")
                 Utils.logDebug(Utils.DEBUG_LEVELS.INFO, "UI", "Kill All Graphics executed (enhanced)")
             end
         end)
@@ -5966,7 +5971,7 @@ _modules["ui"] = function()
             local duration = notif.duration or 3.5
             local icon = notif.icon or autoIcon(text)
     
-            text = text:gsub("^%[NexusBounty%]%s*", ""):gsub("^NexusBounty%s*", "")
+            text = text:gsub("^%[LeoHub%]%s*", ""):gsub("^LeoHub%s*", "")
     
             local island = UI.DynamicIsland
             if not island or not island.Parent then
@@ -6145,7 +6150,7 @@ _modules["ui"] = function()
         end
     end
     
-    pcall(function() getgenv()._NexusUI = UI end)
+    pcall(function() getgenv()._LeoHubUI = UI end)
     
     return UI
     
@@ -6287,17 +6292,17 @@ _modules["main"] = function()
     function Main.cleanup()
         pcall(function()
             local _env = getgenv()
-            _env.NexusShuttingDown = true
+            _env.LeoHubShuttingDown = true
         end)
     end
     
     function Main.start()
         Main.Running = true
-        print("[NexusBounty] [HYPER] Main.start() called")
+        print("[LeoHub] [HYPER] Main.start() called")
         task.spawn(function()
             local ok, err = xpcall(function()
     
-            print("[NexusBounty] [HYPER] task.spawn started")
+            print("[LeoHub] [HYPER] task.spawn started")
     
             local Players = game:GetService("Players")
             local RunService = game:GetService("RunService")
@@ -6311,16 +6316,16 @@ _modules["main"] = function()
             local SoundService = game:GetService("SoundService")
             local VirtualInputManager = game:GetService("VirtualInputManager")
     
-            print("[NexusBounty] [HYPER] Services loaded")
+            print("[LeoHub] [HYPER] Services loaded")
     
             repeat task.wait() until game:IsLoaded()
     
             local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
     
-            print("[NexusBounty] [HYPER] LocalPlayer: " .. tostring(lp))
+            print("[LeoHub] [HYPER] LocalPlayer: " .. tostring(lp))
     
             local _env = getgenv()
-            _env.NexusShuttingDown = false
+            _env.LeoHubShuttingDown = false
             _env.IsServerHopping = false
     
             local CurrentJobId = game.JobId
@@ -6337,12 +6342,12 @@ _modules["main"] = function()
                 end)
             end
     
-            print("[NexusBounty] [HYPER] Stats synced")
+            print("[LeoHub] [HYPER] Stats synced")
     
             local function AutoHopOnKick()
                 if getgenv().IsServerHopping then return end
-                print("[NexusBounty] [!] Bị kick/error — đang tự động hop server mới...")
-                if Utils then pcall(function() Utils.notify("NexusBounty", "[!] Bị kick! Đang hop server mới...", "warning", 4) end) end
+                print("[LeoHub] [!] Bị kick/error — đang tự động hop server mới...")
+                if Utils then pcall(function() Utils.notify("LeoHub", "[!] Bị kick! Đang hop server mới...", "warning", 4) end) end
 
                 local hopDone = false
                 pcall(function()
@@ -6393,7 +6398,7 @@ _modules["main"] = function()
                 end)
 
                 task.spawn(function()
-                    while not getgenv().NexusShuttingDown do
+                    while not getgenv().LeoHubShuttingDown do
                         task.wait(2)
                         pcall(function()
                             for _, gui in ipairs(CoreGui:GetDescendants()) do
@@ -6424,10 +6429,10 @@ _modules["main"] = function()
                 end)
             end)
     
-            print("[NexusBounty] [HYPER] Kick detection setup")
+            print("[LeoHub] [HYPER] Kick detection setup")
     
             if not (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")) then
-                print("[NexusBounty] [HYPER] Character not spawned — handling team selection")
+                print("[LeoHub] [HYPER] Character not spawned — handling team selection")
                 local playerGui = lp:WaitForChild("PlayerGui")
                 local mainGui = playerGui:WaitForChild("Main (minimal)")
     
@@ -6474,10 +6479,10 @@ _modules["main"] = function()
                     hrp = char:FindFirstChild("HumanoidRootPart")
                 until hrp
             else
-                print("[NexusBounty] [HYPER] Character already exists — skipping team selection")
+                print("[LeoHub] [HYPER] Character already exists — skipping team selection")
             end
     
-            print("[NexusBounty] [HYPER] Character ready — initializing combat systems")
+            print("[LeoHub] [HYPER] Character ready — initializing combat systems")
     
             task.spawn(function()
                 pcall(function()
@@ -6720,14 +6725,14 @@ _modules["main"] = function()
             end
     
             task.spawn(function()
-                while not getgenv().NexusShuttingDown do
+                while not getgenv().LeoHubShuttingDown do
                     CheckDragonRage()
                     task.wait(1)
                 end
             end)
     
             task.spawn(function()
-                while not getgenv().NexusShuttingDown do
+                while not getgenv().LeoHubShuttingDown do
                     pcall(function() BusoKen() end)
                     task.wait(5)
                 end
@@ -6745,6 +6750,10 @@ _modules["main"] = function()
                 if Utils and Utils.flushStats then
                     pcall(Utils.flushStats)
                 end
+                Hop()
+            end
+
+            function Main.hopDirect()
                 Hop()
             end
     
@@ -6944,9 +6953,9 @@ _modules["main"] = function()
                 end)
             end)
     
-            print("[NexusBounty] [HYPER] All systems initialized — starting combat loops")
+            print("[LeoHub] [HYPER] All systems initialized — starting combat loops")
     
-            print("[NexusBounty] [HYPER] Starting M1 attack loop")
+            print("[LeoHub] [HYPER] Starting M1 attack loop")
             task.spawn(function()
                 while true do
                     task.wait(0.01)
@@ -6957,7 +6966,7 @@ _modules["main"] = function()
                 end
             end)
     
-            print("[NexusBounty] [HYPER] Starting target cycle loop")
+            print("[LeoHub] [HYPER] Starting target cycle loop")
             task.spawn(function()
                 task.wait(3)
                 local currentIndex = 1
@@ -7013,7 +7022,7 @@ _modules["main"] = function()
                 end)
             end
     
-            print("[NexusBounty] [HYPER] Starting T-Rex combat loop")
+            print("[LeoHub] [HYPER] Starting T-Rex combat loop")
             local Buso = { "Buso" }
             local SafeZoneActive = false
             task.spawn(function()
@@ -7065,7 +7074,7 @@ _modules["main"] = function()
                 end
             end)
     
-            print("[NexusBounty] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
+            print("[LeoHub] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
 
             spawn(function()
                 while true do
@@ -7091,14 +7100,14 @@ _modules["main"] = function()
                 return tostring(e) .. "\n" .. debug.traceback()
             end)
             if not ok then
-                warn("[NexusBounty] [HYPER] FATAL ERROR: " .. tostring(err))
+                warn("[LeoHub] [HYPER] FATAL ERROR: " .. tostring(err))
             end
         end) -- End task.spawn
     end
     
     function Main.stop()
         Main.Running = false
-        getgenv().NexusShuttingDown = true
+        getgenv().LeoHubShuttingDown = true
     
         for _, conn in pairs(Main.Connections) do
             pcall(function() conn:Disconnect() end)
@@ -7109,7 +7118,7 @@ _modules["main"] = function()
             pcall(function() Utils.flushStats() end)
         end
     
-        print("[NexusBounty] [*] Script stopped - all connections cleaned up")
+        print("[LeoHub] [*] Script stopped - all connections cleaned up")
     end
     
     return Main
@@ -7126,22 +7135,22 @@ local function loadModule(name)
     if _modules[name] then
         local ok, result = pcall(_modules[name])
         if ok then
-            print("[NexusBounty] [+] Module loaded: " .. name)
+            print("[LeoHub] [+] Module loaded: " .. name)
             return result
         else
-            local errMsg = "[NexusBounty] [!] Module error (" .. name .. "): " .. tostring(result)
+            local errMsg = "[LeoHub] [!] Module error (" .. name .. "): " .. tostring(result)
             warn(errMsg)
             table.insert(_loadErrors, { module = name, error = tostring(result), time = os.time() })
             error(errMsg)
         end
     end
-    local errMsg = "[NexusBounty] [!] Module not found: " .. name
+    local errMsg = "[LeoHub] [!] Module not found: " .. name
     warn(errMsg)
     table.insert(_loadErrors, { module = name, error = "not found", time = os.time() })
     error(errMsg)
 end
 
-print("[NexusBounty] Loading modules...")
+print("[LeoHub] Loading modules...")
 
 local Utils = loadModule("utils")
 local Config = loadModule("config")
@@ -7149,32 +7158,32 @@ local Auth = loadModule("auth")
 local UI = loadModule("ui")
 local Main = loadModule("main")
 
-print("[NexusBounty] Modules loaded!")
+print("[LeoHub] Modules loaded!")
 
 Config.init()
 Auth.init(Utils)
 
-print("[NexusBounty] Config: Fruit=" .. Config.get("Fruit") .. ", Region=" .. Config.get("Region") .. ", Faction=" .. Config.get("Faction"))
+print("[LeoHub] Config: Fruit=" .. Config.get("Fruit") .. ", Region=" .. Config.get("Region") .. ", Faction=" .. Config.get("Faction"))
 
-print("[NexusBounty] Initializing UI...")
+print("[LeoHub] Initializing UI...")
 
 UI.init(Utils, Config, Auth)
 
-print("[NexusBounty] UI ready! Waiting for authentication...")
+print("[LeoHub] UI ready! Waiting for authentication...")
 
 task.spawn(function()
     while not Auth.isAuthenticated() do
         task.wait(0.5)
     end
     
-    print("[NexusBounty] Authenticated! Loading character...")
+    print("[LeoHub] Authenticated! Loading character...")
     
     Main.init(Utils, Config, UI)
     
     while not Config.isConfigured() do
         task.wait(0.5)
     end
-    print("[NexusBounty] Fully configured! Proceeding...")
+    print("[LeoHub] Fully configured! Proceeding...")
 
     local playerGui
     repeat
@@ -7229,9 +7238,9 @@ task.spawn(function()
         end
         
         if attempt > 10 then
-            print("[NexusBounty] [!] Auto-team selection taking too long. Click it manually!")
+            print("[LeoHub] [!] Auto-team selection taking too long. Click it manually!")
         end
-    until (char and hum) or getgenv().NexusShuttingDown
+    until (char and hum) or getgenv().LeoHubShuttingDown
 
     local hrp
     repeat
@@ -7239,7 +7248,7 @@ task.spawn(function()
         hrp = char:FindFirstChild("HumanoidRootPart")
     until hrp
 
-    print("[NexusBounty] Character loaded! Starting main logic...")
+    print("[LeoHub] Character loaded! Starting main logic...")
     
     Main.start()
 end)
@@ -7254,4 +7263,4 @@ UserInputService.InputBegan:Connect(function(input, processed)
     end
 end)
 
-print("[NexusBounty] Ready! Press RightControl to toggle UI.")
+print("[LeoHub] Ready! Press RightControl to toggle UI.")
