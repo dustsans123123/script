@@ -5514,29 +5514,35 @@ _modules["main"] = function()
                 end)
                 task.spawn(function()
                     while not getgenv().LeoBountyShuttingDown do
-                        task.wait(2)
+                        task.wait(0.5)
                         pcall(function()
-                            for _, gui in ipairs(CoreGui:GetDescendants()) do
-                                if gui:IsA("TextLabel") and (
-                                    gui.Text:find("773") or
-                                    gui.Text:lower():find("reconnect was unsuccessful") or
-                                    gui.Text:lower():find("please rejoin") or
-                                    gui.Text:lower():find("security") or
-                                    gui.Text:lower():find("kicked")
-                                ) then
-                                    task.spawn(AutoHopOnKick)
-                                    pcall(function()
-                                        for _, btn in ipairs(CoreGui:GetDescendants()) do
-                                            if btn:IsA("TextButton") and (
-                                                btn.Text:lower():find("leave") or
-                                                btn.Text:lower():find("ok") or
-                                                btn.Text:lower():find("close")
-                                            ) then
-                                                btn:Activate()
+                            local sources = {CoreGui, lp.PlayerGui}
+                            for _, src in ipairs(sources) do
+                                for _, gui in ipairs(src:GetDescendants()) do
+                                    if gui:IsA("TextLabel") and (
+                                        gui.Text:find("773") or
+                                        gui.Text:lower():find("teleport failed") or
+                                        gui.Text:lower():find("restricted") or
+                                        gui.Text:lower():find("reconnect was unsuccessful") or
+                                        gui.Text:lower():find("please rejoin") or
+                                        gui.Text:lower():find("security") or
+                                        gui.Text:lower():find("kicked")
+                                    ) then
+                                        pcall(function()
+                                            for _, btn in ipairs(src:GetDescendants()) do
+                                                if btn:IsA("TextButton") and (
+                                                    btn.Text:lower():find("ok") or
+                                                    btn.Text:lower():find("leave") or
+                                                    btn.Text:lower():find("close")
+                                                ) then
+                                                    btn:Activate()
+                                                end
                                             end
-                                        end
-                                    end)
-                                    break
+                                        end)
+                                        task.wait(0.3)
+                                        task.spawn(AutoHopOnKick)
+                                        break
+                                    end
                                 end
                             end
                         end)
