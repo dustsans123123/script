@@ -2233,7 +2233,7 @@ _modules["ui"] = function()
                     })
                 end
             end)
-            pcall(function() setclipboard("https://discord.gg/W68jqAaAUk end)
+            pcall(function() setclipboard("https://discord.gg/W68jqAaAUk") end)
             tween(discordBtn, {BackgroundColor3 = Colors.Success}, 0.2)
             task.delay(1, function()
                 if discordBtn and discordBtn.Parent then
@@ -2869,7 +2869,7 @@ _modules["ui"] = function()
         return overlay
     end
     function UI.createDiscordIcon(parent, position, size, zIndex)
-        local DISCORD_URL = "https://discord.gg/W68jqAaAUk
+        local DISCORD_URL = "https://discord.gg/W68jqAaAUk"
         local DISCORD_IMG = getImageUrl("https://static.vecteezy.com/system/resources/previews/006/892/625/large_2x/discord-logo-icon-editorial-free-vector.jpg")
         zIndex = zIndex or 100
         local container = Instance.new("ImageButton")
