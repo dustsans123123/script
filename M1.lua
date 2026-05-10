@@ -1457,6 +1457,34 @@ _modules["config"] = function()
                 return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
             end
         },
+        ["Mammoth"] = {
+            ToolName = "Mammoth-Mammoth",
+            RemoteName = "LeftClickRemote",
+            Args = function(direction)
+                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
+            end
+        },
+        ["Gas"] = {
+            ToolName = "Gas-Gas",
+            RemoteName = "LeftClickRemote",
+            Args = function(direction)
+                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
+            end
+        },
+        ["Leopard"] = {
+            ToolName = "Leopard-Leopard",
+            RemoteName = "LeftClickRemote",
+            Args = function(direction)
+                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
+            end
+        },
+        ["Yeti"] = {
+            ToolName = "Yeti-Yeti",
+            RemoteName = "LeftClickRemote",
+            Args = function(direction)
+                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
+            end
+        },
     }
     Config.REGIONS = {
         "Brazil",
