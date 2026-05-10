@@ -1,32 +1,20 @@
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv().Config = {
-
     Fruit = "T-Rex",
-
     Region = "Singapore",
-
     Faction = "Pirate",
-
     Webhook = "",
-
     ChangeTeamAt30M = true,
-
     AutoKillAt30M = true,
-
     TransformTRex = true,
-
     StartupSound = true,
-
     SoundUrl = "",
-
     HideProfile = false,
-
     Background = "",
 }
-
 local _BUILD_VERSION = "7.4"
 local _BUILD_ID = "36ae3bc8057b"
-local _BUILD_BRAND = "LEO HUB FREE"
-
+local _BUILD_BRAND = "LEO PREMIUM FREE"
 local _SAFE = {}
 do
     _SAFE.pcall    = pcall
@@ -44,7 +32,6 @@ do
     _SAFE.setmetatable = setmetatable
     _SAFE.getmetatable = getmetatable
     _SAFE.require  = require
-
     _SAFE.string_sub    = string.sub
     _SAFE.string_byte   = string.byte
     _SAFE.string_char   = string.char
@@ -57,30 +44,24 @@ do
     _SAFE.string_gsub   = string.gsub
     _SAFE.string_match  = string.match
     _SAFE.string_gmatch = string.gmatch
-
     _SAFE.math_floor  = math.floor
     _SAFE.math_random = math.random
     _SAFE.math_abs    = math.abs
     _SAFE.math_max    = math.max
     _SAFE.math_min    = math.min
     _SAFE.math_huge   = math.huge
-
     _SAFE.os_time  = os.time
     _SAFE.os_clock = os.clock
-
     _SAFE.table_insert = table.insert
     _SAFE.table_remove = table.remove
     _SAFE.table_concat = table.concat
     _SAFE.table_sort   = table.sort
-
     _SAFE.task_spawn = task.spawn
     _SAFE.task_wait  = task.wait
     _SAFE.task_defer = task.defer
     _SAFE.task_delay = task.delay
-
     _SAFE.game = game
     _SAFE.workspace = workspace
-
     _SAFE.pcall(function()
         if getgenv then _SAFE.getgenv = getgenv end
         if iscclosure then _SAFE.iscclosure = iscclosure end
@@ -89,7 +70,6 @@ do
         if hookfunction then _SAFE.hookfunction = hookfunction end
         if newcclosure then _SAFE.newcclosure = newcclosure end
     end)
-
     local _bootClean = true
     _SAFE.pcall(function()
         if _SAFE.iscclosure then
@@ -104,16 +84,13 @@ do
             end
         end
     end)
-
     if not _bootClean then
-        warn("[LeoHub] [!] Anti-hook bootstrap: hooks detected at load time!")
+        warn("[Leo] [!] Anti-hook bootstrap: hooks detected at load time!")
     end
-
     if _SAFE.getgenv then
         _SAFE.getgenv()._SAFE = _SAFE
     end
 end
-
 local _MODULE_HASHES = {
     ["auth"] = "c0f3e36203d0d0ef",
     ["config"] = "7370ab45e28aca46",
@@ -122,22 +99,16 @@ local _MODULE_HASHES = {
     ["ui"] = "a218d189e9e7189b",
     ["utils"] = "d46572fe53b674e6",
 }
-
 local _modules = {}
-
 _modules["security"] = function()
-    
     local Security = {}
     local Utils = nil
-    
     local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
-    
     local _violations = {}
     local _violationCount = 0
     local _degraded = false
     local _scanCount = 0
-    
     local function _s(bytes)
         local chars = {}
         for i = 1, #bytes do
@@ -145,7 +116,6 @@ _modules["security"] = function()
         end
         return table.concat(chars)
     end
-    
     local _STR = {
         request      = _s({ 114, 101, 113, 117, 101, 115, 116 }),
         http_request = _s({ 104, 116, 116, 112, 95, 114, 101, 113, 117, 101, 115, 116 }),
@@ -153,7 +123,6 @@ _modules["security"] = function()
         index        = _s({ 95, 95, 105, 110, 100, 101, 120 }),
         C_source     = _s({ 91, 67, 93 }),
     }
-    
     local function _isHooked(func)
         if type(func) ~= "function" then return true end
         if iscclosure and not iscclosure(func) then return true end
@@ -164,10 +133,8 @@ _modules["security"] = function()
         end
         return false
     end
-    
     local function _getCriticalFunctions()
         local criticals = {}
-    
         local checks = {
             { pcall,    "pcall" },
             { type,     "type" },
@@ -175,25 +142,20 @@ _modules["security"] = function()
             { rawget,   "rawget" },
             { rawset,   "rawset" },
         }
-    
         for _, item in ipairs(checks) do
             if item[1] then table.insert(criticals, item) end
         end
-    
         if string then
             if string.sub then table.insert(criticals, { string.sub, "string.sub" }) end
             if string.byte then table.insert(criticals, { string.byte, "string.byte" }) end
         end
-    
         if os and os.time then
             table.insert(criticals, { os.time, "os.time" })
         end
-    
         pcall(function()
             table.insert(criticals, { HttpService.JSONEncode, "HttpService.JSONEncode" })
             table.insert(criticals, { HttpService.JSONDecode, "HttpService.JSONDecode" })
         end)
-    
         pcall(function()
             if getgenv then
                 local genv = getgenv()
@@ -201,23 +163,18 @@ _modules["security"] = function()
                 if reqFunc then table.insert(criticals, { reqFunc, "NetworkHandler" }) end
             end
         end)
-    
         return criticals
     end
-    
     function Security.checkFunctionIntegrity()
         local violations = {}
         local criticals = _getCriticalFunctions()
-    
         for _, item in ipairs(criticals) do
             if item[1] and _isHooked(item[1]) then
                 table.insert(violations, item[2])
             end
         end
-    
         return #violations == 0, violations
     end
-    
     function Security.verifyFunction(func, name)
         if not func then return false end
         if _isHooked(func) then
@@ -226,7 +183,6 @@ _modules["security"] = function()
         end
         return true
     end
-    
     function Security._checkMetamethods()
         local clean = true
         pcall(function()
@@ -241,7 +197,6 @@ _modules["security"] = function()
         end)
         return clean
     end
-    
     function Security._recordViolation(category, detail)
         _violationCount = _violationCount + 1
         table.insert(_violations, {
@@ -250,35 +205,29 @@ _modules["security"] = function()
             time = os.time(),
         })
     end
-    
     function Security.getViolationCount()
         return _violationCount
     end
-    
     function Security.isDegraded()
         return _degraded
     end
-    
     local function _silentDegrade(reason)
         if _degraded then return end
         _degraded = true
-    
         task.spawn(function()
             task.wait(math.random(10, 30))
             pcall(function()
                 if getgenv then
                     local env = getgenv()
-                    env.LeoHubShuttingDown = true
+                    env.LeoBountyShuttingDown = true
                 end
             end)
         end)
     end
-    
     function Security.runFullScan()
         _scanCount = _scanCount + 1
         local allClean = true
         local reasons = {}
-    
         local funcOk, funcViolations = Security.checkFunctionIntegrity()
         if not funcOk then
             allClean = false
@@ -287,27 +236,21 @@ _modules["security"] = function()
                 table.insert(reasons, "Hooked: " .. v)
             end
         end
-    
         if not Security._checkMetamethods() then
             allClean = false
             Security._recordViolation("metamethod_hooked", "Game metamethods tampered")
             table.insert(reasons, "Metamethod hook detected")
         end
-    
         return allClean, reasons
     end
-    
     function Security.startHeartbeat()
         task.spawn(function()
             task.wait(math.random(30, 60))
-    
             while true do
                 task.wait(math.random(45, 120))
-    
                 pcall(function()
-                    if getgenv and getgenv().LeoHubShuttingDown then return end
+                    if getgenv and getgenv().LeoBountyShuttingDown then return end
                 end)
-    
                 local clean, reasons = Security.runFullScan()
                 if not clean and not _degraded then
                     _silentDegrade(table.concat(reasons, "; "))
@@ -315,21 +258,17 @@ _modules["security"] = function()
             end
         end)
     end
-    
     function Security.getSafeRequestFunction()
         local reqFunc = nil
-    
         pcall(function()
             if getgenv then
                 local env = getgenv()
                 reqFunc = env[_STR.request] or env[_STR.http_request]
             end
         end)
-    
         if not reqFunc then
             reqFunc = request or http_request or (syn and syn.request) or (http and http.request)
         end
-    
         if reqFunc and _isHooked(reqFunc) then
             Security._recordViolation("hooked_request", "HTTP request function hooked")
             local fallbacks = { request, http_request, syn and syn.request, http and http.request }
@@ -339,60 +278,45 @@ _modules["security"] = function()
             _silentDegrade("All HTTP functions hooked")
             return nil
         end
-    
         return reqFunc
     end
-    
     function Security.init(utilsModule)
         Utils = utilsModule
-    
         local clean, reasons = Security.runFullScan()
         if clean then
-            print("[LeoHub-Security] [+] Initial scan: CLEAN")
+            print("[Leo-Security] [+] Initial scan: CLEAN")
         else
-            print("[LeoHub-Security] [!] Initial scan: " .. #reasons .. " issue(s)")
+            print("[Leo-Security] [!] Initial scan: " .. #reasons .. " issue(s)")
         end
-    
         return clean
     end
-    
     return Security
 end
-
 _modules["utils"] = function()
-    
     local Utils = {}
-    
     local HttpService = game:GetService("HttpService")
     local Players = game:GetService("Players")
     local UserInputService = game:GetService("UserInputService")
     local TweenService = game:GetService("TweenService")
     local GuiService = game:GetService("GuiService")
-    
     local lp = Players.LocalPlayer
-    
-    Utils.ROOT_FOLDER = "Leo Hub"
-    Utils.DATA_FOLDER = "LeoHub/Data"
-    Utils.IMAGES_FOLDER = "LeoHub/Assets/Images"
-    Utils.SOUNDS_FOLDER = "LeoHub/Assets/Sounds"
-    
-    Utils.API_BASE = "https://keyserver.nexusdevs.fun"
-    Utils.KEY_FILE = "LeoHub/Data/LeoHub.nxs"
-    Utils.STATS_FILE = "LeoHub/Data/LeoHub_Stats.nxs"
+    Utils.ROOT_FOLDER = "LeoBounty"
+    Utils.DATA_FOLDER = "Leo/Data"
+    Utils.IMAGES_FOLDER = "Leo/Assets/Images"
+    Utils.SOUNDS_FOLDER = "Leo/Assets/Sounds"
+    Utils.API_BASE = ""
+    Utils.KEY_FILE = "Leo/Data/LeoBounty.nxs"
+    Utils.STATS_FILE = "Leo/Data/LeoBounty_Stats.nxs"
     Utils.CLIENT_VERSION = "6.6"
-    Utils.AUTH_URL = Utils.API_BASE -- Alias used by debug share UI
-    
-    Utils.SAVE_INTERVAL = 10 -- Save to disk every 10 seconds max
+    Utils.AUTH_URL = Utils.API_BASE 
+    Utils.SAVE_INTERVAL = 10 
     Utils._statsLastSaved = 0
     Utils._statsDirty = false
     Utils._statsCache = nil
-    
     function Utils.httpPost(url, body, headers)
         headers = headers or {}
         headers["Content-Type"] = headers["Content-Type"] or "application/json"
-    
         local requestFn = request or http_request or (http and http.request) or (syn and syn.request)
-    
         if requestFn then
             local ok, response = pcall(requestFn, {
                 Url = url,
@@ -404,7 +328,6 @@ _modules["utils"] = function()
                 return response
             end
         end
-    
         local ok2, response2 = pcall(function()
             return HttpService:RequestAsync({
                 Url = url,
@@ -416,56 +339,43 @@ _modules["utils"] = function()
         if ok2 and response2 then
             return response2
         end
-    
         return nil
     end
-    
-    Utils.BANKAI_FILE = "LeoHub/Assets/Sounds/bankai.mp3"
-    Utils.LOGO_FILE = "LeoHub/Assets/Images/LeoHubLogo.png"
+    Utils.BANKAI_FILE = "Leo/Assets/Sounds/bankai.mp3"
+    Utils.LOGO_FILE = "Leo/Assets/Images/LeoLogo.png"
     Utils.BANKAI_URL = "https://raw.githubusercontent.com/Ryu-Dev-here/assetsfora/main/bankai.mp3"
-    Utils.LOGO_URL = "https://nexusdevs.fun/assets/logos/nexus_dark.webp"
-    
+    Utils.LOGO_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoJ-_el71Qlnx-WnINYQmN9GFtl3GP7o5jYw&s"
     Utils._statsCache = nil
     Utils._statsLastSaved = 0
     Utils._statsDirty = false
-    Utils.SAVE_INTERVAL = 10 -- seconds between auto-saves
-    
+    Utils.SAVE_INTERVAL = 10 
     Utils._bankaiSound = nil
-    
     function Utils.initFolders()
         pcall(function()
             local makefolder = makefolder or function() end
             local isfolder = isfolder or function() return false end
-    
             local folders = {
                 Utils.ROOT_FOLDER,
                 Utils.DATA_FOLDER,
-                "LeoHub/Assets",
+                "Leo/Assets",
                 Utils.IMAGES_FOLDER,
                 Utils.SOUNDS_FOLDER
             }
-    
             for _, folder in ipairs(folders) do
                 if not isfolder(folder) then
                     makefolder(folder)
                 end
             end
-    
-            print("[LeoHub] [+] Workspace folders initialized")
+            print("[LeoBounty] [+] Workspace folders initialized")
         end)
     end
-    
     Utils.initFolders()
-    
     local ENCRYPT_KEY = "45b090e9af3bd54b67216a6d6a8e40bf66eba58cb4adc4286d97ff92137d1bdf"
-    
     local NXS_HEADER = "NXS"
     local NXS_VERSION = 2
     local NXS_SEPARATOR = "|"
-    
     local FNV_OFFSET = 2166136261
     local FNV_PRIME = 16777619
-    
     local function fnv1aHash(data)
         local hash = FNV_OFFSET
         for i = 1, #data do
@@ -474,7 +384,6 @@ _modules["utils"] = function()
         end
         return string.format("%08X", hash)
     end
-    
     local function xorEncrypt(data, key)
         local result = {}
         for i = 1, #data do
@@ -484,7 +393,6 @@ _modules["utils"] = function()
         end
         return table.concat(result)
     end
-    
     local function toHex(str)
         local hex = {}
         for i = 1, #str do
@@ -492,7 +400,6 @@ _modules["utils"] = function()
         end
         return table.concat(hex)
     end
-    
     local function fromHex(hexStr)
         local result = {}
         for i = 1, #hexStr, 2 do
@@ -503,84 +410,66 @@ _modules["utils"] = function()
         end
         return table.concat(result)
     end
-    
     function Utils.encrypt(data)
         local encrypted = xorEncrypt(data, ENCRYPT_KEY)
         return toHex(encrypted)
     end
-    
     function Utils.decrypt(hexData)
         local encrypted = fromHex(hexData)
         return xorEncrypt(encrypted, ENCRYPT_KEY)
     end
-    
     function Utils.encryptNXSv2(data)
         local encrypted = Utils.encrypt(data)
         local checksum = fnv1aHash(data)
         return NXS_HEADER ..
             NXS_SEPARATOR .. tostring(NXS_VERSION) .. NXS_SEPARATOR .. checksum .. NXS_SEPARATOR .. encrypted
     end
-    
     function Utils.decryptNXSv2(content)
         if not content or content == "" then
             return nil, "Empty content"
         end
-    
         if content:sub(1, 4) == NXS_HEADER .. NXS_SEPARATOR then
             local parts = {}
             for part in content:gmatch("([^" .. NXS_SEPARATOR .. "]+)") do
                 table.insert(parts, part)
             end
-    
             if #parts >= 4 then
                 local version = tonumber(parts[2])
                 local storedChecksum = parts[3]
                 local encryptedData = parts[4]
-    
                 local decrypted = Utils.decrypt(encryptedData)
                 if not decrypted then
                     return nil, "Decryption failed"
                 end
-    
                 local calculatedChecksum = fnv1aHash(decrypted)
                 if calculatedChecksum ~= storedChecksum then
                     return nil, "Checksum mismatch - file corrupted"
                 end
-    
                 return decrypted, nil
             end
-    
             return nil, "Invalid NXS v2 format"
         end
-    
         local decrypted = Utils.decrypt(content)
         if decrypted and #decrypted > 0 then
             return decrypted, "migrated_from_v1"
         end
-    
         return nil, "Unknown format"
     end
-    
     function Utils.verifyNXSIntegrity(content)
         if not content or content == "" then
             return false, "Empty content"
         end
-    
         if content:sub(1, 4) ~= NXS_HEADER .. NXS_SEPARATOR then
             return false, "Not NXS v2 format"
         end
-    
         local _, err = Utils.decryptNXSv2(content)
         if err and err ~= "migrated_from_v1" then
             return false, err
         end
-    
         return true, nil
     end
-    
     function Utils._getHWIDLegacy()
         local hwid = {}
-    
         pcall(function()
             if gethwid then
                 hwid.exploit_hwid = gethwid()
@@ -592,17 +481,12 @@ _modules["utils"] = function()
                 hwid.exploit_hwid = "user_" .. tostring(lp.UserId)
             end
         end)
-    
         hwid.roblox_userid = tostring(lp.UserId)
-    
         return hwid
     end
-    
     function Utils.httpRequest(options)
         local success, response
-    
         local httpFuncs = { request, http_request, syn and syn.request, http and http.request, fluxus and fluxus.request }
-    
         for _, func in ipairs(httpFuncs) do
             if func then
                 success, response = pcall(function()
@@ -613,23 +497,18 @@ _modules["utils"] = function()
                 end
             end
         end
-    
         return nil, "No HTTP function available"
     end
-    
-    Utils.LEOHUB_LOGO = "https://nexusdevs.fun/assets/logos/nexus_dark.webp"
-    Utils.LEOHUB_BANNER = "https://nexusdevs.fun/assets/banners/banner.webp"
-    
+    Utils.LEO_LOGO = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoJ-_el71Qlnx-WnINYQmN9GFtl3GP7o5jYw&s"
+    Utils.LEO_BANNER = ""
     local function textDisplay(content, id)
         local comp = { type = 10, content = content }
         if id then comp.id = id end
         return comp
     end
-    
     local function separator(spacing, divider)
         return { type = 14, spacing = spacing or 1, divider = divider ~= false }
     end
-    
     local function section(text, thumbnailUrl)
         local comp = {
             type = 9,
@@ -643,7 +522,6 @@ _modules["utils"] = function()
         end
         return comp
     end
-    
     local function container(components, accentColor, spoiler)
         local comp = {
             type = 17,
@@ -653,100 +531,82 @@ _modules["utils"] = function()
         if spoiler then comp.spoiler = true end
         return comp
     end
-    
     function Utils.sendWebhook(webhookUrl, data)
         if not webhookUrl or webhookUrl == "" then return false end
-    
         if not data.components then
             return Utils.sendWebhookEmbed(webhookUrl, data)
         end
-    
         local url = webhookUrl
         if not url:find("with_components") then
             url = url .. (url:find("?") and "&" or "?") .. "with_components=true"
         end
-    
         local payload = HttpService:JSONEncode({
-            username = "Leo Hub",
-            avatar_url = Utils.LEOHUB_LOGO,
-            flags = 32768, -- IS_COMPONENTS_V2
+            username = "Leo",
+            avatar_url = Utils.LEO_LOGO,
+            flags = 32768, 
             components = data.components or {}
         })
-    
         local response, err = Utils.httpRequest({
             Url = url,
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = payload
         })
-    
         return response and (response.StatusCode == 200 or response.StatusCode == 204)
     end
-    
     function Utils.sendWebhookEmbed(webhookUrl, data)
         if not webhookUrl or webhookUrl == "" then return false end
-    
         local embed = {
-            title = data.title or "LeoHub",
+            title = data.title or "LeoBounty",
             description = data.description or "",
             color = data.color or 10181046,
             fields = data.fields or {},
             author = {
-                name = "Leo Hub",
-                icon_url = Utils.LEOHUB_LOGO,
-                url = "https://nexusdevs.fun"
+                name = "Leo",
+                icon_url = Utils.LEO_LOGO,
+                url = ""
             },
-            thumbnail = { url = data.thumbnail or Utils.LEOHUB_LOGO },
+            thumbnail = { url = data.thumbnail or Utils.LEO_LOGO },
             footer = {
-                text = "LeoHub v" .. Utils.CLIENT_VERSION .. " | By: Ryu & Cuakcer",
-                icon_url = Utils.LEOHUB_LOGO
+                text = "LeoBounty v" .. Utils.CLIENT_VERSION .. " | By: Leo Hub",
+                icon_url = Utils.LEO_LOGO
             },
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }
-    
         if data.image then embed.image = { url = data.image } end
-    
         local payload = HttpService:JSONEncode({
-            username = "Leo Hub",
-            avatar_url = Utils.LEOHUB_LOGO,
+            username = "Leo",
+            avatar_url = Utils.LEO_LOGO,
             embeds = { embed }
         })
-    
         local response, err = Utils.httpRequest({
             Url = webhookUrl,
             Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = payload
         })
-    
         return response and response.StatusCode == 204
     end
-    
     function Utils.notifyKill(webhookUrl, targetName, bountyGained, totalStats, extraInfo)
         extraInfo = extraInfo or {}
-    
         local currentBounty = Utils.getCurrentBounty()
         local fruitUsed = extraInfo.fruit or "Unknown"
         local regionName = extraInfo.region or "Unknown"
         local factionName = extraInfo.faction or "Unknown"
         local statName = (factionName == "Marine") and "Honor" or "Bounty"
         local statPrefix = (factionName == "Marine") and "★" or "$"
-    
         return Utils.sendWebhook(webhookUrl, {
             components = {
                 container({
                     textDisplay("# ⚔️ KILL CONFIRMED"),
                     separator(1, true),
-    
                     section(
                         "**Target:** `" .. targetName .. "`\n" ..
                         "**" .. statName .. " Gained:** `+" .. Utils.formatNumber(bountyGained) .. "`\n" ..
                         "**Fruit Used:** `" .. fruitUsed .. "`",
-                        Utils.LEOHUB_LOGO
+                        Utils.LEO_LOGO
                     ),
-    
                     separator(1, true),
-    
                     textDisplay("### 📊 Session Stats"),
                     section(
                         "**Total Kills:** `" .. tostring(totalStats.totalKills) .. "`\n" ..
@@ -754,26 +614,22 @@ _modules["utils"] = function()
                         statName .. ":** `" .. statPrefix .. Utils.formatNumber(totalStats.totalBountyGained) .. "`\n" ..
                         "**Current " .. statName .. ":** `" .. statPrefix .. Utils.formatNumber(currentBounty) .. "`"
                     ),
-    
                     separator(1, true),
-    
                     textDisplay(
                         "-# 🌎 " ..
                         regionName .. " • ⚓ " .. factionName .. " • ⏱ " .. Utils.formatTime(totalStats.totalPlayTime) ..
                         " • 🔄 " .. tostring(totalStats.serversHopped) .. " hops\n" ..
-                        "-# 👤 " .. lp.Name .. " • LeoHub v" .. Utils.CLIENT_VERSION
+                        "-# 👤 " .. lp.Name .. " • LeoBounty v" .. Utils.CLIENT_VERSION
                     ),
-                }, 15158332), -- Red accent
+                }, 15158332), 
             }
         })
     end
-    
     function Utils.notifyServerHop(webhookUrl, reason, stats, extraInfo)
         extraInfo = extraInfo or {}
         local regionName = extraInfo.region or "Unknown"
         local factionName = extraInfo.faction or "Pirate"
         local statPrefix = (factionName == "Marine") and "★" or "$"
-    
         return Utils.sendWebhook(webhookUrl, {
             components = {
                 container({
@@ -784,7 +640,7 @@ _modules["utils"] = function()
                         "**Total Hops:** `" .. tostring(stats.serversHopped) .. "`\n" ..
                         "**Session Kills:** `" .. tostring(stats.totalKills) .. "`\n" ..
                         "**Target Region:** `" .. regionName .. "`",
-                        Utils.LEOHUB_LOGO
+                        Utils.LEO_LOGO
                     ),
                     separator(1, true),
                     textDisplay(
@@ -794,11 +650,10 @@ _modules["utils"] = function()
                         " gained • ⏱ " .. Utils.formatTime(stats.totalPlayTime) ..
                         " • 👤 " .. lp.Name
                     ),
-                }, 3447003), -- Blue accent
+                }, 3447003), 
             }
         })
     end
-    
     function Utils.notifyAchievement(webhookUrl, achievement, stats)
         return Utils.sendWebhook(webhookUrl, {
             components = {
@@ -811,35 +666,32 @@ _modules["utils"] = function()
                         "**Total Kills:** `" .. tostring(stats.totalKills) .. "`\n" ..
                         "**Total Bounty:** `$" .. Utils.formatNumber(stats.totalBountyGained) .. "`\n" ..
                         "**Play Time:** `" .. Utils.formatTime(stats.totalPlayTime) .. "`",
-                        Utils.LEOHUB_LOGO
+                        Utils.LEO_LOGO
                     ),
-                }, 16766720), -- Gold accent
+                }, 16766720), 
             }
         })
     end
-    
     function Utils.notifyStart(webhookUrl, config)
         local factionName = config.Faction or "Pirate"
-    
         return Utils.sendWebhook(webhookUrl, {
             components = {
                 container({
-                    textDisplay("# ▶️ NEXUSBOUNTY STARTED"),
+                    textDisplay("# ▶️ LEOBOUNTY STARTED"),
                     separator(1, true),
                     section(
                         "**Fruit:** `" .. (config.Fruit or "T-Rex") .. "`\n" ..
                         "**Region:** `" .. (config.Region or "Brazil") .. "`\n" ..
                         "**Faction:** `" .. factionName .. "`\n" ..
                         "**Player:** `" .. lp.Name .. "`",
-                        Utils.LEOHUB_LOGO
+                        Utils.LEO_LOGO
                     ),
                     separator(1, true),
-                    textDisplay("-# LeoHub v" .. Utils.CLIENT_VERSION .. " • Blox Fruits • By: Ryu & Cuakcer"),
-                }, 5763719), -- Green accent
+                    textDisplay("-# LeoBounty v" .. Utils.CLIENT_VERSION .. " • Blox Fruits • By: Leo Hub"),
+                }, 5763719), 
             }
         })
     end
-    
     function Utils.saveKey(key)
         pcall(function()
             if writefile then
@@ -848,7 +700,6 @@ _modules["utils"] = function()
             end
         end)
     end
-    
     function Utils.loadKey()
         local key = nil
         pcall(function()
@@ -859,14 +710,13 @@ _modules["utils"] = function()
                     key = decrypted
                     if err == "migrated_from_v1" then
                         Utils.saveKey(decrypted)
-                        print("[LeoHub] [+] Key file migrated to NXS v2 format")
+                        print("[LeoBounty] [+] Key file migrated to NXS v2 format")
                     end
                 end
             end
         end)
         return key
     end
-    
     function Utils.clearKey()
         pcall(function()
             if isfile and isfile(Utils.KEY_FILE) and delfile then
@@ -874,12 +724,10 @@ _modules["utils"] = function()
             end
         end)
     end
-    
     function Utils.loadStats()
         if Utils._statsCache then
             return Utils._statsCache
         end
-    
         local defaultStats = {
             totalBountyGained = 0,
             totalKills = 0,
@@ -889,10 +737,9 @@ _modules["utils"] = function()
             killFeed = {},
             totalPlayTime = 0,
             serversHopped = 0,
-            autoServersHopped = 0, -- Auto (script-triggered) hops
+            autoServersHopped = 0, 
             lastUpdated = os.time()
         }
-    
         local stats = nil
         pcall(function()
             if isfile and isfile(Utils.STATS_FILE) then
@@ -903,14 +750,13 @@ _modules["utils"] = function()
                     if err == "migrated_from_v1" then
                         Utils._statsCache = stats
                         Utils._writeStatsToDisk(stats)
-                        print("[LeoHub] [+] Stats file migrated to NXS v2 format")
+                        print("[LeoBounty] [+] Stats file migrated to NXS v2 format")
                     end
                 else
-                    print("[LeoHub] [!] Stats file corrupted: " .. (err or "unknown"))
+                    print("[LeoBounty] [!] Stats file corrupted: " .. (err or "unknown"))
                 end
             end
         end)
-    
         if stats then
             for key, value in pairs(defaultStats) do
                 if stats[key] == nil then
@@ -920,11 +766,9 @@ _modules["utils"] = function()
             Utils._statsCache = stats
             return stats
         end
-    
         Utils._statsCache = defaultStats
         return defaultStats
     end
-    
     function Utils._writeStatsToDisk(stats)
         pcall(function()
             if writefile then
@@ -937,76 +781,60 @@ _modules["utils"] = function()
             end
         end)
     end
-    
     function Utils.saveStats(stats)
         Utils._statsCache = stats
         Utils._statsDirty = true
-    
         if os.time() - Utils._statsLastSaved >= Utils.SAVE_INTERVAL then
             Utils._writeStatsToDisk(stats)
         end
     end
-    
     function Utils.flushStats()
         if Utils._statsCache and Utils._statsDirty then
             Utils._writeStatsToDisk(Utils._statsCache)
         end
     end
-    
     function Utils.updateStats(bountyGained, kills)
         local stats = Utils.loadStats()
         stats.totalBountyGained = (stats.totalBountyGained or 0) + (bountyGained or 0)
         stats.totalKills = (stats.totalKills or 0) + (kills or 0)
-    
         stats.sessionBounty = (stats.sessionBounty or 0) + (bountyGained or 0)
         stats.sessionKills = (stats.sessionKills or 0) + (kills or 0)
-    
         Utils.saveStats(stats)
-    
         if kills and kills > 0 then
             Utils.flushStats()
         end
-    
         return stats
     end
-    
     function Utils.addKillFeedEntry(entry)
         local stats = Utils.loadStats()
         if not stats.killFeed then stats.killFeed = {} end
-    
-        table.insert(stats.killFeed, 1, entry) -- Insert at start
-    
+        table.insert(stats.killFeed, 1, entry) 
         if #stats.killFeed > 20 then
-            table.remove(stats.killFeed) -- Remove last
+            table.remove(stats.killFeed) 
         end
-    
         Utils.saveStats(stats)
         Utils.flushStats()
     end
-    
     function Utils.incrementServerHops()
         local stats = Utils.loadStats()
         stats.serversHopped = (stats.serversHopped or 0) + 1
         Utils.saveStats(stats)
-        Utils.flushStats() -- Force save on server hop
+        Utils.flushStats() 
         return stats
     end
-    
     function Utils.incrementAutoServerHops()
         local stats = Utils.loadStats()
         stats.autoServersHopped = (stats.autoServersHopped or 0) + 1
         Utils.saveStats(stats)
-        Utils.flushStats() -- Force save on auto hop
+        Utils.flushStats() 
         return stats
     end
-    
     function Utils.updatePlayTime(additionalSeconds)
         local stats = Utils.loadStats()
         stats.totalPlayTime = (stats.totalPlayTime or 0) + (additionalSeconds or 0)
-        Utils.saveStats(stats) -- Uses cache, only writes periodically
+        Utils.saveStats(stats) 
         return stats
     end
-    
     function Utils.resetStats()
         local freshStats = {
             totalBountyGained = 0,
@@ -1021,68 +849,53 @@ _modules["utils"] = function()
         Utils._writeStatsToDisk(freshStats)
         return freshStats
     end
-    
-    Utils.IMAGE_CACHE_FOLDER = "LeoHub/Assets/Images"
+    Utils.IMAGE_CACHE_FOLDER = "Leo/Assets/Images"
     Utils._imageHashCache = {}
-    
     function Utils.getImageHash(url)
         if not url or url == "" then return nil end
         return fnv1aHash(url):sub(1, 8)
     end
-    
     function Utils.cacheImage(url, forceRedownload)
         if not url or url == "" then return nil end
         if url:match("^rbxassetid://") or url:match("^rbxthumb://") then
             return url
         end
-    
         local getAsset = getcustomasset or getsynasset
         local isFile = isfile or function() return false end
         local writeFile = writefile or function() end
         local delFile = delfile or function() end
-    
         if not getAsset or not writeFile then
             return url
         end
-    
         local hash = Utils.getImageHash(url)
         if not hash then return url end
-    
         local fileName = Utils.IMAGE_CACHE_FOLDER .. "/img_" .. hash .. ".png"
-    
         if Utils._imageHashCache[hash] and not forceRedownload then
             return Utils._imageHashCache[hash]
         end
-    
         if forceRedownload then
             pcall(function() if isFile(fileName) then delFile(fileName) end end)
         end
-    
         if isFile(fileName) then
             local asset = getAsset(fileName)
             Utils._imageHashCache[hash] = asset
             return asset
         end
-    
         local success, content = pcall(function()
             return game:HttpGet(url)
         end)
-    
         if success and content and #content > 100 then
             pcall(function() writeFile(fileName, content) end)
             local asset = getAsset(fileName)
             Utils._imageHashCache[hash] = asset
             return asset
         end
-    
         return url
     end
-    
     function Utils.notify(title, text, duration)
         duration = duration or 5
-    
         local uiRef = nil
-        pcall(function() uiRef = getgenv()._LeoHubUI end)
+        pcall(function() uiRef = getgenv()._LeoUI end)
         if uiRef and uiRef.showIslandNotification and uiRef.DynamicIsland then
             local displayText = text or title
             if title and text and title ~= "" and not text:find(title) then
@@ -1091,7 +904,6 @@ _modules["utils"] = function()
             uiRef.showIslandNotification(displayText, nil, math.min(duration, 5))
             return
         end
-    
         pcall(function()
             game:GetService("StarterGui"):SetCore("SendNotification", {
                 Title = title,
@@ -1100,13 +912,11 @@ _modules["utils"] = function()
             })
         end)
     end
-    
     function Utils.formatTime(seconds)
         seconds = math.floor(seconds or 0)
         local hours = math.floor(seconds / 3600)
         local minutes = math.floor((seconds % 3600) / 60)
         local secs = seconds % 60
-    
         if hours > 0 then
             return string.format("%dh %dm %ds", hours, minutes, secs)
         elseif minutes > 0 then
@@ -1115,7 +925,6 @@ _modules["utils"] = function()
             return string.format("%ds", secs)
         end
     end
-    
     function Utils.formatNumber(num)
         num = num or 0
         if num >= 1000000 then
@@ -1126,7 +935,6 @@ _modules["utils"] = function()
             return tostring(math.floor(num))
         end
     end
-    
     function Utils.getScreenSize()
         local camera = workspace.CurrentCamera
         if camera then
@@ -1134,42 +942,34 @@ _modules["utils"] = function()
         end
         return Vector2.new(1920, 1080)
     end
-    
     function Utils.isMobile()
         return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
     end
-    
     function Utils.getScaleFactor()
         local screenSize = Utils.getScreenSize()
         local baseWidth = 1920
         local scale = math.clamp(screenSize.X / baseWidth, 0.5, 1.5)
         return scale
     end
-    
     function Utils.scaledSize(width, height)
         local scale = Utils.getScaleFactor()
         return UDim2.new(0, width * scale, 0, height * scale)
     end
-    
     function Utils.scaledPosition(xScale, xOffset, yScale, yOffset)
         local scale = Utils.getScaleFactor()
         return UDim2.new(xScale, xOffset * scale, yScale, yOffset * scale)
     end
-    
     function Utils.makeDraggable(frame, dragHandle)
         dragHandle = dragHandle or frame
-    
         local dragging = false
         local dragStart = nil
         local startPos = nil
-    
         dragHandle.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or
                 input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
                 dragStart = input.Position
                 startPos = frame.Position
-    
                 input.Changed:Connect(function()
                     if input.UserInputState == Enum.UserInputState.End then
                         dragging = false
@@ -1177,7 +977,6 @@ _modules["utils"] = function()
                 end)
             end
         end)
-    
         local dragConnection = UserInputService.InputChanged:Connect(function(input)
             if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
                     input.UserInputType == Enum.UserInputType.Touch) then
@@ -1186,56 +985,43 @@ _modules["utils"] = function()
                     startPos.X.Scale, startPos.X.Offset + delta.X,
                     startPos.Y.Scale, startPos.Y.Offset + delta.Y
                 )
-    
                 TweenService:Create(frame, TweenInfo.new(0.05), { Position = newPos }):Play()
             end
         end)
-    
         return dragConnection
     end
-    
     function Utils.autoResize(frame, baseWidth, baseHeight, minScale, maxScale)
         minScale = minScale or 0.5
         maxScale = maxScale or 1.5
-    
         local function updateSize()
             local screenSize = Utils.getScreenSize()
             local scaleX = screenSize.X / 1920
             local scaleY = screenSize.Y / 1080
             local scale = math.clamp(math.min(scaleX, scaleY), minScale, maxScale)
-    
             local newWidth = baseWidth * scale
             local newHeight = baseHeight * scale
-    
             frame.Size = UDim2.new(0, newWidth, 0, newHeight)
             frame.Position = UDim2.new(0.5, -newWidth / 2, 0.5, -newHeight / 2)
         end
-    
         updateSize()
-    
         workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateSize)
-    
         return updateSize
     end
-    
     function Utils.tween(object, properties, duration, style, direction)
         duration = duration or 0.3
         style = style or Enum.EasingStyle.Quart
         direction = direction or Enum.EasingDirection.Out
-    
         local tweenInfo = TweenInfo.new(duration, style, direction)
         local t = TweenService:Create(object, tweenInfo, properties)
         t:Play()
         return t
     end
-    
     function Utils.fadeIn(object, targetTransparency, duration)
         targetTransparency = targetTransparency or 0.25
         object.BackgroundTransparency = 1
         object.Visible = true
         return Utils.tween(object, { BackgroundTransparency = targetTransparency }, duration or 0.3)
     end
-    
     function Utils.fadeOut(object, duration, callback)
         local t = Utils.tween(object, { BackgroundTransparency = 1 }, duration or 0.3)
         t.Completed:Connect(function()
@@ -1244,7 +1030,6 @@ _modules["utils"] = function()
         end)
         return t
     end
-    
     function Utils.removeTouchInterest()
         pcall(function()
             local count = 0
@@ -1259,7 +1044,6 @@ _modules["utils"] = function()
             end
         end)
     end
-    
     function Utils.getPlayerLevel(player)
         local data = player:FindFirstChild("Data")
         if data then
@@ -1270,7 +1054,6 @@ _modules["utils"] = function()
         end
         return 0
     end
-    
     function Utils.getCurrentBounty()
         local leaderstats = lp:FindFirstChild("leaderstats")
         if leaderstats then
@@ -1281,67 +1064,53 @@ _modules["utils"] = function()
         end
         return 0
     end
-    
     function Utils.downloadBankaiSound(customUrl)
         local soundUrl = (customUrl and customUrl ~= "") and customUrl or Utils.BANKAI_URL
         local soundFile = (customUrl and customUrl ~= "")
             and (Utils.SOUNDS_FOLDER .. "/custom_" .. soundUrl:gsub("%W", ""):sub(-20) .. ".mp3")
             or Utils.BANKAI_FILE
-    
         local isFile = isfile or function() return false end
         local writeFile = writefile or function() end
-    
         if isFile(soundFile) then
-            print("[LeoHub] [*] Sound already cached")
+            print("[LeoBounty] [*] Sound already cached")
             return soundFile
         end
-    
         local success, content = pcall(function()
             return game:HttpGet(soundUrl)
         end)
-    
         if success and content and #content > 1000 then
             pcall(function()
                 writeFile(soundFile, content)
             end)
-            print("[LeoHub] [+] Sound downloaded and cached")
+            print("[LeoBounty] [+] Sound downloaded and cached")
             return soundFile
         end
-    
-        print("[LeoHub] [!] Failed to download sound")
+        print("[LeoBounty] [!] Failed to download sound")
         return nil
     end
-    
     function Utils.playBankaiSound(customUrl)
         local SoundService = game:GetService("SoundService")
         local getAsset = getcustomasset or getsynasset
         local isFile = isfile or function() return false end
-    
         local soundFile = Utils.downloadBankaiSound(customUrl)
         if not soundFile or not isFile(soundFile) then
             return false
         end
-    
         pcall(function()
             if Utils._bankaiSound then
                 Utils._bankaiSound:Stop()
                 Utils._bankaiSound:Destroy()
             end
-    
             local sound = Instance.new("Sound")
-            sound.Name = "LeoHubBankai"
+            sound.Name = "LeoBankai"
             sound.Volume = 1
             sound.PlayOnRemove = false
-    
             if getAsset then
                 sound.SoundId = getAsset(soundFile)
             end
-    
             sound.Parent = SoundService
             sound:Play()
-    
             Utils._bankaiSound = sound
-    
             sound.Ended:Connect(function()
                 pcall(function()
                     sound:Destroy()
@@ -1351,11 +1120,9 @@ _modules["utils"] = function()
                 end
             end)
         end)
-    
-        print("[LeoHub] [>] Playing startup sound")
+        print("[LeoBounty] [>] Playing startup sound")
         return true
     end
-    
     function Utils.stopBankaiSound()
         if Utils._bankaiSound then
             pcall(function()
@@ -1365,7 +1132,6 @@ _modules["utils"] = function()
             Utils._bankaiSound = nil
         end
     end
-    
     local _raw_type = type
     local _raw_pcall = pcall
     local _raw_tostring = tostring
@@ -1380,16 +1146,13 @@ _modules["utils"] = function()
     local _raw_getmachineinfo = getmachineinfo
     local _raw_syn_hwid = syn and syn.hwid
     local _raw_fluxus_hwid = fluxus and fluxus.hwid
-    
     function Utils.getNetworkIdentifiers()
         local identifiers = {}
-    
         local hwid_funcs = {
             _raw_gethwid, _raw_getexecutorhwid, _raw_identifyexecutor,
             _raw_syn_hwid, _raw_fluxus_hwid,
             _raw_get_hwid, _raw_gethwidstr
         }
-    
         for _, func in ipairs(hwid_funcs) do
             if _raw_type(func) == "function" then
                 local success, result = _raw_pcall(func)
@@ -1398,7 +1161,6 @@ _modules["utils"] = function()
                 end
             end
         end
-    
         local execName = "unknown"
         _raw_pcall(function()
             if _raw_identifyexecutor then
@@ -1408,7 +1170,6 @@ _modules["utils"] = function()
             end
         end)
         _raw_table_insert(identifiers, "exec:" .. _raw_tostring(execName))
-    
         _raw_pcall(function()
             local uis = _raw_getService(game, "UserInputService")
             local deviceType = uis.TouchEnabled and "touch" or "desktop"
@@ -1416,7 +1177,6 @@ _modules["utils"] = function()
             local keyboard = uis.KeyboardEnabled and "kb" or "nokb"
             _raw_table_insert(identifiers, "input:" .. deviceType .. "_" .. gamepad .. "_" .. keyboard)
         end)
-    
         _raw_pcall(function()
             if _raw_getmachineinfo then
                 local info = _raw_getmachineinfo()
@@ -1425,13 +1185,10 @@ _modules["utils"] = function()
                 end
             end
         end)
-    
         return identifiers
     end
-    
     function Utils.getHWID()
         local hwid = nil
-    
         local hwid_funcs = { gethwid, getexecutorhwid, syn and syn.hwid, fluxus and fluxus.hwid, get_hwid }
         for _, func in ipairs(hwid_funcs) do
             if type(func) == "function" then
@@ -1442,49 +1199,38 @@ _modules["utils"] = function()
                 end
             end
         end
-    
         if not hwid then
             local components = Utils.getNetworkIdentifiers()
-    
             pcall(function()
                 table.insert(components, "uid:" .. tostring(lp.UserId))
             end)
-    
             local composite = table.concat(components, "|")
             hwid = Utils.simpleHash(composite)
         end
-    
         if hwid then
             hwid = tostring(hwid):upper():gsub("[%s%-]", "")
-    
             if #hwid > 64 then
                 hwid = hwid:sub(1, 64)
             end
         end
-    
         return hwid or "FALLBACK_" .. tostring(lp.UserId)
     end
-    
     function Utils.simpleHash(str)
         local hash = 0
         local salt = 0x5bd1e995
-    
         for i = 1, #str do
             local char = str:byte(i)
             hash = bit32.bxor(hash, char)
             hash = bit32.band(hash * salt, 0xFFFFFFFF)
             hash = bit32.bxor(hash, bit32.rshift(hash, 15))
         end
-    
         return string.format("%08X%08X",
             bit32.band(hash, 0xFFFFFFFF),
             bit32.band(hash * 0x1b873593, 0xFFFFFFFF)
         )
     end
-    
     function Utils.getMachineGUID()
         local guid = nil
-    
         pcall(function()
             if getmachineinfo then
                 local info = getmachineinfo()
@@ -1493,32 +1239,26 @@ _modules["utils"] = function()
                 end
             end
         end)
-    
         pcall(function()
             if not guid and syn and syn.machine_id then
                 guid = syn.machine_id()
             end
         end)
-    
         return guid
     end
-    
-    Utils.DEBUG_FILE = "LeoHub/debug.nxs"
+    Utils.DEBUG_FILE = "Leo/debug.nxs"
     Utils._debugLog = {}
     Utils._debugMaxEntries = 200
     Utils._debugStartTime = os.time()
-    
     Utils.DEBUG_LEVELS = {
         INFO = "INFO",
         WARN = "WARN",
         ERROR = "ERROR",
         PERF = "PERF",
     }
-    
     function Utils.logDebug(level, category, message, data)
         level = level or Utils.DEBUG_LEVELS.INFO
         category = category or "General"
-    
         local entry = {
             time = os.time(),
             elapsed = os.time() - Utils._debugStartTime,
@@ -1527,24 +1267,19 @@ _modules["utils"] = function()
             message = tostring(message),
             data = data,
         }
-    
         table.insert(Utils._debugLog, entry)
-    
         while #Utils._debugLog > Utils._debugMaxEntries do
             table.remove(Utils._debugLog, 1)
         end
-    
         if level == Utils.DEBUG_LEVELS.ERROR then
             Utils.saveDebugFile()
         end
     end
-    
     function Utils.logError(err, context)
         Utils.logDebug(Utils.DEBUG_LEVELS.ERROR, context or "Runtime", tostring(err), {
             traceback = debug and debug.traceback and debug.traceback() or "N/A",
         })
     end
-    
     function Utils.logPerformance(metric, value, threshold)
         threshold = threshold or 0
         if value > threshold then
@@ -1555,11 +1290,9 @@ _modules["utils"] = function()
             })
         end
     end
-    
     function Utils.saveDebugFile()
         pcall(function()
             if not writefile then return end
-    
             local debugData = {
                 version = Utils.CLIENT_VERSION,
                 userId = tostring(lp.UserId),
@@ -1570,7 +1303,6 @@ _modules["utils"] = function()
                 entries = Utils._debugLog,
                 systemInfo = {},
             }
-    
             pcall(function()
                 if identifyexecutor then
                     debugData.executor = identifyexecutor()
@@ -1591,13 +1323,11 @@ _modules["utils"] = function()
                 local stats = game:GetService("Stats")
                 debugData.systemInfo.ping = stats:GetValue("DataPing")
             end)
-    
             local json = HttpService:JSONEncode(debugData)
             local encrypted = Utils.encryptNXSv2(json)
             writefile(Utils.DEBUG_FILE, encrypted)
         end)
     end
-    
     function Utils.loadDebugFile()
         local debugData = nil
         pcall(function()
@@ -1611,7 +1341,6 @@ _modules["utils"] = function()
         end)
         return debugData
     end
-    
     function Utils.getDebugPayload()
         local debugData = {
             version = Utils.CLIENT_VERSION,
@@ -1627,7 +1356,6 @@ _modules["utils"] = function()
             warnings = {},
             systemInfo = {},
         }
-    
         pcall(function()
             if identifyexecutor then
                 debugData.executor = identifyexecutor()
@@ -1641,7 +1369,6 @@ _modules["utils"] = function()
             local uis = game:GetService("UserInputService")
             debugData.systemInfo.mobile = uis.TouchEnabled and not uis.KeyboardEnabled
         end)
-    
         for _, entry in ipairs(Utils._debugLog) do
             if entry.level == Utils.DEBUG_LEVELS.ERROR then
                 table.insert(debugData.errors, entry)
@@ -1651,41 +1378,32 @@ _modules["utils"] = function()
                 table.insert(debugData.warnings, entry)
             end
         end
-    
         return HttpService:JSONEncode(debugData)
     end
-    
     return Utils
 end
-
 _modules["config"] = function()
-    
     local HttpService = game:GetService("HttpService")
-    
     local Config = {}
-    
-    Config.CONFIG_FILE = "LeoHub/Data/config.json"
-    
+    Config.CONFIG_FILE = "Leo/Data/config.json"
     local Utils = nil
-    
     local USER_CONFIG = {
-        Fruit = "T-Rex",        -- T-Rex, Dragon, Kitsune, Empyrean, Pain, Control, Mammoth
-        Region = "Singapore",   -- Brazil, Japan, Singapore, Hong Kong, India, Australia...
-        Faction = "Auto",       -- Auto-select faction
-        StartupSound = true,    -- Play bankai sound on awakening/v4
-        SoundUrl = "",          -- Custom startup sound URL (mp3/ogg) - leave empty for default
-        Webhook = "",           -- Discord webhook URL
-        Background = "",        -- Custom background image URL (png/webp only)
-        ChangeTeamAt30M = true, -- Change team when Bounty/Honor reaches 30M (Pirate<->Marine)
-        AutoKillAt30M = true,   -- Kill Roblox at 30M (if ChangeTeam is also on, kills only after BOTH hit 30M)
-        HideProfile = false,    -- Anonymize user profile in left panel
-        TransformTRex = true,   -- Auto-transform T-Rex when Rage is ready
+        Fruit = "T-Rex",        
+        Region = "Singapore",   
+        Faction = "Auto",       
+        StartupSound = true,    
+        SoundUrl = "",          
+        Webhook = "",           
+        Background = "",        
+        ChangeTeamAt30M = true, 
+        AutoKillAt30M = true,   
+        HideProfile = false,    
+        TransformTRex = true,   
     }
-    
     local INTERNAL = {
         AttackRange = 100,
         AttackDuration = 32,
-        LevelRange = 700, -- Dynamic range: playerLevel +/- this value
+        LevelRange = 700, 
         PredictionTime = 0.25,
         YOffset = 1,
         AutoFarm = true,
@@ -1696,7 +1414,6 @@ _modules["config"] = function()
         KickRejoin = true,
         MinimizeKey = Enum.KeyCode.RightControl,
     }
-    
     Config.FRUITS = {
         ["T-Rex"] = {
             ToolName = "T-Rex-T-Rex",
@@ -1741,7 +1458,6 @@ _modules["config"] = function()
             end
         },
     }
-    
     Config.REGIONS = {
         "Brazil",
         "Japan",
@@ -1758,17 +1474,12 @@ _modules["config"] = function()
         "Miami",
         "Texas",
     }
-    
     Config.FACTIONS = { "Auto", "Pirate", "Marine" }
-    
     function Config.init(utilsModule)
         Utils = utilsModule
-    
         local persistedConfig, isFirstRun = Config.loadFromFile()
         local userConfig = getgenv().Config or {}
-    
         Config._isFirstRun = isFirstRun
-    
         local mergedConfig = {}
         if persistedConfig then
             for key, value in pairs(persistedConfig) do
@@ -1778,81 +1489,62 @@ _modules["config"] = function()
         for key, value in pairs(userConfig) do
             mergedConfig[key] = value
         end
-    
         local finalConfig = {}
-    
         for key, value in pairs(INTERNAL) do
             finalConfig[key] = value
         end
-    
         if mergedConfig.Fruit and Config.FRUITS[mergedConfig.Fruit] then
             finalConfig.Fruit = mergedConfig.Fruit
         else
             finalConfig.Fruit = USER_CONFIG.Fruit
         end
-    
         if mergedConfig.Region and table.find(Config.REGIONS, mergedConfig.Region) then
             finalConfig.Region = mergedConfig.Region
         else
             finalConfig.Region = USER_CONFIG.Region
         end
-    
         if mergedConfig.Faction and table.find(Config.FACTIONS, mergedConfig.Faction) then
             finalConfig.Faction = mergedConfig.Faction
         else
             finalConfig.Faction = USER_CONFIG.Faction
         end
-    
         if mergedConfig.StartupSound ~= nil then
             finalConfig.v4Sound = mergedConfig.StartupSound == true
         else
             finalConfig.v4Sound = USER_CONFIG.StartupSound
         end
-    
         finalConfig.Webhook = mergedConfig.Webhook or USER_CONFIG.Webhook
-    
         finalConfig.SoundUrl = mergedConfig.SoundUrl or USER_CONFIG.SoundUrl
-    
         finalConfig.Background = mergedConfig.Background or USER_CONFIG.Background
-    
         if mergedConfig.ChangeTeamAt30M ~= nil then
             finalConfig.ChangeTeamAt30M = mergedConfig.ChangeTeamAt30M == true
         else
             finalConfig.ChangeTeamAt30M = USER_CONFIG.ChangeTeamAt30M
         end
-    
         if mergedConfig.AutoKillAt30M ~= nil then
             finalConfig.AutoKillAt30M = mergedConfig.AutoKillAt30M == true
         else
             finalConfig.AutoKillAt30M = USER_CONFIG.AutoKillAt30M
         end
-    
         if mergedConfig.HideProfile ~= nil then
             finalConfig.HideProfile = mergedConfig.HideProfile == true
         else
             finalConfig.HideProfile = USER_CONFIG.HideProfile
         end
-    
         if mergedConfig.TransformTRex ~= nil then
             finalConfig.TransformTRex = mergedConfig.TransformTRex == true
         else
             finalConfig.TransformTRex = USER_CONFIG.TransformTRex
         end
-    
         finalConfig.SwapAt30m = finalConfig.ChangeTeamAt30M
-    
         finalConfig.WebhookOnKill = true
         finalConfig.WebhookOnHop = true
         finalConfig.FreeKeyEnabled = true
-    
         Config.Values = finalConfig
-    
         Config.saveToFile()
-    
-        print("[LeoHub] [+] Config initialized")
+        print("[LeoBounty] [+] Config initialized")
         return finalConfig
     end
-    
     local function _getFS()
         if getgenv and getgenv()._NP_FS then
             return getgenv()._NP_FS
@@ -1873,46 +1565,36 @@ _modules["config"] = function()
             normalizePath = function(p) return p and p:gsub("\\", "/") or "" end,
         }
     end
-    
     function Config.loadFromFile()
         local fs = _getFS()
         if not fs.canSave then return nil, true end
-    
         local config = nil
         local isFirstRun = false
-    
         if not fs.fileExists(Config.CONFIG_FILE) then
-            local oldFile = "LeoHub/Data/LeoHub_Config.nxs"
+            local oldFile = "Leo/Data/LeoBounty_Config.nxs"
             if fs.fileExists(oldFile) then
-                print("[LeoHub] [!] Old .nxs config found, migrating to JSON format")
+                print("[LeoBounty] [!] Old .nxs config found, migrating to JSON format")
             end
             return nil, true
         end
-    
         local content = fs.readFile(Config.CONFIG_FILE)
         if not content or content == "" then
             return nil, true
         end
-    
         local success, decoded = pcall(HttpService.JSONDecode, HttpService, content)
         if success and type(decoded) == "table" then
             config = decoded
         else
-            print("[LeoHub] [!] Config file corrupted, using defaults")
+            print("[LeoBounty] [!] Config file corrupted, using defaults")
         end
-    
         return config, isFirstRun
     end
-    
     function Config.saveToFile()
         if not Config.Values then return end
-    
         local fs = _getFS()
         if not fs.canSave then return end
-    
-        if not fs.folderExists("Leo Hub") then fs.makeFolder("Leo Hub") end
-        if not fs.folderExists("LeoHub/Data") then fs.makeFolder("LeoHub/Data") end
-    
+        if not fs.folderExists("Leo") then fs.makeFolder("Leo") end
+        if not fs.folderExists("Leo/Data") then fs.makeFolder("Leo/Data") end
         local saveData = {
             Fruit = Config.Values.Fruit,
             Region = Config.Values.Region,
@@ -1927,23 +1609,18 @@ _modules["config"] = function()
             HideProfile = Config.Values.HideProfile,
             TransformTRex = Config.Values.TransformTRex,
         }
-    
         local success, json = pcall(HttpService.JSONEncode, HttpService, saveData)
         if success then
             fs.writeFile(Config.CONFIG_FILE, json)
         end
     end
-    
     function Config.get(key)
         if not Config.Values then Config.init() end
         return Config.Values[key]
     end
-    
     function Config.set(key, value)
         if not Config.Values then Config.init() end
-    
         local changed = false
-    
         if key == "Fruit" and Config.FRUITS[value] then
             Config.Values.Fruit = value
             changed = true
@@ -1982,17 +1659,14 @@ _modules["config"] = function()
             Config.Values.TransformTRex = value == true
             changed = true
         end
-    
         if changed then
             Config.saveToFile()
         end
     end
-    
     function Config.getFruitConfig()
         if not Config.Values then Config.init() end
         return Config.FRUITS[Config.Values.Fruit]
     end
-    
     function Config.getFruitList()
         local list = {}
         for name, _ in pairs(Config.FRUITS) do
@@ -2001,11 +1675,9 @@ _modules["config"] = function()
         table.sort(list)
         return list
     end
-    
     function Config.isFirstRun()
         return Config._isFirstRun == true
     end
-    
     function Config.isConfigured()
         if getgenv().Config then return true end
         if not Config.Values then return false end
@@ -2017,15 +1689,12 @@ _modules["config"] = function()
         end
         return true
     end
-    
     return Config
 end
-
 _modules["auth"] = function()
     local Auth = {}
     Auth.IsAuthenticated = true
     Auth.KeyData = { key = "bypass", expiresIn = 999999, isFreeKey = true, isPremium = false, discordLinked = false }
-
     function Auth.init(utilsModule) end
     function Auth.isAuthenticated() return true end
     function Auth.validateKey(key, callback) callback(true, "OK") end
@@ -2038,12 +1707,9 @@ _modules["auth"] = function()
     function Auth.isDiscordLinked() return false end
     function Auth.openGetKeyPage() return "" end
     function Auth.getRemainingTime() return 999999 end
-
     return Auth
 end
-
 _modules["ui"] = function()
-    
     local Players = game:GetService("Players")
     local TweenService = game:GetService("TweenService")
     local UserInputService = game:GetService("UserInputService")
@@ -2051,98 +1717,78 @@ _modules["ui"] = function()
     local CoreGui = game:GetService("CoreGui")
     local Lighting = game:GetService("Lighting")
     local HttpService = game:GetService("HttpService")
-    
     local lp = Players.LocalPlayer
-    
     local Utils, Config, Auth
-    
-    local IMAGE_FOLDER = "LeoHub/Assets/Images"
+    local IMAGE_FOLDER = "Leo/Assets/Images"
     pcall(function()
         if makefolder then
-            makefolder("Leo Hub")
-            makefolder("LeoHub/Assets")
-            makefolder("LeoHub/Assets/Images")
+            makefolder("Leo")
+            makefolder("Leo/Assets")
+            makefolder("Leo/Assets/Images")
         end
     end)
-    
     local function getImageUrl(url, forceRedownload)
         if not url or url == "" then return "" end
         if url:match("^rbxassetid://") or url:match("^rbxthumb://") then
             return url
         end
-        
         local getAsset = getcustomasset or getsynasset
         local isFile = isfile or function(file) return false end
         local writeFile = writefile or function(file, content) end
         local delFile = delfile or function(file) end
         local request = request or http_request or (http and http.request) or (syn and syn.request)
-        
         if getAsset and writeFile then
             local ext = url:match("%.(%w+)$") or "png"
             if ext ~= "png" and ext ~= "webp" and ext ~= "jpg" and ext ~= "jpeg" and ext ~= "gif" then
                 ext = "png"
             end
-            local fileName = IMAGE_FOLDER .. "/leohub_" .. url:gsub("%W", ""):sub(-30) .. "." .. ext
-            
+            local fileName = IMAGE_FOLDER .. "/leo_" .. url:gsub("%W", ""):sub(-30) .. "." .. ext
             if forceRedownload then
                 pcall(function() if isFile(fileName) then delFile(fileName) end end)
             end
-            
             if isFile(fileName) then
                 return getAsset(fileName)
             end
-            
             local success, content = pcall(function()
                 return game:HttpGet(url)
             end)
-            
             if success and content and #content > 100 then
                 pcall(function() writeFile(fileName, content) end)
                 return getAsset(fileName)
             end
         end
-        
-        return url -- Fallback to direct URL (unlikely to work for most executors)
+        return url 
     end
-    
-    local LOGO_URL = getImageUrl("https://nexusdevs.fun/assets/logos/nexus_dark.webp")
+    local LOGO_URL = getImageUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoJ-_el71Qlnx-WnINYQmN9GFtl3GP7o5jYw&s")
     local CURSOR_URL = getImageUrl("https://raw.githubusercontent.com/Ryu-Dev-here/assetsfora/main/cursor.png")
-    
     local Colors = {
         Background = Color3.fromRGB(12, 12, 15),
         Surface = Color3.fromRGB(28, 28, 36),
         SurfaceLight = Color3.fromRGB(42, 42, 55),
-        
         Primary = Color3.fromRGB(170, 130, 255),
         PrimaryMuted = Color3.fromRGB(140, 100, 230),
         Accent = Color3.fromRGB(200, 160, 255),
-        
         Text = Color3.fromRGB(245, 245, 250),
         TextSecondary = Color3.fromRGB(170, 170, 190),
         TextMuted = Color3.fromRGB(110, 110, 130),
-        
         Success = Color3.fromRGB(80, 220, 120),
         Warning = Color3.fromRGB(240, 200, 80),
         Error = Color3.fromRGB(240, 80, 80),
-        
         Border = Color3.fromRGB(60, 60, 75),
         BorderLight = Color3.fromRGB(80, 80, 100),
     }
-    
     local Fonts = {
         Title = Enum.Font.GothamBold,
         Heading = Enum.Font.GothamSemibold,
         Body = Enum.Font.Gotham,
         Small = Enum.Font.Gotham,
     }
-    
     local FontSizes = {
         Title = 18,
         Heading = 14,
         Body = 13,
         Small = 11,
     }
-    
     local Layout = {
         mainWidth = 550,
         mainHeight = 380,
@@ -2155,7 +1801,6 @@ _modules["ui"] = function()
         gap = 8,
         radius = 10,
     }
-    
     local UI = {
         Gui = nil,
         MainFrame = nil,
@@ -2165,22 +1810,19 @@ _modules["ui"] = function()
         Stats = {totalKills = 0, totalBountyGained = 0, totalPlayTime = 0, serversHopped = 0},
         IsMinimized = false,
         Blur = nil,
-        Connections = {}, -- Track all connections for proper cleanup
-        KillFeed = {}, -- Live kill feed entries
+        Connections = {}, 
+        KillFeed = {}, 
     }
-    
     local function tween(obj, props, duration, style, dir)
         local info = TweenInfo.new(duration or 0.3, style or Enum.EasingStyle.Quint, dir or Enum.EasingDirection.Out)
         TweenService:Create(obj, info, props):Play()
     end
-    
     local function createCorner(parent, radius)
         local corner = Instance.new("UICorner")
         corner.CornerRadius = UDim.new(0, radius or Layout.radius)
         corner.Parent = parent
         return corner
     end
-    
     local function createStroke(parent, color, thickness, transparency)
         local stroke = Instance.new("UIStroke")
         stroke.Color = color or Colors.Border
@@ -2189,7 +1831,6 @@ _modules["ui"] = function()
         stroke.Parent = parent
         return stroke
     end
-    
     local function formatNumber(n)
         if n >= 1000000 then
             return string.format("%.1fM", n / 1000000)
@@ -2198,7 +1839,6 @@ _modules["ui"] = function()
         end
         return tostring(n)
     end
-    
     local function formatTime(seconds)
         seconds = math.floor(seconds or 0)
         local h = math.floor(seconds / 3600)
@@ -2209,18 +1849,15 @@ _modules["ui"] = function()
             return string.format("%dm", m)
         end
     end
-    
     local function createLoadingSpinner(parent, size, color)
         size = size or 24
         color = color or Colors.Primary
-        
         local container = Instance.new("Frame")
         container.Name = "LoadingSpinner"
         container.BackgroundTransparency = 1
         container.AnchorPoint = Vector2.new(0.5, 0.5)
         container.Size = UDim2.new(0, size, 0, size)
         container.Parent = parent
-        
         local numDots = 8
         for i = 1, numDots do
             local dot = Instance.new("Frame")
@@ -2237,7 +1874,6 @@ _modules["ui"] = function()
             dot.Parent = container
             createCorner(dot, size/12)
         end
-        
         local rotation = 0
         local connection
         connection = RunService.RenderStepped:Connect(function()
@@ -2248,20 +1884,15 @@ _modules["ui"] = function()
             rotation = (rotation + 5) % 360
             container.Rotation = rotation
         end)
-        
         table.insert(UI.Connections, connection)
-        
         container.Destroying:Connect(function()
             if connection then connection:Disconnect() end
         end)
-        
         return container
     end
-    
     local function pulseElement(element, color, duration)
         color = color or Colors.Primary
         duration = duration or 0.5
-        
         if element:IsA("TextLabel") or element:IsA("TextButton") then
             local originalColor = element.TextColor3
             tween(element, {TextColor3 = color}, duration * 0.3)
@@ -2276,34 +1907,27 @@ _modules["ui"] = function()
             end)
         end
     end
-    
     local function animateEntrance(element, direction, duration)
         direction = direction or "up"
         duration = duration or 0.4
-        
         local offsets = {
             up = UDim2.new(0, 0, 0, 30),
             down = UDim2.new(0, 0, 0, -30),
             left = UDim2.new(0, 30, 0, 0),
             right = UDim2.new(0, -30, 0, 0),
         }
-        
         local originalPos = element.Position
         element.Position = originalPos + offsets[direction]
-        
         if element:IsA("GuiObject") then
             element.BackgroundTransparency = 1
         end
-        
         tween(element, {Position = originalPos}, duration, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
         if element:IsA("Frame") and element.BackgroundTransparency ~= 1 then
             tween(element, {BackgroundTransparency = 0}, duration * 0.8)
         end
     end
-    
     local function addScaleHover(button)
         local originalSize = button.Size
-        
         button.MouseEnter:Connect(function()
             tween(button, {Size = UDim2.new(
                 originalSize.X.Scale * 1.05, 
@@ -2312,12 +1936,10 @@ _modules["ui"] = function()
                 originalSize.Y.Offset * 1.05
             )}, 0.15)
         end)
-        
         button.MouseLeave:Connect(function()
             tween(button, {Size = originalSize}, 0.15)
         end)
     end
-    
     local function createPanel(parent, position, size, color)
         local panel = Instance.new("Frame")
         panel.Name = "Panel"
@@ -2329,7 +1951,6 @@ _modules["ui"] = function()
         createCorner(panel)
         return panel
     end
-    
     local function createText(parent, text, options)
         options = options or {}
         local label = Instance.new("TextLabel")
@@ -2346,7 +1967,6 @@ _modules["ui"] = function()
         label.Parent = parent
         return label
     end
-    
     local function createButton(parent, text, position, size, options)
         options = options or {}
         local btn = Instance.new("TextButton")
@@ -2363,16 +1983,13 @@ _modules["ui"] = function()
         btn.AnchorPoint = Vector2.new(0, 0)
         btn.Parent = parent
         createCorner(btn, 6)
-        
         local originalSize = btn.Size
-        
         btn.MouseEnter:Connect(function()
             tween(btn, {BackgroundColor3 = options.hoverColor or Colors.PrimaryMuted}, 0.15)
         end)
         btn.MouseLeave:Connect(function()
             tween(btn, {BackgroundColor3 = options.color or Colors.Primary}, 0.15)
         end)
-        
         btn.MouseButton1Down:Connect(function()
             tween(btn, {
                 Size = UDim2.new(originalSize.X.Scale * 0.97, originalSize.X.Offset * 0.97,
@@ -2382,10 +1999,8 @@ _modules["ui"] = function()
         btn.MouseButton1Up:Connect(function()
             tween(btn, {Size = originalSize}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
         end)
-        
         return btn
     end
-    
     local function createInput(parent, placeholder, position, size)
         local container = Instance.new("Frame")
         container.Name = "InputContainer"
@@ -2396,7 +2011,6 @@ _modules["ui"] = function()
         container.Parent = parent
         createCorner(container, 6)
         createStroke(container, Colors.Border)
-        
         local input = Instance.new("TextBox")
         input.Name = "Input"
         input.BackgroundTransparency = 1
@@ -2411,21 +2025,17 @@ _modules["ui"] = function()
         input.TextXAlignment = Enum.TextXAlignment.Left
         input.ClearTextOnFocus = false
         input.Parent = container
-        
         input.Focused:Connect(function()
             tween(container, {BackgroundColor3 = Colors.Surface}, 0.15)
         end)
         input.FocusLost:Connect(function()
             tween(container, {BackgroundColor3 = Colors.SurfaceLight}, 0.15)
         end)
-        
         return container, input
     end
-    
     local function createStatCard(parent, label, value, position, size, icon, accentColor)
         icon = icon or ""
         accentColor = accentColor or Colors.Primary
-        
         local card = Instance.new("Frame")
         card.Name = label .. "Card"
         card.BackgroundColor3 = Colors.SurfaceLight
@@ -2435,7 +2045,6 @@ _modules["ui"] = function()
         card.Size = size or UDim2.new(0.48, 0, 0, 60)
         card.Parent = parent
         createCorner(card, 8)
-        
         local accentBar = Instance.new("Frame")
         accentBar.Name = "AccentBar"
         accentBar.BackgroundColor3 = accentColor
@@ -2445,7 +2054,6 @@ _modules["ui"] = function()
         accentBar.Size = UDim2.new(0, 3, 1, 0)
         accentBar.ZIndex = 2
         accentBar.Parent = card
-        
         if icon ~= "" then
             local iconLabel = Instance.new("TextLabel")
             iconLabel.Name = "Icon"
@@ -2459,7 +2067,6 @@ _modules["ui"] = function()
             iconLabel.TextXAlignment = Enum.TextXAlignment.Left
             iconLabel.Parent = card
         end
-        
         local labelText = createText(card, label, {
             position = UDim2.new(0, icon ~= "" and 28 or 10, 0, 8),
             size = UDim2.new(1, -(icon ~= "" and 38 or 20), 0, 14),
@@ -2468,7 +2075,6 @@ _modules["ui"] = function()
         })
         labelText.TextXAlignment = Enum.TextXAlignment.Left
         labelText.Font = Enum.Font.GothamSemibold
-        
         local valueText = createText(card, value, {
             name = "Value",
             position = UDim2.new(0, 10, 0, 26),
@@ -2479,10 +2085,8 @@ _modules["ui"] = function()
         valueText.TextXAlignment = Enum.TextXAlignment.Left
         valueText.Font = Enum.Font.GothamBold
         valueText.TextSize = 16
-        
         return card, valueText
     end
-    
     local function createKeyScreen(parent, onSuccess)
         local screen = Instance.new("Frame")
         screen.Name = "KeyScreen"
@@ -2491,7 +2095,6 @@ _modules["ui"] = function()
         screen.Size = UDim2.new(1, 0, 1, 0)
         screen.ClipsDescendants = true
         screen.Parent = parent
-        
         local content = Instance.new("Frame")
         content.Name = "Content"
         content.BackgroundTransparency = 1
@@ -2499,24 +2102,20 @@ _modules["ui"] = function()
         content.Position = UDim2.new(0.5, 0, 0.5, 0)
         content.Size = UDim2.new(0.9, 0, 0.95, 0)
         content.Parent = screen
-        
         local listLayout = Instance.new("UIListLayout")
         listLayout.SortOrder = Enum.SortOrder.LayoutOrder
         listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
         listLayout.Padding = UDim.new(0, 4)
         listLayout.Parent = content
-        
         local sizeConstraint = Instance.new("UISizeConstraint")
         sizeConstraint.MaxSize = Vector2.new(280, 9999)
         sizeConstraint.Parent = content
-        
         local logoContainer = Instance.new("Frame")
         logoContainer.Name = "LogoWrap"
         logoContainer.BackgroundTransparency = 1
-        logoContainer.Size = UDim2.new(1, 0, 0, 0) -- height set dynamically
+        logoContainer.Size = UDim2.new(1, 0, 0, 0) 
         logoContainer.LayoutOrder = 1
         logoContainer.Parent = content
-        
         local logo = Instance.new("ImageLabel")
         logo.Name = "Logo"
         logo.BackgroundTransparency = 1
@@ -2525,7 +2124,6 @@ _modules["ui"] = function()
         logo.Image = LOGO_URL
         logo.ScaleType = Enum.ScaleType.Fit
         logo.Parent = logoContainer
-        
         local title = Instance.new("TextLabel")
         title.Name = "Title"
         title.BackgroundTransparency = 1
@@ -2538,11 +2136,9 @@ _modules["ui"] = function()
         title.TextScaled = true
         title.LayoutOrder = 2
         title.Parent = content
-        
         local inputContainer, keyInput = createInput(content, "XXXX-XXXX-XXXX-XXXX",
             nil, UDim2.new(1, 0, 0, 36))
         inputContainer.LayoutOrder = 3
-        
         local status = createText(content, "", {
             name = "Status",
             size = UDim2.new(1, 0, 0, 14),
@@ -2551,23 +2147,19 @@ _modules["ui"] = function()
             align = Enum.TextXAlignment.Center,
         })
         status.LayoutOrder = 4
-        
         local validateBtn = createButton(content, "Validate",
             nil, UDim2.new(1, 0, 0, 32))
         validateBtn.LayoutOrder = 5
-        
         local getKeyRow = Instance.new("Frame")
         getKeyRow.Name = "GetKeyRow"
         getKeyRow.BackgroundTransparency = 1
         getKeyRow.Size = UDim2.new(1, 0, 0, 28)
         getKeyRow.LayoutOrder = 6
         getKeyRow.Parent = content
-        
         local getKeyBtn = createButton(getKeyRow, "Get Free Key",
             UDim2.new(0, 32, 0, 0), UDim2.new(1, -32, 0, 28),
             {color = Colors.SurfaceLight, hoverColor = Colors.PrimaryMuted, name = "GetKeyBtn"})
         getKeyBtn.TextColor3 = Colors.Accent
-        
         local DISCORD_IMG_KEY = getImageUrl("https://static.vecteezy.com/system/resources/previews/006/892/625/large_2x/discord-logo-icon-editorial-free-vector.jpg")
         local discordBtn = Instance.new("ImageButton")
         discordBtn.Name = "DiscordIcon"
@@ -2580,7 +2172,6 @@ _modules["ui"] = function()
         discordBtn.AutoButtonColor = false
         discordBtn.Parent = getKeyRow
         createCorner(discordBtn, 6)
-        
         task.defer(function()
             if not screen.Parent then return end
             local parentH = screen.AbsoluteSize.Y
@@ -2588,7 +2179,6 @@ _modules["ui"] = function()
             logoContainer.Size = UDim2.new(1, 0, 0, logoSize)
             logo.Size = UDim2.new(0, logoSize, 0, logoSize)
         end)
-        
         local sizeChangedConn = screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
             local parentH = screen.AbsoluteSize.Y
             local logoSize = math.clamp(math.floor(parentH * 0.25), 30, 80)
@@ -2596,7 +2186,6 @@ _modules["ui"] = function()
             logo.Size = UDim2.new(0, logoSize, 0, logoSize)
         end)
         table.insert(UI.Connections, sizeChangedConn)
-        
         discordBtn.MouseEnter:Connect(function()
             tween(discordBtn, {BackgroundColor3 = Color3.fromRGB(110, 120, 255)}, 0.15)
         end)
@@ -2616,7 +2205,7 @@ _modules["ui"] = function()
                     })
                 end
             end)
-            pcall(function() setclipboard("https://discord.gg/Nhw6G2R9xy end)
+            pcall(function() setclipboard("https://discord.gg/W68jqAaAUk end)
             tween(discordBtn, {BackgroundColor3 = Colors.Success}, 0.2)
             task.delay(1, function()
                 if discordBtn and discordBtn.Parent then
@@ -2624,7 +2213,6 @@ _modules["ui"] = function()
                 end
             end)
         end)
-        
         getKeyBtn.MouseButton1Click:Connect(function()
             if Auth and Auth.openGetKeyPage then
                 Auth.openGetKeyPage()
@@ -2641,7 +2229,6 @@ _modules["ui"] = function()
                 end
             end)
         end)
-        
         validateBtn.MouseButton1Click:Connect(function()
             local key = keyInput.Text
             if key == "" then
@@ -2649,18 +2236,14 @@ _modules["ui"] = function()
                 status.TextColor3 = Colors.Warning
                 return
             end
-            
             status.Text = "Validating..."
             status.TextColor3 = Colors.TextMuted
             validateBtn.Text = ""
-            
             local spinner = createLoadingSpinner(validateBtn, 20, Colors.Text)
             spinner.Position = UDim2.new(0.5, 0, 0.5, 0)
-            
             if Auth then
                 Auth.validateKey(key, function(success, message, data)
                     if spinner then spinner:Destroy() end
-                    
                     if success then
                         status.Text = "✓ Valid"
                         status.TextColor3 = Colors.Success
@@ -2682,14 +2265,11 @@ _modules["ui"] = function()
                 validateBtn.Text = "Validate"
             end
         end)
-        
         return screen, keyInput, status
     end
-    
     local function createConfigPopup(screenGui)
         local existing = screenGui:FindFirstChild("ConfigPopup")
         if existing then existing:Destroy() return end
-        
         local overlay = Instance.new("Frame")
         overlay.Name = "ConfigPopup"
         overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -2699,7 +2279,6 @@ _modules["ui"] = function()
         overlay.Size = UDim2.new(1, 0, 1, 0)
         overlay.ZIndex = 200
         overlay.Parent = screenGui
-        
         local popup = Instance.new("Frame")
         popup.Name = "PopupCard"
         popup.BackgroundColor3 = Colors.Background
@@ -2712,10 +2291,8 @@ _modules["ui"] = function()
         popup.Parent = overlay
         createCorner(popup, 10)
         createStroke(popup, Colors.Border, 1)
-        
         popup.BackgroundTransparency = 1
         tween(popup, {BackgroundTransparency = 0, Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3, Enum.EasingStyle.Back)
-        
         local headerBar = Instance.new("Frame")
         headerBar.Name = "Header"
         headerBar.BackgroundColor3 = Colors.Surface
@@ -2724,9 +2301,8 @@ _modules["ui"] = function()
         headerBar.Size = UDim2.new(1, 0, 0, 40)
         headerBar.ZIndex = 202
         headerBar.Parent = popup
-        
         local isFirstRun = Config and Config.isFirstRun()
-        local titleText = isFirstRun and "⚡ Welcome to LeoHub!" or "⚙ Configuration"
+        local titleText = isFirstRun and "⚡ Welcome to LeoBounty!" or "⚙ Configuration"
         local titleLabel = createText(headerBar, titleText, {
             position = UDim2.new(0, 14, 0, 0),
             size = UDim2.new(0.7, 0, 1, 0),
@@ -2734,10 +2310,8 @@ _modules["ui"] = function()
             color = isFirstRun and Colors.Primary or Colors.Text,
         })
         titleLabel.ZIndex = 203
-        
         local dragging = false
         local dragStart, startPos
-        
         headerBar.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 dragging = true
@@ -2750,14 +2324,12 @@ _modules["ui"] = function()
                 end)
             end
         end)
-        
         headerBar.InputChanged:Connect(function(input)
             if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
                 local delta = input.Position - dragStart
                 popup.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
             end
         end)
-        
         local closeBtn = Instance.new("TextButton")
         closeBtn.Name = "Close"
         closeBtn.BackgroundColor3 = Colors.Error
@@ -2772,22 +2344,18 @@ _modules["ui"] = function()
         closeBtn.AutoButtonColor = false
         closeBtn.Parent = headerBar
         createCorner(closeBtn, 6)
-        
         closeBtn.MouseEnter:Connect(function()
             tween(closeBtn, {BackgroundTransparency = 0.5, TextColor3 = Colors.Text}, 0.15)
         end)
         closeBtn.MouseLeave:Connect(function()
             tween(closeBtn, {BackgroundTransparency = 0.9, TextColor3 = Colors.Error}, 0.15)
         end)
-        
         local function closePopup()
             tween(popup, {BackgroundTransparency = 1, Position = UDim2.new(0.5, 0, 0.5, 20)}, 0.2)
             tween(overlay, {BackgroundTransparency = 1}, 0.2)
             task.delay(0.25, function() overlay:Destroy() end)
         end
-        
         closeBtn.MouseButton1Click:Connect(closePopup)
-        
         overlay.InputBegan:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseButton1 or
                input.UserInputType == Enum.UserInputType.Touch then
@@ -2800,7 +2368,6 @@ _modules["ui"] = function()
                 end
             end
         end)
-        
         local content = Instance.new("ScrollingFrame")
         content.Name = "Content"
         content.BackgroundTransparency = 1
@@ -2812,19 +2379,16 @@ _modules["ui"] = function()
         content.ScrollBarImageColor3 = Colors.TextMuted
         content.ZIndex = 202
         content.Parent = popup
-        
         local listLayout = Instance.new("UIListLayout")
         listLayout.SortOrder = Enum.SortOrder.LayoutOrder
         listLayout.Padding = UDim.new(0, 2)
         listLayout.Parent = content
-        
         local contentPad = Instance.new("UIPadding")
         contentPad.PaddingLeft = UDim.new(0, 14)
         contentPad.PaddingRight = UDim.new(0, 14)
         contentPad.PaddingTop = UDim.new(0, 8)
         contentPad.PaddingBottom = UDim.new(0, 14)
         contentPad.Parent = content
-        
         local function createEnhancedDropdownRow(parent, label, options, currentValue, onChanged, layoutOrder)
             local row = Instance.new("Frame")
             row.Name = label .. "Row"
@@ -2833,7 +2397,6 @@ _modules["ui"] = function()
             row.LayoutOrder = layoutOrder or 0
             row.ZIndex = 202
             row.Parent = parent
-            
             local lbl = createText(row, label, {
                 position = UDim2.new(0, 0, 0, 0),
                 size = UDim2.new(1, 0, 0, 18),
@@ -2841,7 +2404,6 @@ _modules["ui"] = function()
                 color = Colors.TextSecondary,
             })
             lbl.ZIndex = 203
-            
             local dropdownContainer = Instance.new("Frame")
             dropdownContainer.Name = "DropdownContainer"
             dropdownContainer.BackgroundColor3 = Colors.SurfaceLight
@@ -2852,7 +2414,6 @@ _modules["ui"] = function()
             dropdownContainer.Parent = row
             createCorner(dropdownContainer, 6)
             createStroke(dropdownContainer, Colors.Border, 1)
-            
             local dropBtn = Instance.new("TextButton")
             dropBtn.Name = "MainButton"
             dropBtn.BackgroundTransparency = 1
@@ -2865,7 +2426,6 @@ _modules["ui"] = function()
             dropBtn.AutoButtonColor = false
             dropBtn.ZIndex = 204
             dropBtn.Parent = dropdownContainer
-            
             local arrow = Instance.new("TextLabel")
             arrow.Name = "Arrow"
             arrow.BackgroundTransparency = 1
@@ -2878,17 +2438,14 @@ _modules["ui"] = function()
             arrow.TextXAlignment = Enum.TextXAlignment.Center
             arrow.ZIndex = 205
             arrow.Parent = dropdownContainer
-            
             dropBtn.MouseEnter:Connect(function()
                 tween(dropdownContainer, {BackgroundColor3 = Colors.Surface}, 0.15)
                 tween(arrow, {TextColor3 = Colors.Primary}, 0.15)
             end)
-            
             dropBtn.MouseLeave:Connect(function()
                 tween(dropdownContainer, {BackgroundColor3 = Colors.SurfaceLight}, 0.15)
                 tween(arrow, {TextColor3 = Colors.TextMuted}, 0.15)
             end)
-            
             local function showDropdown()
                 local overlay = Instance.new("Frame")
                 overlay.Name = "DropdownOverlay"
@@ -2898,7 +2455,6 @@ _modules["ui"] = function()
                 overlay.Size = UDim2.new(1, 0, 1, 0)
                 overlay.ZIndex = 300
                 overlay.Parent = screenGui
-                
                 local listContainer = Instance.new("Frame")
                 listContainer.Name = "OptionsList"
                 listContainer.BackgroundColor3 = Colors.Background
@@ -2909,14 +2465,12 @@ _modules["ui"] = function()
                 listContainer.Parent = overlay
                 createCorner(listContainer, 6)
                 createStroke(listContainer, Colors.Border, 1)
-                
                 listContainer.BackgroundTransparency = 1
                 listContainer.Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y)
                 tween(listContainer, {
                     BackgroundTransparency = 0,
                     Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y + 2)
                 }, 0.2, Enum.EasingStyle.Back)
-                
                 local scrollFrame = Instance.new("ScrollingFrame")
                 scrollFrame.Name = "ScrollFrame"
                 scrollFrame.BackgroundTransparency = 1
@@ -2927,12 +2481,10 @@ _modules["ui"] = function()
                 scrollFrame.ScrollBarImageColor3 = Colors.TextMuted
                 scrollFrame.ZIndex = 302
                 scrollFrame.Parent = listContainer
-                
                 local listLayout = Instance.new("UIListLayout")
                 listLayout.SortOrder = Enum.SortOrder.LayoutOrder
                 listLayout.Padding = UDim.new(0, 2)
                 listLayout.Parent = scrollFrame
-                
                 for i, option in ipairs(options) do
                     local optionBtn = Instance.new("TextButton")
                     optionBtn.Name = "Option_" .. tostring(i)
@@ -2949,53 +2501,43 @@ _modules["ui"] = function()
                     optionBtn.ZIndex = 303
                     optionBtn.Parent = scrollFrame
                     createCorner(optionBtn, 4)
-                    
                     optionBtn.MouseEnter:Connect(function()
                         if option ~= currentValue then
                             tween(optionBtn, {BackgroundTransparency = 0.8, BackgroundColor3 = Colors.Surface}, 0.1)
                         end
                     end)
-                    
                     optionBtn.MouseLeave:Connect(function()
                         if option ~= currentValue then
                             tween(optionBtn, {BackgroundTransparency = 1, BackgroundColor3 = Colors.SurfaceLight}, 0.1)
                         end
                     end)
-                    
                     optionBtn.MouseButton1Click:Connect(function()
                         dropBtn.Text = "  " .. tostring(option) .. "  ▼"
-                        
                         tween(listContainer, {
                             BackgroundTransparency = 1,
                             Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y)
                         }, 0.2, Enum.EasingStyle.Back)
-                        
                         task.delay(0.2, function()
                             overlay:Destroy()
                         end)
-                        
                         if onChanged then
                             onChanged(option)
                         end
-                        
                         pulseElement(dropdownContainer, Colors.Primary, 0.3)
                     end)
                 end
-                
                 overlay.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or
                        input.UserInputType == Enum.UserInputType.Touch then
                         local pos = input.Position
                         local listPos = listContainer.AbsolutePosition
                         local listSize = listContainer.AbsoluteSize
-                        
                         if pos.X < listPos.X or pos.X > listPos.X + listSize.X or
                            pos.Y < listPos.Y or pos.Y > listPos.Y + listSize.Y then
                             tween(listContainer, {
                                 BackgroundTransparency = 1,
                                 Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y)
                             }, 0.2, Enum.EasingStyle.Back)
-                            
                             task.delay(0.2, function()
                                 overlay:Destroy()
                             end)
@@ -3003,15 +2545,11 @@ _modules["ui"] = function()
                     end
                 end)
             end
-            
             dropBtn.MouseButton1Click:Connect(function()
-    
                 showDropdown()
             end)
-            
             return row
         end
-        
         local function createToggleRow(parent, label, currentValue, onChanged, layoutOrder)
             local row = Instance.new("Frame")
             row.Name = label .. "Row"
@@ -3020,7 +2558,6 @@ _modules["ui"] = function()
             row.LayoutOrder = layoutOrder or 0
             row.ZIndex = 202
             row.Parent = parent
-            
             local lbl = createText(row, label, {
                 position = UDim2.new(0, 0, 0, 0),
                 size = UDim2.new(0.7, 0, 1, 0),
@@ -3028,7 +2565,6 @@ _modules["ui"] = function()
                 color = Colors.Text,
             })
             lbl.ZIndex = 203
-            
             local toggleBg = Instance.new("Frame")
             toggleBg.Name = "ToggleBg"
             toggleBg.BackgroundColor3 = currentValue and Colors.Success or Colors.SurfaceLight
@@ -3039,7 +2575,6 @@ _modules["ui"] = function()
             toggleBg.ZIndex = 203
             toggleBg.Parent = row
             createCorner(toggleBg, 10)
-            
             local toggleKnob = Instance.new("Frame")
             toggleKnob.Name = "Knob"
             toggleKnob.BackgroundColor3 = Colors.Text
@@ -3049,16 +2584,13 @@ _modules["ui"] = function()
             toggleKnob.ZIndex = 204
             toggleKnob.Parent = toggleBg
             createCorner(toggleKnob, 8)
-            
             local isOn = currentValue
-            
             local function toggle()
                 isOn = not isOn
                 tween(toggleBg, {BackgroundColor3 = isOn and Colors.Success or Colors.SurfaceLight}, 0.2)
                 tween(toggleKnob, {Position = isOn and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)}, 0.2, Enum.EasingStyle.Back)
                 if onChanged then onChanged(isOn) end
             end
-            
             local toggleBtn = Instance.new("TextButton")
             toggleBtn.Name = "ToggleHit"
             toggleBtn.BackgroundTransparency = 1
@@ -3067,10 +2599,8 @@ _modules["ui"] = function()
             toggleBtn.ZIndex = 205
             toggleBtn.Parent = toggleBg
             toggleBtn.MouseButton1Click:Connect(toggle)
-            
             return row
         end
-        
         local function createSectionLabel(parent, text, layoutOrder)
             local lbl = createText(parent, text, {
                 size = UDim2.new(1, 0, 0, 24),
@@ -3081,7 +2611,6 @@ _modules["ui"] = function()
             lbl.ZIndex = 203
             return lbl
         end
-        
         local function createTextInputRow(parent, label, currentValue, placeholder, onChanged, layoutOrder)
             local row = Instance.new("Frame")
             row.Name = label .. "Row"
@@ -3090,7 +2619,6 @@ _modules["ui"] = function()
             row.LayoutOrder = layoutOrder or 0
             row.ZIndex = 202
             row.Parent = parent
-            
             local lbl = createText(row, label, {
                 position = UDim2.new(0, 0, 0, 0),
                 size = UDim2.new(1, 0, 0, 18),
@@ -3098,7 +2626,6 @@ _modules["ui"] = function()
                 color = Colors.TextSecondary,
             })
             lbl.ZIndex = 203
-            
             local inputBox = Instance.new("TextBox")
             inputBox.Name = "Input"
             inputBox.BackgroundColor3 = Colors.SurfaceLight
@@ -3117,12 +2644,10 @@ _modules["ui"] = function()
             inputBox.Parent = row
             createCorner(inputBox, 5)
             createStroke(inputBox, Colors.Border, 1)
-            
             local inputPad = Instance.new("UIPadding")
             inputPad.PaddingLeft = UDim.new(0, 8)
             inputPad.PaddingRight = UDim.new(0, 8)
             inputPad.Parent = inputBox
-            
             inputBox.Focused:Connect(function()
                 tween(inputBox, {BackgroundColor3 = Colors.Surface}, 0.1)
             end)
@@ -3130,68 +2655,46 @@ _modules["ui"] = function()
                 tween(inputBox, {BackgroundColor3 = Colors.SurfaceLight}, 0.1)
                 if onChanged then onChanged(inputBox.Text) end
             end)
-            
             return row
         end
-        
         createSectionLabel(content, "Combat", 1)
-        
         local fruitList = Config.getFruitList()
-    
         for i, fruit in ipairs(fruitList) do
-    
         end
-    
         createEnhancedDropdownRow(content, "Fruit", fruitList, Config.get("Fruit"), function(val)
             Config.set("Fruit", val)
         end, 2)
-        
         for i, faction in ipairs(Config.FACTIONS) do
-    
         end
-    
         createEnhancedDropdownRow(content, "Faction", Config.FACTIONS, Config.get("Faction"), function(val)
             Config.set("Faction", val)
         end, 3)
-        
         createSectionLabel(content, "Server", 4)
-        
         for i, region in ipairs(Config.REGIONS) do
-    
         end
-    
         createEnhancedDropdownRow(content, "Region", Config.REGIONS, Config.get("Region"), function(val)
             Config.set("Region", val)
         end, 5)
-        
         createSectionLabel(content, "30M Threshold", 6)
-        
         createToggleRow(content, "Notify Team Change", Config.get("ChangeTeamAt30M"), function(val)
             Config.set("ChangeTeamAt30M", val)
         end, 7)
-        
         createToggleRow(content, "Auto Kill Roblox", Config.get("AutoKillAt30M"), function(val)
             Config.set("AutoKillAt30M", val)
         end, 8)
-        
         createSectionLabel(content, "Other", 9)
-        
         createToggleRow(content, "Startup Sound", Config.get("v4Sound"), function(val)
             Config.set("StartupSound", val)
         end, 10)
-        
         createTextInputRow(content, "Custom Sound URL", Config.get("SoundUrl") or "", "https://example.com/sound.mp3", function(val)
             Config.set("SoundUrl", val)
         end, 10.3)
-        
         createToggleRow(content, "Hide User Profile", Config.get("HideProfile"), function(val)
             Config.set("HideProfile", val)
         end, 10.5)
-        
         createToggleRow(content, "Auto T-Rex Transform", Config.get("TransformTRex"), function(val)
             Config.set("TransformTRex", val)
         end, 10.6)
-        
         createTextInputRow(content, "Custom Background URL", Config.get("Background") or "", "https://example.com/image.png or .webp", function(val)
             Config.set("Background", val)
             if val and val ~= "" then
@@ -3206,13 +2709,10 @@ _modules["ui"] = function()
                 end)
             end
         end, 10.7)
-        
         createSectionLabel(content, "Discord", 11)
-        
         createTextInputRow(content, "Webhook URL", Config.get("Webhook") or "", "https://discord.com/api/webhooks/...", function(val)
             Config.set("Webhook", val)
         end, 12)
-        
         local testWebhookBtn = Instance.new("TextButton")
         testWebhookBtn.Name = "TestWebhook"
         testWebhookBtn.BackgroundColor3 = Colors.SurfaceLight
@@ -3228,7 +2728,6 @@ _modules["ui"] = function()
         testWebhookBtn.Parent = content
         createCorner(testWebhookBtn, 5)
         createStroke(testWebhookBtn, Colors.Border, 1)
-        
         testWebhookBtn.MouseEnter:Connect(function()
             tween(testWebhookBtn, {BackgroundColor3 = Colors.Surface}, 0.15)
         end)
@@ -3238,13 +2737,12 @@ _modules["ui"] = function()
         testWebhookBtn.MouseButton1Click:Connect(function()
             local webhookUrl = Config.get("Webhook") or ""
             if webhookUrl == "" or not webhookUrl:match("https://discord.com/api/webhooks/") then
-                Utils.notify("LeoHub", "[!] Please enter a valid Discord webhook URL")
+                Utils.notify("LeoBounty", "[!] Please enter a valid Discord webhook URL")
                 return
             end
-            
             task.spawn(function()
                 local success = Utils.sendWebhook(webhookUrl, {
-                    title = "LeoHub Test",
+                    title = "LeoBounty Test",
                     description = "Webhook connection successful! 🎯",
                     color = 0x5865F2,
                     fields = {
@@ -3252,21 +2750,18 @@ _modules["ui"] = function()
                         {name = "Status", value = "✅ Online", inline = true}
                     }
                 })
-                
                 if success then
                     pulseElement(testWebhookBtn, Colors.Success, 0.3)
-                    Utils.notify("LeoHub", "[+] Webhook test successful!")
+                    Utils.notify("LeoBounty", "[+] Webhook test successful!")
                 else
                     pulseElement(testWebhookBtn, Colors.Error, 0.3)
-                    Utils.notify("LeoHub", "[!] Webhook test failed!")
+                    Utils.notify("LeoBounty", "[!] Webhook test failed!")
                 end
             end)
         end)
-        
         createToggleRow(content, "Notify on Kill", Config.get("WebhookOnKill") ~= false, function(val)
             Config.set("WebhookOnKill", val)
         end, 13)
-        
         local saveBtn = Instance.new("TextButton")
         saveBtn.Name = "SaveButton"
         saveBtn.BackgroundColor3 = Colors.Primary
@@ -3281,7 +2776,6 @@ _modules["ui"] = function()
         saveBtn.LayoutOrder = 14
         saveBtn.Parent = content
         createCorner(saveBtn, 6)
-        
         saveBtn.MouseEnter:Connect(function()
             tween(saveBtn, {BackgroundColor3 = Colors.PrimaryMuted}, 0.15)
         end)
@@ -3291,13 +2785,12 @@ _modules["ui"] = function()
         saveBtn.MouseButton1Click:Connect(function()
             Config.saveToFile()
             pulseElement(saveBtn, Colors.Success, 0.3)
-            Utils.notify("LeoHub", "[+] Configuration saved!")
+            Utils.notify("LeoBounty", "[+] Configuration saved!")
             task.delay(0.4, closePopup)
         end)
-        
         local debugBtn = Instance.new("TextButton")
         debugBtn.Name = "ShareDebugButton"
-        debugBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242) -- Discord blurple
+        debugBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242) 
         debugBtn.BorderSizePixel = 0
         debugBtn.Position = UDim2.new(0, 14, 0, 0)
         debugBtn.Size = UDim2.new(1, -28, 0, 32)
@@ -3309,7 +2802,6 @@ _modules["ui"] = function()
         debugBtn.LayoutOrder = 15
         debugBtn.Parent = content
         createCorner(debugBtn, 6)
-        
         debugBtn.MouseEnter:Connect(function()
             tween(debugBtn, {BackgroundColor3 = Color3.fromRGB(100, 115, 255)}, 0.15)
         end)
@@ -3335,26 +2827,23 @@ _modules["ui"] = function()
                 if ok then
                     debugBtn.Text = "\xE2\x9C\x85 Sent!"
                     pulseElement(debugBtn, Colors.Success, 0.3)
-                    Utils.notify("LeoHub", "[+] Debug file shared with admins!")
+                    Utils.notify("LeoBounty", "[+] Debug file shared with admins!")
                 else
                     debugBtn.Text = "\xE2\x9D\x8C Failed"
                     pulseElement(debugBtn, Colors.Error, 0.3)
-                    Utils.notify("LeoHub", "[!] Failed to share debug file")
+                    Utils.notify("LeoBounty", "[!] Failed to share debug file")
                 end
                 task.delay(2, function()
                     debugBtn.Text = "\xF0\x9F\x93\xA4 Share Debug File"
                 end)
             end)
         end)
-        
         return overlay
     end
-    
     function UI.createDiscordIcon(parent, position, size, zIndex)
-        local DISCORD_URL = "https://discord.gg/Nhw6G2R9xy
+        local DISCORD_URL = "https://discord.gg/W68jqAaAUk
         local DISCORD_IMG = getImageUrl("https://static.vecteezy.com/system/resources/previews/006/892/625/large_2x/discord-logo-icon-editorial-free-vector.jpg")
         zIndex = zIndex or 100
-        
         local container = Instance.new("ImageButton")
         container.Name = "DiscordBtn"
         container.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
@@ -3369,7 +2858,6 @@ _modules["ui"] = function()
         container.Parent = parent
         createCorner(container, 6)
         createStroke(container, Color3.fromRGB(120, 130, 255), 1.5)
-        
         container.MouseEnter:Connect(function()
             tween(container, {BackgroundColor3 = Color3.fromRGB(120, 130, 255)}, 0.15)
             tween(container, {Size = UDim2.new(0, 32, 0, 32)}, 0.1)
@@ -3378,7 +2866,6 @@ _modules["ui"] = function()
             tween(container, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.15)
             tween(container, {Size = size or UDim2.new(0, 28, 0, 28)}, 0.1)
         end)
-        
         container.MouseButton1Click:Connect(function()
             pcall(function()
                 if setclipboard then
@@ -3388,20 +2875,17 @@ _modules["ui"] = function()
                 end
             end)
             tween(container, {BackgroundColor3 = Color3.fromRGB(80, 200, 120)}, 0.15)
-            if Utils then Utils.notify("LeoHub", "[+] Discord invite copied!") end
+            if Utils then Utils.notify("LeoBounty", "[+] Discord invite copied!") end
             task.delay(1, function()
                 if container and container.Parent then
                     tween(container, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.3)
                 end
             end)
         end)
-        
         return container
     end
-    
     function UI.createMinimizeBtn(parent, position, size, zIndex)
         zIndex = zIndex or 100
-        
         local minBtn = Instance.new("TextButton")
         minBtn.Name = "MinimizeBtn"
         minBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
@@ -3415,7 +2899,6 @@ _modules["ui"] = function()
         minBtn.Parent = parent
         createCorner(minBtn, 6)
         createStroke(minBtn, Color3.fromRGB(100, 100, 120), 1)
-        
         local dashLabel = Instance.new("TextLabel")
         dashLabel.Name = "Dash"
         dashLabel.BackgroundTransparency = 1
@@ -3426,25 +2909,22 @@ _modules["ui"] = function()
         dashLabel.Font = Enum.Font.GothamBold
         dashLabel.ZIndex = zIndex + 1
         dashLabel.Parent = minBtn
-        
         minBtn.MouseEnter:Connect(function()
             tween(minBtn, {BackgroundColor3 = Color3.fromRGB(90, 90, 105)}, 0.15)
         end)
         minBtn.MouseLeave:Connect(function()
             tween(minBtn, {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}, 0.15)
         end)
-        
         minBtn.MouseButton1Click:Connect(function()
             if UI.MainFrame then
                 local isVisible = UI.MainFrame.Visible
                 if isVisible then
                     UI.MainFrame.Visible = false
                     if UI.Blur then UI.Blur.Size = 0 end
-                    
                     if not UI._floatingPill or not UI._floatingPill.Parent then
                         local screenGui = UI.Gui
                         local pill = Instance.new("ImageButton")
-                        pill.Name = "LeoHubFloatingPill"
+                        pill.Name = "LeoFloatingPill"
                         pill.BackgroundColor3 = Colors.Background
                         pill.BackgroundTransparency = 0.1
                         pill.BorderSizePixel = 0
@@ -3458,14 +2938,12 @@ _modules["ui"] = function()
                         pill.Parent = screenGui
                         createCorner(pill, 18)
                         createStroke(pill, Colors.BorderLight, 1.5)
-                        
                         pill.MouseEnter:Connect(function()
                             tween(pill, {BackgroundTransparency = 0, Size = UDim2.new(0, 48, 0, 48)}, 0.15)
                         end)
                         pill.MouseLeave:Connect(function()
                             tween(pill, {BackgroundTransparency = 0.1, Size = UDim2.new(0, 42, 0, 42)}, 0.15)
                         end)
-                        
                         pill.MouseButton1Click:Connect(function()
                             if UI.MainFrame then
                                 UI.MainFrame.Visible = true
@@ -3474,7 +2952,6 @@ _modules["ui"] = function()
                             pill:Destroy()
                             UI._floatingPill = nil
                         end)
-                        
                         local pillDragging, pillDragStart, pillStartPos = false, nil, nil
                         pill.InputBegan:Connect(function(input)
                             if input.UserInputType == Enum.UserInputType.MouseButton1 or
@@ -3499,7 +2976,6 @@ _modules["ui"] = function()
                             end
                         end)
                         table.insert(UI.Connections, pillDragConn)
-                        
                         UI._floatingPill = pill
                     end
                 else
@@ -3512,10 +2988,8 @@ _modules["ui"] = function()
                 end
             end
         end)
-        
         return minBtn
     end
-    
     local function createDashboard(parent)
         local dashboard = Instance.new("Frame")
         dashboard.Name = "Dashboard"
@@ -3525,29 +2999,23 @@ _modules["ui"] = function()
         dashboard.ClipsDescendants = true
         dashboard.Visible = false
         dashboard.Parent = parent
-        
         local p = Layout.padding
         local gap = Layout.gap
-        
         local faction = Config and Config.get("Faction") or "Pirate"
         local statLabel = (faction == "Marine") and "Honor" or "Bounty"
         local statPrefix = (faction == "Marine") and "★" or "$"
-        
         local headerContainer = Instance.new("Frame")
         headerContainer.Name = "HeaderContainer"
         headerContainer.BackgroundTransparency = 1
         headerContainer.Position = UDim2.new(0, p, 0, p)
         headerContainer.Size = UDim2.new(1, -p*2, 0, 24)
         headerContainer.Parent = dashboard
-        
-        local header = createText(headerContainer, "LeoHub v6.5", {
+        local header = createText(headerContainer, "LeoBounty v6.5", {
             position = UDim2.new(0, 0, 0, 0),
             size = UDim2.new(1, -30, 1, 0),
             variant = "Title",
         })
-        
         local stats = Utils and Utils.loadStats() or {}
-        
         local sessionLabel = createText(dashboard, "Session: 00:00:00", {
             name = "SessionTimer",
             position = UDim2.new(0, p, 0, p + 26),
@@ -3555,7 +3023,6 @@ _modules["ui"] = function()
             variant = "Small",
             color = Colors.TextSecondary,
         })
-        
         local keyTimerLabel = createText(dashboard, "", {
             name = "KeyTimer",
             position = UDim2.new(0.5, 0, 0, p + 26),
@@ -3564,7 +3031,6 @@ _modules["ui"] = function()
             color = Colors.Primary,
             align = Enum.TextXAlignment.Right,
         })
-        
         local keyBarBg = Instance.new("Frame")
         keyBarBg.Name = "KeyBarBg"
         keyBarBg.BackgroundColor3 = Colors.SurfaceLight
@@ -3573,7 +3039,6 @@ _modules["ui"] = function()
         keyBarBg.Size = UDim2.new(1, -p*2, 0, 3)
         keyBarBg.Parent = dashboard
         createCorner(keyBarBg, 2)
-        
         local keyBarFill = Instance.new("Frame")
         keyBarFill.Name = "Fill"
         keyBarFill.BackgroundColor3 = Colors.Primary
@@ -3581,15 +3046,12 @@ _modules["ui"] = function()
         keyBarFill.Size = UDim2.new(1, 0, 1, 0)
         keyBarFill.Parent = keyBarBg
         createCorner(keyBarFill, 2)
-        
         local keyExpiryTotalSeconds = 0
         local keyExpiryStarted = 0
-        
         if Auth and Auth.KeyData and Auth.KeyData.expiresIn then
             keyExpiryTotalSeconds = Auth.KeyData.expiresIn
             keyExpiryStarted = os.time()
         end
-        
         local keyTimerConnection = RunService.Heartbeat:Connect(function()
             if keyExpiryTotalSeconds <= 0 then
                 keyTimerLabel.Text = "∞ PERMANENT"
@@ -3599,10 +3061,8 @@ _modules["ui"] = function()
                 keyBarBg.Visible = true
                 return
             end
-            
             local elapsed = os.time() - keyExpiryStarted
             local remaining = keyExpiryTotalSeconds - elapsed
-            
             if remaining <= 0 then
                 keyTimerLabel.Text = "Expired"
                 keyTimerLabel.TextColor3 = Colors.Error
@@ -3612,58 +3072,48 @@ _modules["ui"] = function()
                 local m = math.floor((remaining % 3600) / 60)
                 local s = remaining % 60
                 keyTimerLabel.Text = string.format("%02d:%02d:%02d", h, m, s)
-                
-                if remaining < 300 then -- 5 mins
+                if remaining < 300 then 
                     keyTimerLabel.TextColor3 = Colors.Error
                     keyBarFill.BackgroundColor3 = Colors.Error
-                elseif remaining < 3600 then -- 1 hour
+                elseif remaining < 3600 then 
                     keyTimerLabel.TextColor3 = Colors.Warning
                     keyBarFill.BackgroundColor3 = Colors.Warning
                 else
                     keyTimerLabel.TextColor3 = Colors.Primary
                     keyBarFill.BackgroundColor3 = Colors.Primary
                 end
-                
                 local alpha = math.clamp(remaining / keyExpiryTotalSeconds, 0, 1)
                 keyBarFill.Size = UDim2.new(alpha, 0, 1, 0)
             end
         end)
-        
         table.insert(UI.Connections, keyTimerConnection)
-        
         dashboard.Destroying:Connect(function()
             if keyTimerConnection then keyTimerConnection:Disconnect() end
         end)
-        
         local statsContainer = Instance.new("Frame")
         statsContainer.Name = "StatsGrid"
         statsContainer.BackgroundTransparency = 1
         statsContainer.Position = UDim2.new(0, p, 0, p + 52)
         statsContainer.Size = UDim2.new(1, -p*2, 0, 110)
         statsContainer.Parent = dashboard
-        
         local killsCard, killsValue = createStatCard(statsContainer, "Kills", tostring(stats.sessionKills or 0),
             UDim2.new(0, 0, 0, 0), UDim2.new(0.5, -gap/2, 0, 48),
             "+", Colors.Error)
         killsCard.Name = "KillsCard"
-        
         local bountyIcon = (statLabel == "Honor") and "⚓︎" or "₿"
         local bountyAccent = (statLabel == "Honor") and Color3.fromRGB(70, 130, 220) or Color3.fromRGB(230, 180, 50)
         local bountyCard, bountyValue = createStatCard(statsContainer, statLabel, Utils and Utils.formatNumber(stats.sessionBounty or 0) or "0",
             UDim2.new(0.5, gap/2, 0, 0), UDim2.new(0.5, -gap/2, 0, 48),
             bountyIcon, bountyAccent)
         bountyCard.Name = "BountyCard"
-        
         local timeCard, timeValue = createStatCard(statsContainer, "Time", "0h 0m",
             UDim2.new(0, 0, 0, 58), UDim2.new(0.5, -gap/2, 0, 48),
             "T", Color3.fromRGB(80, 200, 200))
         timeCard.Name = "TimeCard"
-        
         local hopsCard, hopsValue = createStatCard(statsContainer, "Hops", "0",
             UDim2.new(0.5, gap/2, 0, 58), UDim2.new(0.5, -gap/2, 0, 48),
             ">", Color3.fromRGB(120, 200, 120))
         hopsCard.Name = "HopsCard"
-        
         local killFeedContainer = Instance.new("Frame")
         killFeedContainer.Name = "KillFeedContainer"
         killFeedContainer.BackgroundColor3 = Colors.SurfaceLight
@@ -3673,14 +3123,12 @@ _modules["ui"] = function()
         killFeedContainer.ClipsDescendants = true
         killFeedContainer.Parent = dashboard
         createCorner(killFeedContainer, 6)
-        
         local feedHeader = createText(killFeedContainer, "Kill Feed", {
             position = UDim2.new(0, 8, 0, 4),
             size = UDim2.new(1, -16, 0, 16),
             variant = "Small",
             color = Colors.TextMuted,
         })
-        
         local killFeedScroll = Instance.new("ScrollingFrame")
         killFeedScroll.Name = "KillFeedScroll"
         killFeedScroll.BackgroundTransparency = 1
@@ -3691,12 +3139,10 @@ _modules["ui"] = function()
         killFeedScroll.ScrollBarThickness = 2
         killFeedScroll.ScrollBarImageColor3 = Colors.TextMuted
         killFeedScroll.Parent = killFeedContainer
-        
         local feedLayout = Instance.new("UIListLayout")
         feedLayout.SortOrder = Enum.SortOrder.LayoutOrder
         feedLayout.Padding = UDim.new(0, 2)
         feedLayout.Parent = killFeedScroll
-        
         if stats.killFeed then
             for _, entry in ipairs(stats.killFeed) do
                 local killEntry = Instance.new("Frame")
@@ -3704,10 +3150,9 @@ _modules["ui"] = function()
                 killEntry.BackgroundColor3 = Colors.Surface
                 killEntry.BackgroundTransparency = 0.3
                 killEntry.Size = UDim2.new(1, 0, 0, 22)
-                killEntry.LayoutOrder = -(entry.time or os.time()) -- Sort by time descending
+                killEntry.LayoutOrder = -(entry.time or os.time()) 
                 killEntry.Parent = killFeedScroll
                 createCorner(killEntry, 4)
-                
                 local entryText = Instance.new("TextLabel")
                 entryText.BackgroundTransparency = 1
                 entryText.Position = UDim2.new(0, 6, 0, 0)
@@ -3720,38 +3165,31 @@ _modules["ui"] = function()
                 entryText.Parent = killEntry
             end
         end
-        
         local btnContainer = Instance.new("Frame")
         btnContainer.Name = "ControlsContainer"
         btnContainer.BackgroundTransparency = 1
         btnContainer.Position = UDim2.new(0, p, 1, -p - 36)
         btnContainer.Size = UDim2.new(1, -p*2, 0, 36)
         btnContainer.Parent = dashboard
-        
         local hopBtn = createButton(btnContainer, "Hop", 
             UDim2.new(0, 0, 0, 0), UDim2.new(0.333, -gap*2/3, 1, 0),
             {color = Colors.SurfaceLight, hoverColor = Colors.Border})
-        
-        
         local killGfxBtn = createButton(btnContainer, "Kill GFX", 
             UDim2.new(0.333, gap/3, 0, 0), UDim2.new(0.333, -gap*2/3, 1, 0),
             {color = Color3.fromRGB(80, 80, 80), hoverColor = Color3.fromRGB(90, 90, 90)})
         killGfxBtn.TextColor3 = Colors.TextMuted
-        
         local stopBtn = createButton(btnContainer, "Stop", 
             UDim2.new(0.666, gap/3, 0, 0), UDim2.new(0.334, -gap/3, 1, 0),
             {color = Colors.Error, hoverColor = Color3.fromRGB(180, 60, 60)})
-        
         killGfxBtn.MouseButton1Click:Connect(function()
             killGfxBtn.Text = "Soon™"
-            if Utils then Utils.notify("LeoHub", "Kill GFX is coming soon!") end
+            if Utils then Utils.notify("LeoBounty", "Kill GFX is coming soon!") end
             task.delay(2, function()
                 if killGfxBtn and killGfxBtn.Parent then
                     killGfxBtn.Text = "Kill GFX"
                 end
             end)
         end)
-        
         UI.Elements.killsValue = killsValue
         UI.Elements.bountyValue = bountyValue
         UI.Elements.timeValue = timeValue
@@ -3768,50 +3206,39 @@ _modules["ui"] = function()
         local statsConnection = RunService.Heartbeat:Connect(function()
             if os.time() - lastUpdate >= 1 then
                 lastUpdate = os.time()
-                
                 local duration = os.time() - (stats.sessionStartTime or os.time())
                 local h = math.floor(duration / 3600)
                 local m = math.floor((duration % 3600) / 60)
                 local s = duration % 60
                 local timeStr = string.format("%dh %dm", h, m)
                 local sessionStr = string.format("Session: %02d:%02d:%02d", h, m, s)
-                
                 if timeValue then timeValue.Text = timeStr end
                 if sessionLabel then sessionLabel.Text = sessionStr end
                 if hopsValue then hopsValue.Text = tostring(stats.serversHopped or 0) end
             end
         end)
         table.insert(UI.Connections, statsConnection)
-        
         dashboard.Destroying:Connect(function()
             if statsConnection then statsConnection:Disconnect() end
         end)
-        
         return dashboard
     end
-    
     function UI.init(utilsModule, configModule, authModule)
         Utils = utilsModule
         Config = configModule
         Auth = authModule
-        
         if Utils then UI.Stats = Utils.loadStats() end
-        
         pcall(function()
             local uis = game:GetService("UserInputService")
             local guiService = game:GetService("GuiService")
             local starterGui = game:GetService("StarterGui")
-            
             UI._isMobile = uis.TouchEnabled and not uis.KeyboardEnabled
-            
             if UI._isMobile then
                 pcall(function() uis.MouseIconEnabled = true end)
                 pcall(function() guiService.AutoSelectGuiEnabled = false end)
-                
                 pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false) end)
                 pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.SelfView, false) end)
                 pcall(function() guiService:SetEmotesMenuOpen(false) end)
-                
                 pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end)
                 pcall(function()
                     local vim = game:GetService("VirtualInputManager")
@@ -3821,17 +3248,13 @@ _modules["ui"] = function()
                         vim:SendKeyEvent(false, Enum.KeyCode.Unknown, false, game)
                     end
                 end)
-                
                 local viewport = workspace.CurrentCamera.ViewportSize
-                local baseW, baseH = 550, 380  -- Original design dimensions
-                
-                local scaleX = viewport.X / (baseW + 60)  -- add margin
+                local baseW, baseH = 550, 380  
+                local scaleX = viewport.X / (baseW + 60)  
                 local scaleY = viewport.Y / (baseH + 60)
                 local scaleFactor = math.min(scaleX, scaleY)
-                
                 scaleFactor = scaleFactor * 0.50
                 scaleFactor = math.clamp(scaleFactor, 0.45, 0.85)
-                
                 Layout.mainWidth = math.max(250, math.floor(baseW * scaleFactor))
                 Layout.mainHeight = math.max(180, math.floor(baseH * scaleFactor))
                 Layout.leftPanelWidth = math.max(80, math.floor(180 * scaleFactor))
@@ -3842,46 +3265,39 @@ _modules["ui"] = function()
                 Layout.maxWidth = Layout.mainWidth + 40
                 Layout.minHeight = math.max(160, Layout.mainHeight - 20)
                 Layout.maxHeight = Layout.mainHeight + 40
-                
                 FontSizes.Title = math.max(9, math.floor(18 * scaleFactor))
                 FontSizes.Heading = math.max(8, math.floor(14 * scaleFactor))
                 FontSizes.Body = math.max(7, math.floor(13 * scaleFactor))
                 FontSizes.Small = math.max(6, math.floor(11 * scaleFactor))
             end
         end)
-        
         if Utils and Config and Config.get("v4Sound") then
             task.spawn(function()
                 local customSoundUrl = Config.get("SoundUrl")
                 Utils.downloadBankaiSound(customSoundUrl)
             end)
         end
-        
         pcall(function()
-            if lp.PlayerGui:FindFirstChild("LeoHubUI") then
-                lp.PlayerGui.LeoHubUI:Destroy()
+            if lp.PlayerGui:FindFirstChild("LeoBountyUI") then
+                lp.PlayerGui.LeoBountyUI:Destroy()
             end
-            if CoreGui:FindFirstChild("LeoHubUI") then
-                CoreGui.LeoHubUI:Destroy()
+            if CoreGui:FindFirstChild("LeoBountyUI") then
+                CoreGui.LeoBountyUI:Destroy()
             end
-            if Lighting:FindFirstChild("LeoHubBlur") then
-                Lighting.LeoHubBlur:Destroy()
+            if Lighting:FindFirstChild("LeoBountyBlur") then
+                Lighting.LeoBountyBlur:Destroy()
             end
         end)
-        
         local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "LeoHubUI"
+        screenGui.Name = "LeoBountyUI"
         screenGui.ResetOnSpawn = false
         screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
         screenGui.IgnoreGuiInset = true
-        
         pcall(function() screenGui.Parent = CoreGui end)
         if not screenGui.Parent then
             screenGui.Parent = lp.PlayerGui
         end
-        
         UI.Gui = screenGui
-        
         local splashFrame = Instance.new("Frame")
         splashFrame.Name = "SplashScreen"
         splashFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 18)
@@ -3891,7 +3307,6 @@ _modules["ui"] = function()
         splashFrame.ZIndex = 100
         splashFrame.ClipsDescendants = true
         splashFrame.Parent = screenGui
-        
         local bgGradient = Instance.new("UIGradient")
         bgGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 8, 25)),
@@ -3900,7 +3315,6 @@ _modules["ui"] = function()
         })
         bgGradient.Rotation = 45
         bgGradient.Parent = splashFrame
-        
         local logoContainer = Instance.new("Frame")
         logoContainer.Name = "LogoContainer"
         logoContainer.BackgroundTransparency = 1
@@ -3909,7 +3323,6 @@ _modules["ui"] = function()
         logoContainer.Size = UDim2.new(0, 180, 0, 180)
         logoContainer.ZIndex = 102
         logoContainer.Parent = splashFrame
-        
         local NUM_DOTS = 12
         local dotRing = Instance.new("Frame")
         dotRing.Name = "DotRing"
@@ -3919,7 +3332,6 @@ _modules["ui"] = function()
         dotRing.Size = UDim2.new(1, 20, 1, 20)
         dotRing.ZIndex = 103
         dotRing.Parent = logoContainer
-        
         local dots = {}
         for i = 1, NUM_DOTS do
             local angle = (i - 1) * (2 * math.pi / NUM_DOTS)
@@ -3937,7 +3349,6 @@ _modules["ui"] = function()
             createCorner(dot, dotSize)
             dots[i] = dot
         end
-        
         local logoGlow = Instance.new("ImageLabel")
         logoGlow.Name = "LogoGlow"
         logoGlow.BackgroundTransparency = 1
@@ -3950,7 +3361,6 @@ _modules["ui"] = function()
         logoGlow.ScaleType = Enum.ScaleType.Fit
         logoGlow.ZIndex = 101
         logoGlow.Parent = logoContainer
-        
         local splashLogo = Instance.new("ImageLabel")
         splashLogo.Name = "SplashLogo"
         splashLogo.BackgroundTransparency = 1
@@ -3962,7 +3372,6 @@ _modules["ui"] = function()
         splashLogo.ScaleType = Enum.ScaleType.Fit
         splashLogo.ZIndex = 105
         splashLogo.Parent = logoContainer
-        
         local stageText = Instance.new("TextLabel")
         stageText.Name = "StageText"
         stageText.BackgroundTransparency = 1
@@ -3976,7 +3385,6 @@ _modules["ui"] = function()
         stageText.TextTransparency = 1
         stageText.ZIndex = 106
         stageText.Parent = splashFrame
-        
         local progressContainer = Instance.new("Frame")
         progressContainer.Name = "ProgressBar"
         progressContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
@@ -3988,7 +3396,6 @@ _modules["ui"] = function()
         progressContainer.ZIndex = 106
         progressContainer.Parent = splashFrame
         createCorner(progressContainer, 2)
-        
         local progressFill = Instance.new("Frame")
         progressFill.Name = "Fill"
         progressFill.BackgroundColor3 = Colors.Primary
@@ -3997,14 +3404,12 @@ _modules["ui"] = function()
         progressFill.ZIndex = 107
         progressFill.Parent = progressContainer
         createCorner(progressFill, 2)
-        
         local progressGradient = Instance.new("UIGradient")
         progressGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Colors.Primary),
             ColorSequenceKeypoint.new(1, Colors.Accent or Color3.fromRGB(130, 100, 255)),
         })
         progressGradient.Parent = progressFill
-        
         local versionLabel = Instance.new("TextLabel")
         versionLabel.Name = "Version"
         versionLabel.BackgroundTransparency = 1
@@ -4012,13 +3417,12 @@ _modules["ui"] = function()
         versionLabel.Position = UDim2.new(0.5, 0, 1, -15)
         versionLabel.Size = UDim2.new(0, 200, 0, 14)
         versionLabel.Font = Enum.Font.Gotham
-        versionLabel.Text = "LeoHub v6.5"
+        versionLabel.Text = "LeoBounty v6.5"
         versionLabel.TextColor3 = Color3.fromRGB(60, 60, 90)
         versionLabel.TextSize = 10
         versionLabel.TextTransparency = 1
         versionLabel.ZIndex = 101
         versionLabel.Parent = splashFrame
-        
         local walterLabel = Instance.new("TextLabel")
         walterLabel.Name = "WalterSanchez"
         walterLabel.BackgroundTransparency = 1
@@ -4032,7 +3436,6 @@ _modules["ui"] = function()
         walterLabel.TextTransparency = 1
         walterLabel.ZIndex = 106
         walterLabel.Parent = splashFrame
-        
         local tipsLabel = Instance.new("TextLabel")
         tipsLabel.Name = "TipsLabel"
         tipsLabel.BackgroundTransparency = 1
@@ -4046,7 +3449,6 @@ _modules["ui"] = function()
         tipsLabel.TextTransparency = 1
         tipsLabel.ZIndex = 106
         tipsLabel.Parent = splashFrame
-        
         local tipsList = {
             "💡 TIP: use Angle v4 + Kit for No SUS KILLS",
             "💡 TIP: Set Region to Auto for fastest hops",
@@ -4054,7 +3456,6 @@ _modules["ui"] = function()
             "💡 TIP: Press RightControl to toggle UI",
             "💡 TIP: Enable AutoBuso for constant Haki",
         }
-        
         local splashActive = true
         task.spawn(function()
             for _ = 1, 20 do
@@ -4071,7 +3472,6 @@ _modules["ui"] = function()
                     particle.ZIndex = 101
                     particle.Parent = splashFrame
                     createCorner(particle, pSize)
-                    
                     local targetY = math.random(-20, 30) / 100
                     local duration = math.random(20, 40) / 10
                     tween(particle, {
@@ -4085,7 +3485,6 @@ _modules["ui"] = function()
                 task.wait(math.random(10, 25) / 100)
             end
         end)
-        
         task.spawn(function()
             local rotation = 0
             while splashActive and splashFrame.Parent do
@@ -4098,7 +3497,6 @@ _modules["ui"] = function()
                 task.wait(1/30)
             end
         end)
-        
         task.spawn(function()
             while splashActive and splashFrame.Parent do
                 tween(logoGlow, {ImageTransparency = 0.6, Size = UDim2.new(0, 150, 0, 150)}, 1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
@@ -4107,7 +3505,6 @@ _modules["ui"] = function()
                 task.wait(1)
             end
         end)
-        
         task.spawn(function()
             local rot = 45
             while splashActive and splashFrame.Parent do
@@ -4116,7 +3513,6 @@ _modules["ui"] = function()
                 task.wait(1/15)
             end
         end)
-        
         local stages = {
             {text = "Initializing...", progress = 0.1},
             {text = "Loading Modules...", progress = 0.3},
@@ -4125,13 +3521,11 @@ _modules["ui"] = function()
             {text = "Almost Ready...", progress = 0.95},
             {text = "Ready!", progress = 1.0},
         }
-        
         tween(splashLogo, {ImageTransparency = 0}, 0.6)
         tween(stageText, {TextTransparency = 0.2}, 0.6)
         tween(versionLabel, {TextTransparency = 0.5}, 1.5)
         tween(walterLabel, {TextTransparency = 0}, 0.8)
         tween(tipsLabel, {TextTransparency = 0.3}, 1.0)
-        
         task.spawn(function()
             local tipIndex = 1
             while splashActive do
@@ -4140,7 +3534,6 @@ _modules["ui"] = function()
                 task.wait(1.5)
             end
         end)
-        
         task.spawn(function()
             for i, stage in ipairs(stages) do
                 if not splashActive then break end
@@ -4149,16 +3542,13 @@ _modules["ui"] = function()
                 task.wait(0.55)
             end
         end)
-        
         if Utils and Config and Config.get("v4Sound") then
             task.spawn(function()
                 local customSoundUrl = Config.get("SoundUrl")
                 Utils.playBankaiSound(customSoundUrl)
             end)
         end
-        
         task.wait(3.5)
-        
         splashActive = false
         tween(splashFrame, {BackgroundTransparency = 1}, 0.6)
         tween(splashLogo, {ImageTransparency = 1, Size = UDim2.new(0, 140, 0, 140)}, 0.5)
@@ -4174,14 +3564,12 @@ _modules["ui"] = function()
         end
         task.wait(0.7)
         splashFrame:Destroy()
-        
         local blur = Instance.new("BlurEffect")
-        blur.Name = "LeoHubBlur"
+        blur.Name = "LeoBountyBlur"
         blur.Size = 0
         blur.Parent = Lighting
         UI.Blur = blur
         tween(blur, {Size = 6}, 0.5)
-        
         local mainFrame = Instance.new("Frame")
         mainFrame.Name = "MainFrame"
         mainFrame.BackgroundColor3 = Colors.Background
@@ -4193,12 +3581,9 @@ _modules["ui"] = function()
         mainFrame.Parent = screenGui
         createCorner(mainFrame, Layout.radius)
         createStroke(mainFrame, Colors.Border)
-        
         UI.MainFrame = mainFrame
-        
         do
             local isMobile = UI._isMobile
-            
             local island = Instance.new("Frame")
             island.Name = "DynamicIsland"
             island.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
@@ -4210,17 +3595,14 @@ _modules["ui"] = function()
             island.ZIndex = 200
             island.ClipsDescendants = true
             island.Parent = screenGui
-            
             local islandCorner = Instance.new("UICorner")
             islandCorner.CornerRadius = UDim.new(0, 15)
             islandCorner.Parent = island
-            
             local islandStroke = Instance.new("UIStroke")
             islandStroke.Color = Color3.fromRGB(80, 80, 100)
             islandStroke.Thickness = 1
             islandStroke.Transparency = 0.5
             islandStroke.Parent = island
-            
             local islandGradient = Instance.new("UIGradient")
             islandGradient.Color = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 42, 55)),
@@ -4230,7 +3612,6 @@ _modules["ui"] = function()
             })
             islandGradient.Rotation = 135
             islandGradient.Parent = island
-            
             local highlightOverlay = Instance.new("Frame")
             highlightOverlay.Name = "HighlightOverlay"
             highlightOverlay.BackgroundTransparency = 1
@@ -4240,7 +3621,6 @@ _modules["ui"] = function()
             highlightOverlay.Size = island.Size
             highlightOverlay.ZIndex = 201
             highlightOverlay.Parent = screenGui
-            
             local glassHighlight = Instance.new("Frame")
             glassHighlight.Name = "GlassHighlight"
             glassHighlight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -4252,7 +3632,6 @@ _modules["ui"] = function()
             local highlightCorner = Instance.new("UICorner")
             highlightCorner.CornerRadius = UDim.new(0, 15)
             highlightCorner.Parent = glassHighlight
-            
             local function createMetric(name, label, order)
                 local container = Instance.new("Frame")
                 container.Name = name
@@ -4260,7 +3639,6 @@ _modules["ui"] = function()
                 container.LayoutOrder = order
                 container.Size = UDim2.new(0, isMobile and 62 or 78, 1, 0)
                 container.Parent = island
-                
                 local labelText = Instance.new("TextLabel")
                 labelText.Name = "Label"
                 labelText.BackgroundTransparency = 1
@@ -4273,7 +3651,6 @@ _modules["ui"] = function()
                 labelText.TextXAlignment = Enum.TextXAlignment.Center
                 labelText.ZIndex = 202
                 labelText.Parent = container
-                
                 local valueLabel = Instance.new("TextLabel")
                 valueLabel.Name = "Value"
                 valueLabel.BackgroundTransparency = 1
@@ -4286,10 +3663,8 @@ _modules["ui"] = function()
                 valueLabel.TextXAlignment = Enum.TextXAlignment.Center
                 valueLabel.ZIndex = 202
                 valueLabel.Parent = container
-                
                 return valueLabel
             end
-            
             local islandLayout = Instance.new("UIListLayout")
             islandLayout.FillDirection = Enum.FillDirection.Horizontal
             islandLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -4297,7 +3672,6 @@ _modules["ui"] = function()
             islandLayout.SortOrder = Enum.SortOrder.LayoutOrder
             islandLayout.Padding = UDim.new(0, 0)
             islandLayout.Parent = island
-            
             local function createDivider(order)
                 local div = Instance.new("Frame")
                 div.Name = "Div"
@@ -4308,13 +3682,11 @@ _modules["ui"] = function()
                 div.LayoutOrder = order
                 div.Parent = island
             end
-            
             local pingValue = createMetric("Ping", "PING", 1)
             createDivider(2)
             local lossValue = createMetric("Loss", "LOSS", 3)
             createDivider(4)
             local fpsValue = createMetric("FPS", "FPS", 5)
-            
             local function getColor(value, goodMax, warnMax)
                 if value <= goodMax then
                     return Color3.fromRGB(52, 211, 153)
@@ -4324,33 +3696,25 @@ _modules["ui"] = function()
                     return Color3.fromRGB(239, 68, 68)
                 end
             end
-            
             if isMobile then
                 createDivider(6)
-                
                 local resizeBtnContainer = Instance.new("Frame")
                 resizeBtnContainer.Name = "ResizeButtons"
                 resizeBtnContainer.BackgroundTransparency = 1
                 resizeBtnContainer.Size = UDim2.new(0, 50, 1, 0)
                 resizeBtnContainer.LayoutOrder = 7
                 resizeBtnContainer.Parent = island
-                
                 local resizeLayout = Instance.new("UIListLayout")
                 resizeLayout.FillDirection = Enum.FillDirection.Horizontal
                 resizeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
                 resizeLayout.VerticalAlignment = Enum.VerticalAlignment.Center
                 resizeLayout.Padding = UDim.new(0, 2)
                 resizeLayout.Parent = resizeBtnContainer
-                
                 local sizes = {
                     {label = "S", scale = 0.45},
                     {label = "M", scale = 0.60},
                     {label = "L", scale = 0.80},
                 }
-                
-                local sizeL_btn = nil
-                local sizeL_btn = nil
-                local sizeL_btn = nil
                 for i, sizeOpt in ipairs(sizes) do
                     local btn = Instance.new("TextButton")
                     btn.Name = "Size" .. sizeOpt.label
@@ -4365,22 +3729,17 @@ _modules["ui"] = function()
                     btn.LayoutOrder = i
                     btn.ZIndex = 203
                     btn.Parent = resizeBtnContainer
-                    
                     local btnCorner = Instance.new("UICorner")
                     btnCorner.CornerRadius = UDim.new(0, 4)
                     btnCorner.Parent = btn
-                    
-                    if sizeOpt.label == "L" then sizeL_btn = btn end
                     btn.MouseButton1Click:Connect(function()
                         if UI.MainFrame then
                             local baseW, baseH = 550, 380
                             local newW = math.floor(baseW * sizeOpt.scale)
                             local newH = math.floor(baseH * sizeOpt.scale)
                             local newLeftW = math.max(80, math.floor(180 * sizeOpt.scale))
-                            
                             tween(UI.MainFrame, {Size = UDim2.new(0, newW, 0, newH)}, 0.25)
                             task.wait(0.3)
-                            
                             local leftPanel = UI.MainFrame:FindFirstChild("LeftPanel")
                             if leftPanel then
                                 leftPanel.Size = UDim2.new(0, newLeftW, 1, 0)
@@ -4396,36 +3755,29 @@ _modules["ui"] = function()
                                 dragHandle.Size = UDim2.new(1, -newLeftW, 0, 40)
                             end
                         end
-                        
                         tween(btn, {BackgroundColor3 = Color3.fromRGB(52, 211, 153)}, 0.1)
                         task.delay(0.3, function()
                             tween(btn, {BackgroundColor3 = Color3.fromRGB(50, 52, 65)}, 0.2)
                         end)
                     end)
                 end
-                
                 island.Size = UDim2.new(0, 280, 0, 30)
             end
-            
             task.spawn(function()
                 local frameCount = 0
                 local lastTime = tick()
                 local highSendWarnedAt = 0
-                
                 local fpsConn = RunService.Heartbeat:Connect(function()
                     frameCount = frameCount + 1
                 end)
                 table.insert(UI.Connections, fpsConn)
-                
                 while screenGui and screenGui.Parent do
                     task.wait(0.5)
-                    
                     local now = tick()
                     local elapsed = now - lastTime
                     local currentFps = math.floor(frameCount / math.max(elapsed, 0.001))
                     frameCount = 0
                     lastTime = now
-                    
                     local ping = 0
                     pcall(function()
                         local ps = game:GetService("Stats"):FindFirstChild("PerformanceStats")
@@ -4456,7 +3808,6 @@ _modules["ui"] = function()
                             end
                         end)
                     end
-                    
                     local packetLoss = 0
                     pcall(function()
                         local network = game:GetService("Stats"):FindFirstChild("Network")
@@ -4468,7 +3819,6 @@ _modules["ui"] = function()
                             end
                         end
                     end)
-                    
                     local sendRate, recvRate = 0, 0
                     pcall(function()
                         local network = game:GetService("Stats"):FindFirstChild("Network")
@@ -4477,12 +3827,11 @@ _modules["ui"] = function()
                             if si then
                                 local sent = si:FindFirstChild("Data Send")
                                 local recv = si:FindFirstChild("Data Receive")
-                                if sent then sendRate = sent:GetValue() end  -- KB/s
+                                if sent then sendRate = sent:GetValue() end  
                                 if recv then recvRate = recv:GetValue() end
                             end
                         end
                     end)
-                    
                     if sendRate > 100 and (now - highSendWarnedAt) > 10 then
                         highSendWarnedAt = now
                         if UI and UI.setStatus then
@@ -4495,24 +3844,18 @@ _modules["ui"] = function()
                             end)
                         end)
                     end
-                    
                     pingValue.Text = ping .. "ms"
                     pingValue.TextColor3 = getColor(ping, 80, 150)
-                    
                     lossValue.Text = string.format("%.1f%%", packetLoss)
                     lossValue.TextColor3 = getColor(packetLoss, 1, 5)
-                    
                     fpsValue.Text = tostring(currentFps)
                     fpsValue.TextColor3 = getColor(60 - currentFps, 0, 30)
                 end
             end)
-            
             UI.DynamicIsland = island
         end
-        
-        local configBgUrl = (Config and Config.get("Background")) or "https://www.nexusdevs.fun/assets/banners/hero_banner.webp"
-        local bgAsset = getImageUrl(configBgUrl, true) -- force re-download every time
-        
+        local configBgUrl = (Config and Config.get("Background")) or ""
+        local bgAsset = getImageUrl(configBgUrl, true) 
         local bgImage = Instance.new("ImageLabel")
         bgImage.Name = "FullBackground"
         bgImage.BackgroundTransparency = 1
@@ -4523,10 +3866,8 @@ _modules["ui"] = function()
         bgImage.ZIndex = 1
         bgImage.Parent = mainFrame
         createCorner(bgImage, Layout.radius)
-        
         UI.BackgroundImage = bgImage
         UI.BackgroundUrl = configBgUrl
-        
         local glassOverlay = Instance.new("Frame")
         glassOverlay.Name = "GlassOverlay"
         glassOverlay.BackgroundColor3 = Colors.Background
@@ -4537,7 +3878,6 @@ _modules["ui"] = function()
         glassOverlay.ZIndex = 2
         glassOverlay.Parent = mainFrame
         createCorner(glassOverlay, Layout.radius)
-        
         local dragHandle = Instance.new("Frame")
         dragHandle.Name = "DragHandle"
         dragHandle.BackgroundColor3 = Colors.SurfaceLight
@@ -4547,7 +3887,6 @@ _modules["ui"] = function()
         dragHandle.Size = UDim2.new(1, -Layout.leftPanelWidth, 0, 40)
         dragHandle.ZIndex = 100
         dragHandle.Parent = mainFrame
-        
         local dragIndicator = Instance.new("Frame")
         dragIndicator.Name = "Indicator"
         dragIndicator.BackgroundColor3 = Color3.fromRGB(160, 160, 180)
@@ -4557,29 +3896,24 @@ _modules["ui"] = function()
         dragIndicator.Size = UDim2.new(0, 50, 0, 5)
         dragIndicator.Parent = dragHandle
         createCorner(dragIndicator, 3)
-        
         task.defer(function()
             if UI.createMinimizeBtn then
                 UI.createMinimizeBtn(dragHandle, UDim2.new(1, -38, 0.5, -14), UDim2.new(0, 30, 0, 28), 105)
             end
         end)
-        
         task.defer(function()
             if UI.createDiscordIcon then
                 UI.createDiscordIcon(dragHandle, UDim2.new(1, -74, 0.5, -14), UDim2.new(0, 30, 0, 28), 105)
             end
         end)
-        
         do
             local dragging, dragStart, startPos = false, nil, nil
-            
             dragHandle.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or 
                    input.UserInputType == Enum.UserInputType.Touch then
                     dragging = true
                     dragStart = input.Position
                     startPos = mainFrame.Position
-                    
                     input.Changed:Connect(function()
                         if input.UserInputState == Enum.UserInputState.End then
                             dragging = false
@@ -4587,14 +3921,12 @@ _modules["ui"] = function()
                     end)
                 end
             end)
-            
             dragHandle.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or
                    input.UserInputType == Enum.UserInputType.Touch then
                     dragging = false
                 end
             end)
-            
             local dragConn = UserInputService.InputChanged:Connect(function(input)
                 if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
                                  input.UserInputType == Enum.UserInputType.Touch) then
@@ -4605,7 +3937,6 @@ _modules["ui"] = function()
             end)
             table.insert(UI.Connections, dragConn)
         end
-        
         do
             local resizeHandle = Instance.new("Frame")
             resizeHandle.Name = "ResizeHandle"
@@ -4616,14 +3947,12 @@ _modules["ui"] = function()
             resizeHandle.Size = UDim2.new(0, 16, 0, 16)
             resizeHandle.ZIndex = 150
             resizeHandle.Parent = mainFrame
-            
             local lineColors = {Colors.TextMuted, Colors.TextMuted, Colors.TextMuted}
             local linePositions = {
-                {x1 = 12, y1 = 16, x2 = 16, y2 = 12},  -- Bottom right (shortest)
-                {x1 = 7, y1 = 16, x2 = 16, y2 = 7},    -- Middle
-                {x1 = 2, y1 = 16, x2 = 16, y2 = 2},    -- Top left (longest)
+                {x1 = 12, y1 = 16, x2 = 16, y2 = 12},  
+                {x1 = 7, y1 = 16, x2 = 16, y2 = 7},    
+                {x1 = 2, y1 = 16, x2 = 16, y2 = 2},    
             }
-            
             for i = 1, 3 do
                 local line = Instance.new("Frame")
                 line.Name = "GripLine" .. i
@@ -4632,35 +3961,29 @@ _modules["ui"] = function()
                 line.BorderSizePixel = 0
                 line.Rotation = -45
                 line.AnchorPoint = Vector2.new(0.5, 0.5)
-                
                 local offset = (i - 1) * 4
                 line.Position = UDim2.new(1, -4 - offset, 1, -4 - offset)
                 line.Size = UDim2.new(0, 8 + (i * 2), 0, 2)
                 line.ZIndex = 151
                 line.Parent = resizeHandle
-                
                 local corner = Instance.new("UICorner")
                 corner.CornerRadius = UDim.new(0, 1)
                 corner.Parent = line
             end
-            
             local resizing = false
             local resizeStart = nil
             local startSize = nil
-            
             resizeHandle.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or
                    input.UserInputType == Enum.UserInputType.Touch then
                     resizing = true
                     resizeStart = input.Position
                     startSize = mainFrame.Size
-                    
                     for _, child in ipairs(resizeHandle:GetChildren()) do
                         if child:IsA("Frame") then
                             tween(child, {BackgroundTransparency = 0}, 0.1)
                         end
                     end
-                    
                     input.Changed:Connect(function()
                         if input.UserInputState == Enum.UserInputState.End then
                             resizing = false
@@ -4673,7 +3996,6 @@ _modules["ui"] = function()
                     end)
                 end
             end)
-            
             resizeHandle.InputEnded:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or
                    input.UserInputType == Enum.UserInputType.Touch then
@@ -4685,12 +4007,10 @@ _modules["ui"] = function()
                     end
                 end
             end)
-            
             local resizeConn = UserInputService.InputChanged:Connect(function(input)
                 if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or
                                 input.UserInputType == Enum.UserInputType.Touch) then
                     local delta = input.Position - resizeStart
-                    
                     local newWidth = math.clamp(
                         startSize.X.Offset + delta.X,
                         Layout.minWidth,
@@ -4701,24 +4021,19 @@ _modules["ui"] = function()
                         Layout.minHeight,
                         Layout.maxHeight
                     )
-                    
                     mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
-                    
                     local scaleX = newWidth / Layout.mainWidth
                     local newLeftWidth = math.floor(Layout.leftPanelWidth * scaleX)
                     newLeftWidth = math.clamp(newLeftWidth, 120, 250)
-                    
                     local leftPanel = mainFrame:FindFirstChild("LeftPanel")
                     if leftPanel then
                         leftPanel.Size = UDim2.new(0, newLeftWidth, 1, 0)
                     end
-                    
                     local rightPanel = mainFrame:FindFirstChild("RightPanel")
                     if rightPanel then
                         rightPanel.Position = UDim2.new(0, newLeftWidth, 0, 0)
                         rightPanel.Size = UDim2.new(1, -newLeftWidth, 1, 0)
                     end
-                    
                     local dragHandle = mainFrame:FindFirstChild("DragHandle")
                     if dragHandle then
                         dragHandle.Position = UDim2.new(0, newLeftWidth, 0, 0)
@@ -4727,7 +4042,6 @@ _modules["ui"] = function()
                 end
             end)
             table.insert(UI.Connections, resizeConn)
-            
             resizeHandle.MouseEnter:Connect(function()
                 for _, child in ipairs(resizeHandle:GetChildren()) do
                     if child:IsA("Frame") then
@@ -4745,7 +4059,6 @@ _modules["ui"] = function()
                 end
             end)
         end
-        
         local leftPanel = Instance.new("Frame")
         leftPanel.Name = "LeftPanel"
         leftPanel.BackgroundColor3 = Colors.Surface
@@ -4756,11 +4069,9 @@ _modules["ui"] = function()
         leftPanel.ClipsDescendants = true
         leftPanel.ZIndex = 10
         leftPanel.Parent = mainFrame
-        
         local leftCorner = Instance.new("UICorner")
         leftCorner.CornerRadius = UDim.new(0, Layout.radius)
         leftCorner.Parent = leftPanel
-        
         local profileContainer = Instance.new("Frame")
         profileContainer.Name = "ProfileContainer"
         profileContainer.BackgroundTransparency = 1
@@ -4768,7 +4079,6 @@ _modules["ui"] = function()
         profileContainer.Size = UDim2.new(1, -Layout.padding*2, 1, -Layout.padding*2)
         profileContainer.ZIndex = 15
         profileContainer.Parent = leftPanel
-        
         local hideProfile = Config.get("HideProfile")
         local avatarFrame = Instance.new("Frame")
         avatarFrame.Name = "AvatarFrame"
@@ -4781,14 +4091,12 @@ _modules["ui"] = function()
         avatarFrame.ZIndex = 16
         avatarFrame.Parent = profileContainer
         createCorner(avatarFrame, 40)
-        
         local avatarStroke = Instance.new("UIStroke")
         avatarStroke.Name = "RGBGlow"
         avatarStroke.Thickness = 2
         avatarStroke.Transparency = 0
         avatarStroke.Color = Colors.Primary
         avatarStroke.Parent = avatarFrame
-        
         task.spawn(function()
             local h = 0
             while avatarFrame.Parent do
@@ -4797,7 +4105,6 @@ _modules["ui"] = function()
                 task.wait(1/60)
             end
         end)
-        
         local avatarImage = Instance.new("ImageLabel")
         avatarImage.Name = "Avatar"
         avatarImage.BackgroundTransparency = 1
@@ -4811,7 +4118,6 @@ _modules["ui"] = function()
         avatarImage.ZIndex = 17
         avatarImage.Parent = avatarFrame
         createCorner(avatarImage, 40)
-        
         local usernameContainer = Instance.new("Frame")
         usernameContainer.Name = "UsernameContainer"
         usernameContainer.BackgroundTransparency = 1
@@ -4819,8 +4125,7 @@ _modules["ui"] = function()
         usernameContainer.Size = UDim2.new(1, 0, 0, 22)
         usernameContainer.ZIndex = 16
         usernameContainer.Parent = profileContainer
-        
-        local displayName = hideProfile and "Ryu" or lp.DisplayName
+        local displayName = hideProfile and "Leo Hub" or lp.DisplayName
         local usernameLabel = createText(usernameContainer, displayName, {
             position = UDim2.new(0, 0, 0, 0),
             size = UDim2.new(1, 0, 1, 0),
@@ -4829,10 +4134,9 @@ _modules["ui"] = function()
         })
         usernameLabel.TextXAlignment = Enum.TextXAlignment.Center
         usernameLabel.ZIndex = 17
-        
         local showTag = hideProfile or (lp.DisplayName ~= lp.Name)
         if showTag then
-            local tagText = hideProfile and "@RyuDaCatt" or ("@" .. lp.Name)
+            local tagText = hideProfile and "@LeoHub" or ("@" .. lp.Name)
             local userTag = createText(usernameContainer, tagText, {
                 position = UDim2.new(0, 0, 1, -2),
                 size = UDim2.new(1, 0, 0, 12),
@@ -4842,23 +4146,19 @@ _modules["ui"] = function()
             userTag.TextXAlignment = Enum.TextXAlignment.Center
             userTag.ZIndex = 17
         end
-        
         local currentFaction = Config and Config.get("Faction") or "Pirate"
         local factionPrefix = (currentFaction == "Marine") and "Honor: " or "Bounty: "
-        
         local statsContainer = Instance.new("Frame")
         statsContainer.Name = "StatsContainer"
         statsContainer.BackgroundTransparency = 1
         statsContainer.Position = UDim2.new(0, 0, 0, 125)
-        statsContainer.Size = UDim2.new(1, 0, 0, 50) -- Taller for stacked
+        statsContainer.Size = UDim2.new(1, 0, 0, 50) 
         statsContainer.ZIndex = 16
         statsContainer.Parent = profileContainer
-        
         local statsLayout = Instance.new("UIListLayout")
         statsLayout.SortOrder = Enum.SortOrder.LayoutOrder
         statsLayout.Padding = UDim.new(0, 4)
         statsLayout.Parent = statsContainer
-        
         local levelBadge = Instance.new("Frame")
         levelBadge.Name = "LevelBadge"
         levelBadge.BackgroundColor3 = Colors.Primary
@@ -4869,7 +4169,6 @@ _modules["ui"] = function()
         levelBadge.ZIndex = 17
         levelBadge.Parent = statsContainer
         createCorner(levelBadge, 5)
-        
         local levelLabel = createText(levelBadge, "Level: --", {
             position = UDim2.new(0, 0, 0, 0),
             size = UDim2.new(1, 0, 1, 0),
@@ -4879,7 +4178,6 @@ _modules["ui"] = function()
         levelLabel.TextXAlignment = Enum.TextXAlignment.Center
         levelLabel.ZIndex = 18
         UI.Elements.profileLevel = levelLabel
-        
         local bountyBadge = Instance.new("Frame")
         bountyBadge.Name = "BountyBadge"
         bountyBadge.BackgroundColor3 = (currentFaction == "Marine") and Colors.Primary or Colors.Success
@@ -4890,7 +4188,6 @@ _modules["ui"] = function()
         bountyBadge.ZIndex = 17
         bountyBadge.Parent = statsContainer
         createCorner(bountyBadge, 5)
-        
         local bountyLabel = createText(bountyBadge, factionPrefix .. "0", {
             position = UDim2.new(0, 0, 0, 0),
             size = UDim2.new(1, 0, 1, 0),
@@ -4900,11 +4197,9 @@ _modules["ui"] = function()
         bountyLabel.TextXAlignment = Enum.TextXAlignment.Center
         bountyLabel.ZIndex = 18
         UI.Elements.profileBounty = bountyLabel
-        
         task.spawn(function()
             local level = 0
             local bounty = 0
-            
             pcall(function()
                 local data = lp:FindFirstChild("Data")
                 if data then
@@ -4913,7 +4208,6 @@ _modules["ui"] = function()
                         level = levelValue.Value
                     end
                 end
-                
                 local leaderstats = lp:FindFirstChild("leaderstats")
                 if leaderstats then
                     local b = leaderstats:FindFirstChild("Bounty/Honor")
@@ -4922,11 +4216,9 @@ _modules["ui"] = function()
                     end
                 end
             end)
-            
             levelLabel.Text = "Lv: " .. tostring(level)
             bountyLabel.Text = factionPrefix .. formatNumber(bounty)
         end)
-        
         local separator = Instance.new("Frame")
         separator.Name = "Separator"
         separator.BackgroundColor3 = Colors.Border
@@ -4936,7 +4228,6 @@ _modules["ui"] = function()
         separator.Size = UDim2.new(0.7, 0, 0, 1)
         separator.ZIndex = 16
         separator.Parent = profileContainer
-        
         local targetContainer = Instance.new("Frame")
         targetContainer.Name = "TargetContainer"
         targetContainer.BackgroundTransparency = 1
@@ -4945,12 +4236,10 @@ _modules["ui"] = function()
         targetContainer.Size = UDim2.new(1, 0, 1, -targetY - 40)
         targetContainer.ZIndex = 16
         targetContainer.Parent = profileContainer
-        
         local leftLayout = Instance.new("UIListLayout")
         leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
         leftLayout.Padding = UDim.new(0, 4)
         leftLayout.Parent = targetContainer
-        
         local targetHeader = Instance.new("Frame")
         targetHeader.Name = "TargetHeader"
         targetHeader.BackgroundTransparency = 1
@@ -4958,7 +4247,6 @@ _modules["ui"] = function()
         targetHeader.LayoutOrder = 1
         targetHeader.ZIndex = 17
         targetHeader.Parent = targetContainer
-        
         local targetLabel = createText(targetHeader, "[ HUNTING ]", {
             position = UDim2.new(0, 0, 0, 0),
             size = UDim2.new(1, 0, 1, 0),
@@ -4967,7 +4255,6 @@ _modules["ui"] = function()
         })
         targetLabel.TextXAlignment = Enum.TextXAlignment.Left
         targetLabel.ZIndex = 18
-        
         local targetNameFrame = Instance.new("Frame")
         targetNameFrame.Name = "TargetNameFrame"
         targetNameFrame.BackgroundColor3 = Colors.SurfaceLight
@@ -4978,7 +4265,6 @@ _modules["ui"] = function()
         targetNameFrame.ZIndex = 17
         targetNameFrame.Parent = targetContainer
         createCorner(targetNameFrame, 4)
-        
         local profileTargetName = createText(targetNameFrame, "None", {
             position = UDim2.new(0, 8, 0, 0),
             size = UDim2.new(1, -16, 1, 0),
@@ -4988,7 +4274,6 @@ _modules["ui"] = function()
         profileTargetName.TextXAlignment = Enum.TextXAlignment.Left
         profileTargetName.ZIndex = 18
         UI.Elements.profileTargetName = profileTargetName
-        
         local targetLevelFrame = Instance.new("Frame")
         targetLevelFrame.Name = "TargetLevelFrame"
         targetLevelFrame.BackgroundColor3 = Colors.SurfaceLight
@@ -4999,7 +4284,6 @@ _modules["ui"] = function()
         targetLevelFrame.ZIndex = 17
         targetLevelFrame.Parent = targetContainer
         createCorner(targetLevelFrame, 4)
-        
         local profileTargetLevel = createText(targetLevelFrame, "Level: --", {
             position = UDim2.new(0, 8, 0, 0),
             size = UDim2.new(1, -16, 1, 0),
@@ -5009,14 +4293,12 @@ _modules["ui"] = function()
         profileTargetLevel.TextXAlignment = Enum.TextXAlignment.Left
         profileTargetLevel.ZIndex = 18
         UI.Elements.profileTargetLevel = profileTargetLevel
-        
         local spacer = Instance.new("Frame")
         spacer.Name = "Spacer"
         spacer.BackgroundTransparency = 1
         spacer.Size = UDim2.new(1, 0, 0, 10)
         spacer.LayoutOrder = 4
         spacer.Parent = targetContainer
-        
         local currentFaction = Config and Config.get("Faction") or "Pirate"
         local factionInfo = createText(targetContainer, "Faction: " .. currentFaction, {
             size = UDim2.new(1, 0, 0, 14),
@@ -5027,7 +4309,6 @@ _modules["ui"] = function()
         factionInfo.LayoutOrder = 5
         factionInfo.TextXAlignment = Enum.TextXAlignment.Left
         UI.Elements.profileFaction = factionInfo
-        
         local currentRegion = Config and Config.get("Region") or "Brazil"
         local regionInfo = createText(targetContainer, "Region: " .. currentRegion, {
             size = UDim2.new(1, 0, 0, 14),
@@ -5038,7 +4319,6 @@ _modules["ui"] = function()
         regionInfo.LayoutOrder = 6
         regionInfo.TextXAlignment = Enum.TextXAlignment.Left
         UI.Elements.profileRegion = regionInfo
-        
         local statusLabel = Instance.new("TextLabel")
         statusLabel.Name = "StatusLabel"
         statusLabel.BackgroundTransparency = 1
@@ -5052,21 +4332,19 @@ _modules["ui"] = function()
         statusLabel.ZIndex = 16
         statusLabel.Parent = profileContainer
         UI.Elements.statusLabel = statusLabel
-        
         local credits = Instance.new("TextLabel")
         credits.Name = "Credits"
         credits.BackgroundTransparency = 1
         credits.Position = UDim2.new(0, 0, 1, -18)
         credits.Size = UDim2.new(1, 0, 0, 12)
         credits.Font = Fonts.Small
-        credits.Text = "Ryu & Cuakcer"
+        credits.Text = "Leo Hub"
         credits.TextColor3 = Colors.TextMuted
         credits.TextSize = 9
         credits.TextTransparency = 0.7
         credits.TextXAlignment = Enum.TextXAlignment.Center
         credits.ZIndex = 11
         credits.Parent = profileContainer
-        
         local gradient = Instance.new("UIGradient")
         gradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.new(0, 0, 0)),
@@ -5079,14 +4357,12 @@ _modules["ui"] = function()
         })
         gradient.Rotation = 0
         gradient.Parent = overlay
-        
         local rightPanel = Instance.new("Frame")
         rightPanel.Name = "RightPanel"
         rightPanel.BackgroundTransparency = 1
         rightPanel.Position = UDim2.new(0, Layout.leftPanelWidth, 0, 0)
         rightPanel.Size = UDim2.new(1, -Layout.leftPanelWidth, 1, 0)
         rightPanel.Parent = mainFrame
-        
         UI.KeyScreen = createKeyScreen(rightPanel, function()
             if Config and (Config.isFirstRun() or not Config.isConfigured()) and not getgenv().Config then
                 if UI.KeyScreen then UI.KeyScreen.Visible = false end
@@ -5094,7 +4370,7 @@ _modules["ui"] = function()
                 UI.startUpdateLoop()
                 task.delay(0.3, function()
                     UI.openConfig()
-                    if Utils then Utils.notify("LeoHub", "Please set up your configuration before starting!") end
+                    if Utils then Utils.notify("LeoBounty", "Please set up your configuration before starting!") end
                 end)
             else
                 if UI.KeyScreen then UI.KeyScreen.Visible = false end
@@ -5102,20 +4378,27 @@ _modules["ui"] = function()
                 UI.startUpdateLoop()
             end
         end)
-        
         UI.Dashboard = createDashboard(rightPanel)
-        
         UI.setupCallbacks()
-
         task.spawn(function()
-            task.wait(0.5)
-            local resizeBtns = UI.Gui and UI.Gui:FindFirstChild("ResizeButtons", true)
-            if resizeBtns then
-                local btnL = resizeBtns:FindFirstChild("SizeL")
-                if btnL then btnL:Activate() end
+            task.wait(0.8)
+            if UI.MainFrame then
+                local scale = 0.80
+                local baseW, baseH = 550, 380
+                local newW = math.floor(baseW * scale)
+                local newH = math.floor(baseH * scale)
+                local newLeftW = math.max(80, math.floor(180 * scale))
+                tween(UI.MainFrame, {Size = UDim2.new(0, newW, 0, newH)}, 0.25)
+                task.wait(0.3)
+                local leftPanel = UI.MainFrame:FindFirstChild("LeftPanel")
+                if leftPanel then leftPanel.Size = UDim2.new(0, newLeftW, 1, 0) end
+                local rightPanel = UI.MainFrame:FindFirstChild("RightPanel")
+                if rightPanel then
+                    rightPanel.Position = UDim2.new(0, newLeftW, 0, 0)
+                    rightPanel.Size = UDim2.new(1, -newLeftW, 1, 0)
+                end
             end
         end)
-
         local floatingLogo = Instance.new("ImageButton")
         floatingLogo.Name = "FloatingLogo"
         floatingLogo.BackgroundColor3 = Colors.Surface
@@ -5123,13 +4406,12 @@ _modules["ui"] = function()
         floatingLogo.BorderSizePixel = 0
         floatingLogo.Position = UDim2.new(0, 20, 0.5, -25)
         floatingLogo.Size = UDim2.new(0, 50, 0, 50)
-        floatingLogo.Image = LOGO_URL -- Use same LOGO_URL as main GUI (via getImageUrl)
+        floatingLogo.Image = LOGO_URL 
         floatingLogo.ScaleType = Enum.ScaleType.Fit
         floatingLogo.Visible = false
         floatingLogo.ZIndex = 200
         floatingLogo.Parent = screenGui
-        createCorner(floatingLogo, 25) -- Full round circle
-        
+        createCorner(floatingLogo, 25) 
         local logoText = Instance.new("TextLabel")
         logoText.Name = "LogoText"
         logoText.BackgroundTransparency = 1
@@ -5140,9 +4422,8 @@ _modules["ui"] = function()
         logoText.Font = Enum.Font.GothamBlack
         logoText.ZIndex = 201
         logoText.Parent = floatingLogo
-        
         task.spawn(function()
-            task.wait(1) -- Give time for image to load
+            task.wait(1) 
             pcall(function()
                 if floatingLogo.Image and floatingLogo.Image ~= "" then
                     if floatingLogo.IsLoaded or floatingLogo.Image:match("^rbx") or floatingLogo.Image:match("getcustomasset") then
@@ -5151,13 +4432,11 @@ _modules["ui"] = function()
                 end
             end)
         end)
-        
         local logoStroke = Instance.new("UIStroke")
         logoStroke.Color = Colors.Border
         logoStroke.Transparency = 0.5
         logoStroke.Thickness = 1
         logoStroke.Parent = floatingLogo
-        
         do
             local dragging, dragStart, startPos = false, nil, nil
             floatingLogo.InputBegan:Connect(function(input)
@@ -5186,16 +4465,13 @@ _modules["ui"] = function()
             end)
             table.insert(UI.Connections, floatDragConn)
         end
-        
         floatingLogo.MouseButton1Click:Connect(function()
             floatingLogo.Visible = false
             mainFrame.Visible = true
             tween(mainFrame, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.35)
             tween(UI.Blur, {Size = 8}, 0.3)
         end)
-        
         UI.FloatingLogo = floatingLogo
-        
         local minimizeBtn = Instance.new("TextButton")
         minimizeBtn.Name = "MinimizeBtn"
         minimizeBtn.BackgroundTransparency = 1
@@ -5207,7 +4483,6 @@ _modules["ui"] = function()
         minimizeBtn.Font = Enum.Font.GothamBold
         minimizeBtn.ZIndex = 101
         minimizeBtn.Parent = mainFrame:FindFirstChild("DragHandle")
-        
         minimizeBtn.MouseButton1Click:Connect(function()
             tween(mainFrame, {Position = UDim2.new(-0.5, 0, 0.5, 0)}, 0.35)
             tween(UI.Blur, {Size = 0}, 0.3)
@@ -5216,19 +4491,17 @@ _modules["ui"] = function()
                 floatingLogo.Visible = true
             end)
         end)
-        
         if Auth then
             Auth.tryCachedKey(function(success, message)
                 if success then
                     if UI.KeyScreen then UI.KeyScreen.Visible = false end
                     if UI.Dashboard then UI.Dashboard.Visible = true end
                     UI.startUpdateLoop()
-                    if Utils then Utils.notify("LeoHub", "Auto-logged in!", 3) end
-                    
+                    if Utils then Utils.notify("LeoBounty", "Auto-logged in!", 3) end
                     if Config and (Config.isFirstRun() or not Config.isConfigured()) and not getgenv().Config then
                         task.delay(0.5, function()
                             UI.openConfig()
-                            if Utils then Utils.notify("LeoHub", "Please set up your configuration!") end
+                            if Utils then Utils.notify("LeoBounty", "Please set up your configuration!") end
                         end)
                     end
                 else
@@ -5239,33 +4512,26 @@ _modules["ui"] = function()
         else
             if UI.KeyScreen then UI.KeyScreen.Visible = true end
         end
-        
         return UI
     end
-    
     function UI.setupCallbacks()
         if not UI.Elements then return end
-        
         if UI.Elements.serverHopBtn then
             UI.Elements.serverHopBtn.MouseButton1Click:Connect(function()
-                if getgenv().LeoHub and getgenv().LeoHub.hopDirect then
-                    getgenv().LeoHub.hopDirect()
-                end
+                spawn(function() Hop() end)
             end)
         end
-        
         if UI.Elements.stopBtn then
             UI.Elements.stopBtn.MouseButton1Click:Connect(function()
-                getgenv().LeoHubShuttingDown = true
-                if getgenv().LeoHub then
-                    getgenv().LeoHub.Running = false
+                getgenv().LeoBountyShuttingDown = true
+                if getgenv().LeoBounty then
+                    getgenv().LeoBounty.Running = false
                 end
                 UI.Elements.stopBtn.Text = "Stopped"
                 UI.Elements.stopBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 105)
             end)
         end
     end
-    
     function UI.minimize()
         UI.IsMinimized = true
         tween(UI.MainFrame, {Position = UDim2.new(-0.5, 0, 0.5, 0)}, 0.35)
@@ -5273,7 +4539,6 @@ _modules["ui"] = function()
         task.wait(0.35)
         UI.MainFrame.Visible = false
     end
-    
     function UI.maximize()
         UI.IsMinimized = false
         UI.MainFrame.Visible = true
@@ -5281,7 +4546,6 @@ _modules["ui"] = function()
         tween(UI.MainFrame, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.4)
         tween(UI.Blur, {Size = 6}, 0.4)
     end
-    
     function UI.toggle()
         if UI.IsMinimized then
             UI.maximize()
@@ -5289,17 +4553,14 @@ _modules["ui"] = function()
             UI.minimize()
         end
     end
-    
     function UI.showDashboard()
         if UI.KeyScreen then UI.KeyScreen.Visible = false end
         if UI.Dashboard then UI.Dashboard.Visible = true end
         UI.startUpdateLoop()
     end
-    
     function UI.startUpdateLoop()
         local stats = Utils and Utils.loadStats()
         local sessionStart = stats and stats.sessionStartTime or os.time()
-        
         if stats and stats.killFeed and UI.Elements and UI.Elements.killFeedScroll then
             for _, entry in ipairs(stats.killFeed) do
                 pcall(function()
@@ -5311,7 +4572,6 @@ _modules["ui"] = function()
                     killEntry.LayoutOrder = -(entry.time or 0)
                     killEntry.Parent = UI.Elements.killFeedScroll
                     createCorner(killEntry, 4)
-                    
                     local entryText = Instance.new("TextLabel")
                     entryText.BackgroundTransparency = 1
                     entryText.Position = UDim2.new(0, 6, 0, 0)
@@ -5325,11 +4585,9 @@ _modules["ui"] = function()
                 end)
             end
         end
-        
         task.spawn(function()
             while UI.Gui and UI.Gui.Parent do
                 task.wait(1)
-                
                 local elapsed = os.time() - sessionStart
                 if UI.Elements and UI.Elements.sessionLabel then
                     local h = math.floor(elapsed / 3600)
@@ -5337,25 +4595,19 @@ _modules["ui"] = function()
                     local s = elapsed % 60
                     UI.Elements.sessionLabel.Text = string.format("Session: %02d:%02d:%02d", h, m, s)
                 end
-                
                 if UI.Elements and UI.Elements.timeValue then
                     UI.Elements.timeValue.Text = formatTime(elapsed)
                 end
-                
                 if Utils then
                     UI.updateStats()
                 end
             end
         end)
     end
-    
     function UI.updateStats()
         if not UI.Elements or not Utils then return end
-        
         UI.Stats = Utils.loadStats()
-        
         local prefix = (UI.Elements.statPrefix) or "₿"
-        
         if UI.Elements.killsValue then
             UI.Elements.killsValue.Text = tostring(UI.Stats.sessionKills or 0)
         end
@@ -5365,7 +4617,6 @@ _modules["ui"] = function()
         if UI.Elements.hopsValue then
             UI.Elements.hopsValue.Text = tostring(UI.Stats.serversHopped or 0)
         end
-        
         if UI.Elements.profileBounty then
             pcall(function()
                 local leaderstats = lp:FindFirstChild("leaderstats")
@@ -5378,7 +4629,6 @@ _modules["ui"] = function()
             end)
         end
     end
-    
     function UI.setTarget(name, level)
         if UI.Elements then
             if UI.Elements.targetName then
@@ -5387,7 +4637,6 @@ _modules["ui"] = function()
             if UI.Elements.targetLevel then
                 UI.Elements.targetLevel.Text = level and ("$ " .. formatNumber(level)) or ""
             end
-            
             if UI.Elements.profileTargetName then
                 UI.Elements.profileTargetName.Text = name or "Searching..."
             end
@@ -5396,7 +4645,6 @@ _modules["ui"] = function()
             end
         end
     end
-    
     function UI.setStatus(text, color)
         if UI.Elements and UI.Elements.statusLabel then
             UI.Elements.statusLabel.Text = text or "Active"
@@ -5405,29 +4653,25 @@ _modules["ui"] = function()
             end
         end
     end
-    
     function UI.addKill(bountyGained, targetName)
         if Utils then
             UI.Stats = Utils.updateStats(bountyGained or 0, 1)
             UI.updateStats()
-            
             Utils.addKillFeedEntry({
                 name = targetName,
                 bounty = bountyGained,
                 time = os.time()
             })
         end
-        
         if UI.Elements and UI.Elements.killFeedScroll then
             local killEntry = Instance.new("Frame")
             killEntry.Name = "KillEntry"
             killEntry.BackgroundColor3 = Colors.Surface
             killEntry.BackgroundTransparency = 0.3
             killEntry.Size = UDim2.new(1, 0, 0, 22)
-            killEntry.LayoutOrder = -os.time() -- Newest first
+            killEntry.LayoutOrder = -os.time() 
             killEntry.Parent = UI.Elements.killFeedScroll
             createCorner(killEntry, 4)
-            
             local entryText = Instance.new("TextLabel")
             entryText.BackgroundTransparency = 1
             entryText.Position = UDim2.new(0, 6, 0, 0)
@@ -5438,7 +4682,6 @@ _modules["ui"] = function()
             entryText.TextSize = 10
             entryText.TextXAlignment = Enum.TextXAlignment.Left
             entryText.Parent = killEntry
-            
             local children = UI.Elements.killFeedScroll:GetChildren()
             local entryCount = 0
             for _, child in ipairs(children) do
@@ -5458,15 +4701,12 @@ _modules["ui"] = function()
                     sorted[i]:Destroy()
                 end
             end
-            
             killEntry.BackgroundTransparency = 1
             tween(killEntry, {BackgroundTransparency = 0.3}, 0.3)
         end
-        
         if Config then
             local webhook = Config.get("Webhook")
             local webhookOnKill = Config.get("WebhookOnKill")
-            
             if webhook and webhook ~= "" and webhookOnKill and Utils then
                 local extraInfo = {
                     fruit = Config.get("Fruit") or "Unknown",
@@ -5477,44 +4717,35 @@ _modules["ui"] = function()
             end
         end
     end
-    
     UI._notifQueue = {}
     UI._notifActive = false
-    UI._notifOverlay = nil  -- The notification overlay frame (sibling of island)
-    UI._islandDefaultSize = nil  -- Cached default size
-    
+    UI._notifOverlay = nil  
+    UI._islandDefaultSize = nil  
     local NotifTypes = {
         success = { icon = "✓", color = Color3.fromRGB(52, 211, 153), accent = Color3.fromRGB(16, 185, 129) },
         warning = { icon = "⚠", color = Color3.fromRGB(251, 191, 36), accent = Color3.fromRGB(245, 158, 11) },
         error   = { icon = "✕", color = Color3.fromRGB(239, 68, 68),  accent = Color3.fromRGB(220, 38, 38) },
         info    = { icon = "ℹ", color = Color3.fromRGB(96, 165, 250), accent = Color3.fromRGB(59, 130, 246) },
     }
-    
     function UI.showIslandNotification(text, notifType, duration)
         notifType = notifType or "info"
         duration = duration or 3
-        
         if UI._notifActive then
             table.insert(UI._notifQueue, {text = text, notifType = notifType, duration = duration})
             return
         end
-        
         local island = UI.DynamicIsland
         if not island or not island.Parent then
-            print("[LeoHub]", text)
+            print("[LeoBounty]", text)
             return
         end
-        
         UI._notifActive = true
-        
         if not UI._islandDefaultSize then
             UI._islandDefaultSize = island.Size
         end
-        
         local config = NotifTypes[notifType] or NotifTypes.info
         local isMobile = UI._isMobile
         local screenGui = island.Parent
-        
         local overlay = Instance.new("Frame")
         overlay.Name = "NotifOverlay"
         overlay.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
@@ -5522,15 +4753,13 @@ _modules["ui"] = function()
         overlay.BorderSizePixel = 0
         overlay.AnchorPoint = Vector2.new(0.5, 0)
         overlay.Position = island.Position
-        overlay.Size = island.Size  -- Start at island's current size
+        overlay.Size = island.Size  
         overlay.ZIndex = 210
         overlay.ClipsDescendants = true
         overlay.Parent = screenGui
-        
         local overlayCorner = Instance.new("UICorner")
         overlayCorner.CornerRadius = UDim.new(0, 15)
         overlayCorner.Parent = overlay
-        
         local overlayGradient = Instance.new("UIGradient")
         overlayGradient.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 42, 55)),
@@ -5540,7 +4769,6 @@ _modules["ui"] = function()
         })
         overlayGradient.Rotation = 135
         overlayGradient.Parent = overlay
-        
         local glowBar = Instance.new("Frame")
         glowBar.Name = "AccentGlow"
         glowBar.BackgroundColor3 = config.accent
@@ -5550,11 +4778,10 @@ _modules["ui"] = function()
         glowBar.Position = UDim2.new(0, 0, 0, 0)
         glowBar.ZIndex = 211
         glowBar.Parent = overlay
-        
         local iconBg = Instance.new("Frame")
         iconBg.Name = "IconBg"
         iconBg.BackgroundColor3 = config.accent
-        iconBg.BackgroundTransparency = 1  -- Start invisible
+        iconBg.BackgroundTransparency = 1  
         iconBg.BorderSizePixel = 0
         iconBg.AnchorPoint = Vector2.new(0, 0.5)
         iconBg.Position = UDim2.new(0, 10, 0.5, 0)
@@ -5564,7 +4791,6 @@ _modules["ui"] = function()
         local iconCorner = Instance.new("UICorner")
         iconCorner.CornerRadius = UDim.new(1, 0)
         iconCorner.Parent = iconBg
-        
         local iconLabel = Instance.new("TextLabel")
         iconLabel.Name = "Icon"
         iconLabel.BackgroundTransparency = 1
@@ -5573,10 +4799,9 @@ _modules["ui"] = function()
         iconLabel.Text = config.icon
         iconLabel.TextColor3 = config.color
         iconLabel.TextSize = 14
-        iconLabel.TextTransparency = 1  -- Start invisible
+        iconLabel.TextTransparency = 1  
         iconLabel.ZIndex = 213
         iconLabel.Parent = iconBg
-        
         local notifText = Instance.new("TextLabel")
         notifText.Name = "NotifText"
         notifText.BackgroundTransparency = 1
@@ -5590,9 +4815,8 @@ _modules["ui"] = function()
         notifText.TextXAlignment = Enum.TextXAlignment.Left
         notifText.TextTruncate = Enum.TextTruncate.AtEnd
         notifText.ZIndex = 212
-        notifText.TextTransparency = 1  -- Start invisible for fade-in
+        notifText.TextTransparency = 1  
         notifText.Parent = overlay
-        
         local progressBar = Instance.new("Frame")
         progressBar.Name = "ProgressBar"
         progressBar.BackgroundColor3 = config.accent
@@ -5603,37 +4827,29 @@ _modules["ui"] = function()
         progressBar.Size = UDim2.new(1, 0, 0, 2)
         progressBar.ZIndex = 211
         progressBar.Parent = overlay
-        
         UI._notifOverlay = overlay
-        
         local expandedWidth = isMobile and 280 or 360
         local expandedHeight = 36
-        
         tween(overlay, {Size = UDim2.new(0, expandedWidth, 0, expandedHeight)}, 0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        
         task.delay(0.1, function()
             if iconBg and iconBg.Parent then
                 tween(iconBg, {BackgroundTransparency = 0.6}, 0.2)
                 tween(iconLabel, {TextTransparency = 0}, 0.2)
             end
         end)
-        
         task.delay(0.15, function()
             if notifText and notifText.Parent then
                 tween(notifText, {TextTransparency = 0}, 0.25)
             end
         end)
-        
         task.delay(0.35, function()
             if progressBar and progressBar.Parent then
                 local progressInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
                 TweenService:Create(progressBar, progressInfo, {Size = UDim2.new(0, 0, 0, 2)}):Play()
             end
         end)
-        
         task.delay(0.35 + duration, function()
             if not overlay or not overlay.Parent then return end
-            
             pcall(function()
                 tween(notifText, {TextTransparency = 1}, 0.15)
                 tween(iconBg, {BackgroundTransparency = 1}, 0.15)
@@ -5641,16 +4857,13 @@ _modules["ui"] = function()
                 tween(glowBar, {BackgroundTransparency = 1}, 0.1)
                 tween(progressBar, {BackgroundTransparency = 1}, 0.1)
             end)
-            
             task.delay(0.15, function()
                 local defaultSize = UI._islandDefaultSize or UDim2.new(0, isMobile and 220 or 280, 0, 30)
                 tween(overlay, {Size = defaultSize, BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-                
                 task.delay(0.35, function()
                     pcall(function() overlay:Destroy() end)
                     UI._notifOverlay = nil
                     UI._notifActive = false
-                    
                     if #UI._notifQueue > 0 then
                         local next = table.remove(UI._notifQueue, 1)
                         task.defer(function()
@@ -5661,13 +4874,11 @@ _modules["ui"] = function()
             end)
         end)
     end
-    
     function UI.notify(title, message, notifType, duration)
         local text = message or title
         if title and message and title ~= "" then
             text = message
         end
-        
         if not notifType then
             if text:find("%[%+%]") or text:find("success") or text:find("saved") or text:find("started") then
                 notifType = "success"
@@ -5679,24 +4890,18 @@ _modules["ui"] = function()
                 notifType = "info"
             end
         end
-        
         text = text:gsub("%[%+%]%s*", ""):gsub("%[!%]%s*", ""):gsub("%[%*%]%s*", "")
-        
         UI.showIslandNotification(text, notifType, duration or 3)
     end
-    
     function UI.destroy()
         if Utils and Utils.flushStats then
             pcall(Utils.flushStats)
         end
-        
         for _, conn in pairs(UI.Connections) do
             pcall(function() conn:Disconnect() end)
         end
         UI.Connections = {}
-        
-        print("[LeoHub] [*] UI connections cleaned up")
-        
+        print("[LeoBounty] [*] UI connections cleaned up")
         pcall(function() 
             tween(UI.Blur, {Size = 0}, 0.3)
             tween(UI.MainFrame, {BackgroundTransparency = 1}, 0.3)
@@ -5705,59 +4910,50 @@ _modules["ui"] = function()
         pcall(function() UI.Blur:Destroy() end)
         pcall(function() UI.Gui:Destroy() end)
     end
-    
     function UI.refreshBackground()
         local configBgUrl = UI.BackgroundUrl
         if not configBgUrl or configBgUrl == "" then return end
-        
         task.spawn(function()
             pcall(function()
-                local newAsset = getImageUrl(configBgUrl, true) -- force fresh download
+                local newAsset = getImageUrl(configBgUrl, true) 
                 if UI.BackgroundImage and newAsset and newAsset ~= "" then
                     UI.BackgroundImage.Image = newAsset
                 end
             end)
         end)
     end
-    
     function UI.openConfig()
         if not UI.Gui then return end
-        
         local popup = createConfigPopup(UI.Gui)
         if popup then
-    
         end
     end
-    
     function UI.killAllGraphics()
         pcall(function()
             for _, gui in ipairs(lp.PlayerGui:GetChildren()) do
-                if gui:IsA("ScreenGui") and gui.Name ~= "LeoHubUI" then
+                if gui:IsA("ScreenGui") and gui.Name ~= "LeoBountyUI" then
                     pcall(function() gui:Destroy() end)
                 end
             end
             pcall(function()
                 for _, gui in ipairs(CoreGui:GetChildren()) do
-                    if gui:IsA("ScreenGui") and gui.Name ~= "LeoHubUI" and gui.Name ~= "RobloxGui" then
+                    if gui:IsA("ScreenGui") and gui.Name ~= "LeoBountyUI" and gui.Name ~= "RobloxGui" then
                         pcall(function() gui.Enabled = false end)
                     end
                 end
             end)
-            
             pcall(function()
                 Lighting.GlobalShadows = false
                 Lighting.FogEnd = 9e9
                 Lighting.Brightness = 1
             end)
-            
             pcall(function()
                 for _, effect in ipairs(Lighting:GetChildren()) do
-                    if effect:IsA("PostEffect") and effect.Name ~= "LeoHubBlur" then
+                    if effect:IsA("PostEffect") and effect.Name ~= "LeoBountyBlur" then
                         pcall(function() effect:Destroy() end)
                     end
                 end
             end)
-            
             pcall(function()
                 for _, child in ipairs(Lighting:GetChildren()) do
                     if child:IsA("Atmosphere") or child:IsA("Sky") then
@@ -5765,7 +4961,6 @@ _modules["ui"] = function()
                     end
                 end
             end)
-            
             pcall(function()
                 local settings = settings()
                 if settings and settings.Rendering then
@@ -5775,7 +4970,6 @@ _modules["ui"] = function()
             pcall(function()
                 settings().Rendering.QualityLevel = 1
             end)
-            
             pcall(function()
                 for _, desc in ipairs(workspace:GetDescendants()) do
                     pcall(function()
@@ -5791,7 +4985,6 @@ _modules["ui"] = function()
                     end)
                 end
             end)
-            
             pcall(function()
                 local terrain = workspace:FindFirstChildOfClass("Terrain")
                 if terrain then
@@ -5801,7 +4994,6 @@ _modules["ui"] = function()
                     terrain.WaterTransparency = 0
                 end
             end)
-            
             pcall(function()
                 for _, desc in ipairs(workspace:GetDescendants()) do
                     pcall(function()
@@ -5811,18 +5003,15 @@ _modules["ui"] = function()
                     end)
                 end
             end)
-            
             if Utils then
-                Utils.notify("LeoHub", "[*] Graphics killed! Maximum FPS mode.")
+                Utils.notify("LeoBounty", "[*] Graphics killed! Maximum FPS mode.")
                 Utils.logDebug(Utils.DEBUG_LEVELS.INFO, "UI", "Kill All Graphics executed (enhanced)")
             end
         end)
     end
-    
     function UI.showNetworkWarning(message)
         if not UI.Gui then return end
-        if UI._networkWarning then return end -- Already showing
-        
+        if UI._networkWarning then return end 
         local overlay = Instance.new("Frame")
         overlay.Name = "NetworkWarning"
         overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -5831,7 +5020,6 @@ _modules["ui"] = function()
         overlay.Size = UDim2.new(1, 0, 1, 0)
         overlay.ZIndex = 500
         overlay.Parent = UI.Gui
-        
         local warningBox = Instance.new("Frame")
         warningBox.Name = "WarningBox"
         warningBox.BackgroundColor3 = Colors.Surface
@@ -5843,13 +5031,11 @@ _modules["ui"] = function()
         warningBox.ZIndex = 501
         warningBox.Parent = overlay
         createCorner(warningBox, 12)
-        
         local warnStroke = Instance.new("UIStroke")
         warnStroke.Color = Colors.Warning or Color3.fromRGB(255, 180, 40)
         warnStroke.Transparency = 0.3
         warnStroke.Thickness = 2
         warnStroke.Parent = warningBox
-        
         local warnIcon = createText(warningBox, "\xE2\x9A\xA0", {
             position = UDim2.new(0.5, 0, 0, 20),
             size = UDim2.new(0, 40, 0, 40),
@@ -5859,7 +5045,6 @@ _modules["ui"] = function()
         warnIcon.AnchorPoint = Vector2.new(0.5, 0)
         warnIcon.TextXAlignment = Enum.TextXAlignment.Center
         warnIcon.ZIndex = 502
-        
         local warnTitle = createText(warningBox, "Connection Unstable", {
             position = UDim2.new(0, 20, 0, 65),
             size = UDim2.new(1, -40, 0, 20),
@@ -5868,7 +5053,6 @@ _modules["ui"] = function()
         })
         warnTitle.TextXAlignment = Enum.TextXAlignment.Center
         warnTitle.ZIndex = 502
-        
         local warnMsg = createText(warningBox, message or "High ping or packet loss detected. Try again with a better internet connection.", {
             position = UDim2.new(0, 20, 0, 90),
             size = UDim2.new(1, -40, 0, 36),
@@ -5878,25 +5062,20 @@ _modules["ui"] = function()
         warnMsg.TextWrapped = true
         warnMsg.TextXAlignment = Enum.TextXAlignment.Center
         warnMsg.ZIndex = 502
-        
         local retryBtn = createButton(warningBox, "Retry",
             UDim2.new(0.5, -50, 1, -45), UDim2.new(0, 100, 0, 32),
             {color = Colors.Primary, hoverColor = Colors.PrimaryMuted})
         retryBtn.ZIndex = 503
         retryBtn.AnchorPoint = Vector2.new(0, 0)
-        
         retryBtn.MouseButton1Click:Connect(function()
             UI.hideNetworkWarning()
         end)
-        
         UI._networkWarning = overlay
-        
         overlay.BackgroundTransparency = 1
         tween(overlay, {BackgroundTransparency = 0.3}, 0.3)
         warningBox.Position = UDim2.new(0.5, 0, 0.6, 0)
         tween(warningBox, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.35)
     end
-    
     function UI.hideNetworkWarning()
         if UI._networkWarning then
             local overlay = UI._networkWarning
@@ -5907,14 +5086,12 @@ _modules["ui"] = function()
             end)
         end
     end
-    
     do
         local notifQueue = {}
         local isShowingNotif = false
         local NOTIF_HEIGHT = 56
         local ISLAND_HEIGHT = 30
         local isMobile = UI._isMobile
-    
         local function autoIcon(text)
             if text:find("%[%+%]") or text:find("started") or text:find("saved") or text:find("successful") then
                 return "✓"
@@ -5942,52 +5119,43 @@ _modules["ui"] = function()
                 return "●"
             end
         end
-    
         local function autoColor(text)
             if text:find("%[%+%]") or text:find("started") or text:find("saved") or text:find("successful") or text:find("logged") then
-                return Color3.fromRGB(52, 211, 153) -- green
+                return Color3.fromRGB(52, 211, 153) 
             elseif text:find("%[!%]") or text:find("Failed") or text:find("failed") or text:find("Blacklisted") then
-                return Color3.fromRGB(239, 68, 68) -- red
+                return Color3.fromRGB(239, 68, 68) 
             elseif text:find("%[~%]") or text:find("hopping") or text:find("Switching") then
-                return Color3.fromRGB(99, 102, 241) -- indigo
+                return Color3.fromRGB(99, 102, 241) 
             elseif text:find("60M") or text:find("30M") or text:find("ACHIEVED") then
-                return Color3.fromRGB(251, 191, 36) -- gold
+                return Color3.fromRGB(251, 191, 36) 
             elseif text:find("%[%*%]") or text:find("stopped") then
-                return Color3.fromRGB(170, 130, 255) -- purple
+                return Color3.fromRGB(170, 130, 255) 
             elseif text:find("configure") or text:find("Configure") then
-                return Color3.fromRGB(220, 180, 80) -- amber
+                return Color3.fromRGB(220, 180, 80) 
             else
-                return Color3.fromRGB(170, 130, 255) -- default purple
+                return Color3.fromRGB(170, 130, 255) 
             end
         end
-    
         local function processQueue()
             if isShowingNotif or #notifQueue == 0 then return end
             isShowingNotif = true
-    
             local notif = table.remove(notifQueue, 1)
             local text = notif.text
             local accentColor = notif.color or autoColor(text)
             local duration = notif.duration or 3.5
             local icon = notif.icon or autoIcon(text)
-    
-            text = text:gsub("^%[LeoHub%]%s*", ""):gsub("^LeoHub%s*", "")
-    
+            text = text:gsub("^%[LeoBounty%]%s*", ""):gsub("^LeoBounty%s*", "")
             local island = UI.DynamicIsland
             if not island or not island.Parent then
                 isShowingNotif = false
                 return
             end
-    
             local screenGui = island.Parent
-    
             local highlightOverlay = screenGui:FindFirstChild("HighlightOverlay")
-    
             local origSize = island.Size
             local origPos = island.Position
             local expandedWidth = isMobile and 280 or 340
             local expandedHeight = ISLAND_HEIGHT + NOTIF_HEIGHT
-    
             local notifFrame = Instance.new("Frame")
             notifFrame.Name = "NotifContent"
             notifFrame.BackgroundTransparency = 1
@@ -5997,7 +5165,6 @@ _modules["ui"] = function()
             notifFrame.ZIndex = 204
             notifFrame.ClipsDescendants = true
             notifFrame.Parent = island
-    
             local accentLine = Instance.new("Frame")
             accentLine.Name = "AccentLine"
             accentLine.BackgroundColor3 = accentColor
@@ -6008,7 +5175,6 @@ _modules["ui"] = function()
             accentLine.ZIndex = 206
             accentLine.Parent = notifFrame
             createCorner(accentLine, 2)
-    
             local accentGlow = Instance.new("Frame")
             accentGlow.Name = "AccentGlow"
             accentGlow.BackgroundColor3 = accentColor
@@ -6020,7 +5186,6 @@ _modules["ui"] = function()
             accentGlow.ZIndex = 205
             accentGlow.Parent = notifFrame
             createCorner(accentGlow, 4)
-    
             local iconLabel = Instance.new("TextLabel")
             iconLabel.Name = "Icon"
             iconLabel.BackgroundTransparency = 1
@@ -6034,7 +5199,6 @@ _modules["ui"] = function()
             iconLabel.TextTransparency = 1
             iconLabel.ZIndex = 206
             iconLabel.Parent = notifFrame
-    
             local textLabel = Instance.new("TextLabel")
             textLabel.Name = "NotifText"
             textLabel.BackgroundTransparency = 1
@@ -6050,7 +5214,6 @@ _modules["ui"] = function()
             textLabel.TextTransparency = 1
             textLabel.ZIndex = 206
             textLabel.Parent = notifFrame
-    
             local separator = Instance.new("Frame")
             separator.Name = "Separator"
             separator.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
@@ -6060,30 +5223,25 @@ _modules["ui"] = function()
             separator.Position = UDim2.new(0.1, 0, 0, 0)
             separator.ZIndex = 205
             separator.Parent = notifFrame
-    
             island.ClipsDescendants = true
             tween(island, {
                 Size = UDim2.new(0, expandedWidth, 0, expandedHeight),
             }, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-    
             if highlightOverlay then
                 tween(highlightOverlay, {
                     Size = UDim2.new(0, expandedWidth, 0, expandedHeight),
                 }, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
             end
-    
             local islandStroke = island:FindFirstChildWhichIsA("UIStroke")
             if islandStroke then
                 tween(islandStroke, {Color = accentColor, Transparency = 0.1}, 0.2)
             end
-    
             task.delay(0.15, function()
                 tween(accentLine, {Size = UDim2.new(0, 3, 0, 30)}, 0.3, Enum.EasingStyle.Quint)
                 tween(accentGlow, {Size = UDim2.new(0, 8, 0, 30)}, 0.35, Enum.EasingStyle.Quint)
                 tween(iconLabel, {TextTransparency = 0}, 0.25)
                 tween(textLabel, {TextTransparency = 0}, 0.3)
             end)
-    
             local progressBar = Instance.new("Frame")
             progressBar.Name = "Progress"
             progressBar.BackgroundColor3 = accentColor
@@ -6094,77 +5252,56 @@ _modules["ui"] = function()
             progressBar.ZIndex = 206
             progressBar.Parent = notifFrame
             createCorner(progressBar, 1)
-    
             task.delay(0.5, function()
                 tween(progressBar, {Size = UDim2.new(0, 0, 0, 2)}, duration - 0.8, Enum.EasingStyle.Linear)
             end)
-    
             task.wait(duration)
-    
             tween(textLabel, {TextTransparency = 1}, 0.2)
             tween(iconLabel, {TextTransparency = 1}, 0.2)
             tween(accentLine, {Size = UDim2.new(0, 3, 0, 0)}, 0.2)
             tween(accentGlow, {Size = UDim2.new(0, 8, 0, 0)}, 0.2)
             tween(progressBar, {BackgroundTransparency = 1}, 0.15)
-    
             task.wait(0.2)
-    
             tween(island, {
                 Size = origSize,
             }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    
             if highlightOverlay then
                 tween(highlightOverlay, {
                     Size = origSize,
                 }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
             end
-    
             if islandStroke then
                 tween(islandStroke, {Color = Color3.fromRGB(80, 80, 100), Transparency = 0.5}, 0.3)
             end
-    
             task.wait(0.4)
-    
             pcall(function() notifFrame:Destroy() end)
-    
             isShowingNotif = false
-    
             if #notifQueue > 0 then
                 task.defer(processQueue)
             end
         end
-    
         function UI.showDynamicNotification(text, color, duration, icon)
             if not text or text == "" then return end
-    
             table.insert(notifQueue, {
                 text = text,
                 color = color,
                 duration = duration or 3.5,
                 icon = icon,
             })
-    
             if not isShowingNotif then
                 task.spawn(processQueue)
             end
         end
     end
-    
-    pcall(function() getgenv()._LeoHubUI = UI end)
-    
+    pcall(function() getgenv()._LeoUI = UI end)
     return UI
-    
 end
-
 _modules["main"] = function()
-    
     local Main = {}
     local Utils, Config, UI
-    
     local SELECTED_TEAM = "Pirates"
     local Selected_Region = "Singapore"
     local SELECTED_FRUIT = "T-Rex"
-    
     local SessionStartTime = tick()
     local TotalKills = 0
     local SessionKills = 0
@@ -6172,93 +5309,65 @@ _modules["main"] = function()
     local InitialBounty = 0
     local SessionBountyGained = 0
     local EliminatedPlayers = {}
-    
     Main.Running = false
     Main.Connections = {}
-
-    local WEBHOOKS = {
-        FullMoon          = "https://ptb.discord.com/api/webhooks/1489972659373473935/5SYjVIIUGTeSxeqU6i8GwmUcsdByVJFGEala98-xYqgOszr2wEZZ9tU3Ypz9jAy2j9re",
-        NearFullMoon      = "https://ptb.discord.com/api/webhooks/1489972504176099548/Ax0SiWkikITemgrt21lIYbAfvVEp98n0DOxbiqSibPvsZiApiiAscrWT9ZTL5oXaxjjF",
-        Boss              = "https://ptb.discord.com/api/webhooks/1489972397867012146/KgWF45FYWCl_Ymij8tSvbVgWO-3z1Sppd53BbXRUUiNgXYB_paP-0CBFMO4IbTC4WWuW",
-        Haki              = "https://ptb.discord.com/api/webhooks/1489973503254855814/A617qsd9cKAvZQ6NU5X3ARo5g0DUNw74ZKot2Stp_EsJH5ESPh3jkEP_uXQxZoLAfToe",
-        Sword             = "https://ptb.discord.com/api/webhooks/1489973638613696706/j6-LxX8XqxDhOAbzjUk8b-1kov1e6yJ6EATqIdC3VgFxVYqMQn4vp03e93wZ9-Km9vwj",
-        Fruit             = "https://ptb.discord.com/api/webhooks/1489973826115600434/lzjBgkBJf_v1eN8WQffPCuiB21HUAj9Dhl78_PKgO209xobvZ3Y0Jhevn6PmMEza4Tfi",
-        KitsuneIsland     = "https://ptb.discord.com/api/webhooks/1489973949025489027/XfVkV0NOmFUyWJKPTn73QX78K6uJpwLmN70Fg3x6jzDfX8HZdOSUUuvv43mIfy9RMf4N",
-        PrehistoricIsland = "https://ptb.discord.com/api/webhooks/1489974105422823565/0vww7YWpr0MBKyRc9HeCmS3wIPATqA5HbD_pmCHw5T6z4FtOW0yWk2iNc1oewmuA0wrt",
-        MirageIsland      = "https://ptb.discord.com/api/webhooks/1489974271991218176/IUd9ZrDhXJvO2VNZkvejqBQQGJuTNf5gTIZ_kWo4w7ViLf6FUALJemTs95Ot7LO_IhCp",
-        Berry             = "https://ptb.discord.com/api/webhooks/1489974383437942927/Gcvhc8pBcYRcKR4rRck1uKrm0Hlmbgu0tDT_1VqdWMDjka06m1HpnqEAULOUUq6fTQpE",
-        Elites            = "https://ptb.discord.com/api/webhooks/1489974517903392808/p6IyMsPgpytvc0D9nq_cFgbS0X_88K0po8brbQSeLH57KK4blW1DAqytFZf0eIAjCcrG",
-        CastleRaid        = "https://ptb.discord.com/api/webhooks/1489974864025485322/gREVMfyINYpvqNxovgxLc-jrZ9IRWTj6LJJPG3PcbQUrfRsiK07ZgnWWswdodqXYArHj",
+    local EVENT_WEBHOOKS = {
+        FullMoon     = "", 
+        Boss         = "", 
+        MirageIsland = "", 
+        CastleRaid   = "", 
     }
-
-    local function SendNotify(url, title)
+    local _eventNotifiedThisServer = {}
+    local function SendEventNotify(url, title)
+        if not url or url == "" then return end
+        if _eventNotifiedThisServer[title] then return end 
+        _eventNotifiedThisServer[title] = true
+        local JobId = game.JobId
+        local HttpService = game:GetService("HttpService")
         local data = {
-            ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. game.JobId .. "\")`",
-            ["username"] = "Michael Monitor"
+            ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. JobId .. "\")`",
+            ["username"] = "Leo Event Monitor"
         }
         pcall(function()
-            local response = request or http_request or syn.request
-            response({
-                Url = url,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode(data)
-            })
+            local reqFn = request or http_request or (syn and syn.request) or (http and http.request)
+            if reqFn then
+                reqFn({
+                    Url = url,
+                    Method = "POST",
+                    Headers = {["Content-Type"] = "application/json"},
+                    Body = HttpService:JSONEncode(data)
+                })
+            end
         end)
     end
-
-    local function CheckEvents()
-        local hasEvent = false
-
+    local function CheckGameEvents()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
         pcall(function()
-            local moonProgress = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState").MoonProgress
-            if moonProgress >= 5 then
-                SendNotify(WEBHOOKS.FullMoon, "Full Moon")
-                hasEvent = true
+            local state = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState")
+            if state and state.MoonProgress and state.MoonProgress >= 5 then
+                SendEventNotify(EVENT_WEBHOOKS.FullMoon, "Full Moon")
             end
         end)
-
-        if game.Workspace.Map:FindFirstChild("Mirage Island") then
-            SendNotify(WEBHOOKS.MirageIsland, "Mirage Island")
-            hasEvent = true
-        end
-
-        for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-            if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
-                SendNotify(WEBHOOKS.Boss, v.Name)
-                hasEvent = true
+        pcall(function()
+            if workspace.Map:FindFirstChild("Mirage Island") then
+                SendEventNotify(EVENT_WEBHOOKS.MirageIsland, "Mirage Island")
             end
-        end
-
-        return hasEvent
-    end
-
-    local function Hop()
-        local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100&_rnd=" .. math.random(1, 9999)
-        local success, result = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
         end)
-
-        if success and result.data then
-            for _, s in pairs(result.data) do
-                if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                    pcall(function()
-                        ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
-                    end)
-                    task.wait(2)
+        pcall(function()
+            local enemies = workspace:FindFirstChild("Enemies")
+            if enemies then
+                for _, v in pairs(enemies:GetChildren()) do
+                    if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
+                        SendEventNotify(EVENT_WEBHOOKS.Boss, v.Name)
+                    end
                 end
             end
-        end
+        end)
     end
-
     function Main.getSessionKills() return TotalKills end
-    
     function Main.getSessionTime() return tick() - SessionStartTime end
-    
     function Main.getSessionHops() return SessionHops end
-    
     function Main.getKillFeed() return {} end
-    
     function Main.getSessionBounty()
         local Players = game:GetService("Players")
         if not Players.LocalPlayer then return 0 end
@@ -6270,40 +5379,32 @@ _modules["main"] = function()
         if InitialBounty == 0 then InitialBounty = current end
         return math.max(0, current - InitialBounty)
     end
-    
     function Main.getModeName() return "HYPER" end
-    
     function Main.init(utilsModule, configModule, uiModule)
         Utils = utilsModule
         Config = configModule
         UI = uiModule
-    
         if Config and Config.Values then
             SELECTED_TEAM = Config.Values.Faction or "Pirates"
             local _rawRegion = Config.Values.Region or "Singapore"
             Selected_Region = (_rawRegion == "Auto" or _rawRegion == "" or _rawRegion == nil) and "Singapore" or _rawRegion
             SELECTED_FRUIT = Config.Values.Fruit or "T-Rex"
         end
-    
         if SELECTED_TEAM == "Pirate" then SELECTED_TEAM = "Pirates" end
         if SELECTED_TEAM == "Marine" then SELECTED_TEAM = "Marines" end
     end
-    
     function Main.cleanup()
         pcall(function()
             local _env = getgenv()
-            _env.LeoHubShuttingDown = true
+            _env.LeoBountyShuttingDown = true
         end)
     end
-    
     function Main.start()
         Main.Running = true
-        print("[LeoHub] [HYPER] Main.start() called")
+        print("[LeoBounty] [HYPER] Main.start() called")
         task.spawn(function()
             local ok, err = xpcall(function()
-    
-            print("[LeoHub] [HYPER] task.spawn started")
-    
+            print("[LeoBounty] [HYPER] task.spawn started")
             local Players = game:GetService("Players")
             local RunService = game:GetService("RunService")
             local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -6315,22 +5416,14 @@ _modules["main"] = function()
             local CoreGui = game:GetService("CoreGui")
             local SoundService = game:GetService("SoundService")
             local VirtualInputManager = game:GetService("VirtualInputManager")
-    
-            print("[LeoHub] [HYPER] Services loaded")
-    
-            repeat task.wait() until game:IsLoaded()
-    
-            local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
-    
-            print("[LeoHub] [HYPER] LocalPlayer: " .. tostring(lp))
-    
+            print("[LeoBounty] [HYPER] Services loaded")
+                        local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
+            print("[LeoBounty] [HYPER] LocalPlayer: " .. tostring(lp))
             local _env = getgenv()
-            _env.LeoHubShuttingDown = false
+            _env.LeoBountyShuttingDown = false
             _env.IsServerHopping = false
-    
             local CurrentJobId = game.JobId
             local CurrentPlaceId = game.PlaceId
-    
             if Utils and Utils.loadStats then
                 pcall(function()
                     local pStats = Utils.loadStats()
@@ -6341,14 +5434,11 @@ _modules["main"] = function()
                     end
                 end)
             end
-    
-            print("[LeoHub] [HYPER] Stats synced")
-    
+            print("[LeoBounty] [HYPER] Stats synced")
             local function AutoHopOnKick()
                 if getgenv().IsServerHopping then return end
-                print("[LeoHub] [!] Bị kick/error — đang tự động hop server mới...")
-                if Utils then pcall(function() Utils.notify("LeoHub", "[!] Bị kick! Đang hop server mới...", "warning", 4) end) end
-
+                print("[LeoBounty] [!] Bị kick/error — đang tự động hop server mới...")
+                if Utils then pcall(function() Utils.notify("LeoBounty", "[!] Bị kick! Đang hop server mới...", "warning", 4) end) end
                 local hopDone = false
                 pcall(function()
                     local HttpService = game:GetService("HttpService")
@@ -6369,7 +5459,6 @@ _modules["main"] = function()
                         end
                     end
                 end)
-
                 if not hopDone then
                     pcall(function()
                         local HttpService = game:GetService("HttpService")
@@ -6389,16 +5478,14 @@ _modules["main"] = function()
                     end)
                 end
             end
-
             pcall(function()
                 CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
                     if child.Name == "ErrorPrompt" and child:FindFirstChild("MessageArea") and child.MessageArea:FindFirstChild("ErrorFrame") then
                         task.spawn(AutoHopOnKick)
                     end
                 end)
-
                 task.spawn(function()
-                    while not getgenv().LeoHubShuttingDown do
+                    while not getgenv().LeoBountyShuttingDown do
                         task.wait(2)
                         pcall(function()
                             for _, gui in ipairs(CoreGui:GetDescendants()) do
@@ -6428,14 +5515,11 @@ _modules["main"] = function()
                     end
                 end)
             end)
-    
-            print("[LeoHub] [HYPER] Kick detection setup")
-    
+            print("[LeoBounty] [HYPER] Kick detection setup")
             if not (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")) then
-                print("[LeoHub] [HYPER] Character not spawned — handling team selection")
+                print("[LeoBounty] [HYPER] Character not spawned — handling team selection")
                 local playerGui = lp:WaitForChild("PlayerGui")
                 local mainGui = playerGui:WaitForChild("Main (minimal)")
-    
                 local btn
                 repeat
                     task.wait()
@@ -6453,7 +5537,6 @@ _modules["main"] = function()
                             and mainGui.ChooseTeam.Container.Marines.Frame:FindFirstChild("TextButton")
                     end
                 until btn
-    
                 repeat
                     task.wait(0.25)
                     pcall(function()
@@ -6463,7 +5546,6 @@ _modules["main"] = function()
                         break
                     end
                 until false
-    
                 local char, hum
                 repeat
                     task.wait()
@@ -6472,18 +5554,15 @@ _modules["main"] = function()
                         hum = char:FindFirstChild("Humanoid")
                     end
                 until char and hum
-    
                 local hrp
                 repeat
                     task.wait()
                     hrp = char:FindFirstChild("HumanoidRootPart")
                 until hrp
             else
-                print("[LeoHub] [HYPER] Character already exists — skipping team selection")
+                print("[LeoBounty] [HYPER] Character already exists — skipping team selection")
             end
-    
-            print("[LeoHub] [HYPER] Character ready — initializing combat systems")
-    
+            print("[LeoBounty] [HYPER] Character ready — initializing combat systems")
             task.spawn(function()
                 pcall(function()
                     local util = ReplicatedStorage:WaitForChild("Util", 15)
@@ -6502,10 +5581,8 @@ _modules["main"] = function()
                     CameraShaker.Start = noop
                 end)
             end)
-    
             local AntiSeatConnection
             local AntiSeatConnection2
-    
             local function StartAntiSeat()
                 if AntiSeatConnection then AntiSeatConnection:Disconnect() end
                 if AntiSeatConnection2 then AntiSeatConnection2:Disconnect() end
@@ -6526,9 +5603,7 @@ _modules["main"] = function()
                     end
                 end)
             end
-    
             StartAntiSeat()
-    
             local MIN_PLAYER_LEVEL = 2300
             local PREDICTION_TIME = 0.25
             local YOffset = 1
@@ -6542,9 +5617,7 @@ _modules["main"] = function()
             local PREDICTION_SAMPLES = 3
             local PlayerPositionHistory = {}
             local V_KEY_DELAY = 1
-    
             local StartInstaTeleport
-    
             local function PerformHealthEscape()
                 if InstaTpConnection then
                     InstaTpConnection:Disconnect()
@@ -6580,7 +5653,6 @@ _modules["main"] = function()
                 task.wait(0.2)
                 StartInstaTeleport()
             end
-    
             local function IsHealthLow()
                 local char = lp.Character
                 if not char then return false end
@@ -6588,7 +5660,6 @@ _modules["main"] = function()
                 if not humanoid then return false end
                 return humanoid.Health <= LOW_HEALTH_THRESHOLD
             end
-    
             local function GetPlayerLevel(player)
                 local data = player:FindFirstChild("Data")
                 if data then
@@ -6597,7 +5668,6 @@ _modules["main"] = function()
                 end
                 return 0
             end
-    
             local function IsPlayerInSafeZone(player)
                 if not player.Character then return false end
                 local hrp = player.Character:FindFirstChild("HumanoidRootPart")
@@ -6623,14 +5693,12 @@ _modules["main"] = function()
                 end
                 return false
             end
-    
             local function PvpEnable()
                 pcall(function()
                     local args = { "EnablePvp" }
                     ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
                 end)
             end
-    
             local function IsPlayerValid(player)
                 if player == lp then return false end
                 if lp.Team and lp.Team.Name == "Marines" and player.Team and player.Team == lp.Team then return false end
@@ -6646,7 +5714,6 @@ _modules["main"] = function()
                 if IsPlayerInSafeZone(player) then return false end
                 return true
             end
-    
             local function GetCurrentBounty()
                 local leaderstats = lp:FindFirstChild("leaderstats")
                 if leaderstats then
@@ -6655,7 +5722,6 @@ _modules["main"] = function()
                 end
                 return 0
             end
-    
             local function IsInCombat()
                 local playerGui = lp:FindFirstChild("PlayerGui")
                 if not playerGui then return false end
@@ -6669,7 +5735,6 @@ _modules["main"] = function()
                 if inCombatUI:IsA("TextLabel") and inCombatUI.Text and string.find(inCombatUI.Text, "risk") then return true end
                 return false
             end
-    
             local function FakeIsInCombat()
                 local playerGui = lp:FindFirstChild("PlayerGui")
                 if not playerGui then return false end
@@ -6681,7 +5746,6 @@ _modules["main"] = function()
                 if not inCombatUI then return false end
                 return inCombatUI.Visible == true
             end
-    
             local function WaitForCombatEnd(timeout)
                 timeout = timeout or 30
                 local startTime = tick()
@@ -6690,7 +5754,6 @@ _modules["main"] = function()
                 end
                 return not IsInCombat()
             end
-    
             local function BusoKen()
                 pcall(function()
                     local args = { "Ken", true }
@@ -6705,7 +5768,6 @@ _modules["main"] = function()
                     end
                 end)
             end
-    
             local function CheckDragonRage()
                 if SELECTED_FRUIT ~= "Dragon" then return end
                 pcall(function()
@@ -6723,21 +5785,91 @@ _modules["main"] = function()
                     end
                 end)
             end
-    
             task.spawn(function()
-                while not getgenv().LeoHubShuttingDown do
+                while not getgenv().LeoBountyShuttingDown do
                     CheckDragonRage()
                     task.wait(1)
                 end
             end)
-    
             task.spawn(function()
-                while not getgenv().LeoHubShuttingDown do
+                while not getgenv().LeoBountyShuttingDown do
                     pcall(function() BusoKen() end)
                     task.wait(5)
                 end
             end)
-    
+            local WEBHOOKS = {
+                FullMoon          = "https://ptb.discord.com/api/webhooks/1489972659373473935/5SYjVIIUGTeSxeqU6i8GwmUcsdByVJFGEala98-xYqgOszr2wEZZ9tU3Ypz9jAy2j9re",
+                NearFullMoon      = "https://ptb.discord.com/api/webhooks/1489972504176099548/Ax0SiWkikITemgrt21lIYbAfvVEp98n0DOxbiqSibPvsZiApiiAscrWT9ZTL5oXaxjjF",
+                Boss              = "https://ptb.discord.com/api/webhooks/1489972397867012146/KgWF45FYWCl_Ymij8tSvbVgWO-3z1Sppd53BbXRUUiNgXYB_paP-0CBFMO4IbTC4WWuW",
+                Haki              = "https://ptb.discord.com/api/webhooks/1489973503254855814/A617qsd9cKAvZQ6NU5X3ARo5g0DUNw74ZKot2Stp_EsJH5ESPh3jkEP_uXQxZoLAfToe",
+                Sword             = "https://ptb.discord.com/api/webhooks/1489973638613696706/j6-LxX8XqxDhOAbzjUk8b-1kov1e6yJ6EATqIdC3VgFxVYqMQn4vp03e93wZ9-Km9vwj",
+                Fruit             = "https://ptb.discord.com/api/webhooks/1489973826115600434/lzjBgkBJf_v1eN8WQffPCuiB21HUAj9Dhl78_PKgO209xobvZ3Y0Jhevn6PmMEza4Tfi",
+                KitsuneIsland     = "https://ptb.discord.com/api/webhooks/1489973949025489027/XfVkV0NOmFUyWJKPTn73QX78K6uJpwLmN70Fg3x6jzDfX8HZdOSUUuvv43mIfy9RMf4N",
+                PrehistoricIsland = "https://ptb.discord.com/api/webhooks/1489974105422823565/0vww7YWpr0MBKyRc9HeCmS3wIPATqA5HbD_pmCHw5T6z4FtOW0yWk2iNc1oewmuA0wrt",
+                MirageIsland      = "https://ptb.discord.com/api/webhooks/1489974271991218176/IUd9ZrDhXJvO2VNZkvejqBQQGJuTNf5gTIZ_kWo4w7ViLf6FUALJemTs95Ot7LO_IhCp",
+                Berry             = "https://ptb.discord.com/api/webhooks/1489974383437942927/Gcvhc8pBcYRcKR4rRck1uKrm0Hlmbgu0tDT_1VqdWMDjka06m1HpnqEAULOUUq6fTQpE",
+                Elites            = "https://ptb.discord.com/api/webhooks/1489974517903392808/p6IyMsPgpytvc0D9nq_cFgbS0X_88K0po8brbQSeLH57KK4blW1DAqytFZf0eIAjCcrG",
+                CastleRaid        = "https://ptb.discord.com/api/webhooks/1489974864025485322/gREVMfyINYpvqNxovgxLc-jrZ9IRWTj6LJJPG3PcbQUrfRsiK07ZgnWWswdodqXYArHj",
+            }
+            local function SendNotify(url, title)
+                local data = {
+                    ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. game.JobId .. "\")`",
+                    ["username"] = "Michael Monitor"
+                }
+                pcall(function()
+                    local response = request or http_request or syn.request
+                    response({
+                        Url = url,
+                        Method = "POST",
+                        Headers = {["Content-Type"] = "application/json"},
+                        Body = HttpService:JSONEncode(data)
+                    })
+                end)
+            end
+            local function CheckEvents()
+                local hasEvent = false
+                pcall(function()
+                    local moonProgress = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState").MoonProgress
+                    if moonProgress >= 5 then
+                        SendNotify(WEBHOOKS.FullMoon, "Full Moon")
+                        hasEvent = true
+                    end
+                end)
+                if game.Workspace.Map:FindFirstChild("Mirage Island") then
+                    SendNotify(WEBHOOKS.MirageIsland, "Mirage Island")
+                    hasEvent = true
+                end
+                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                    if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
+                        SendNotify(WEBHOOKS.Boss, v.Name)
+                        hasEvent = true
+                    end
+                end
+                return hasEvent
+            end
+            local function Hop()
+                local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100&_rnd=" .. math.random(1, 9999)
+                local success, result = pcall(function()
+                    return HttpService:JSONDecode(game:HttpGet(url))
+                end)
+                if success and result.data then
+                    for _, s in pairs(result.data) do
+                        if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                            pcall(function()
+                                ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
+                            end)
+                            task.wait(2)
+                        end
+                    end
+                end
+            end
+            spawn(function()
+                while true do
+                    CheckEvents()
+                    task.wait(30)
+                end
+            end)
+
             function Main.serverHop()
                 SessionHops = SessionHops + 1
                 if Utils and Utils.saveStats then
@@ -6747,16 +5879,118 @@ _modules["main"] = function()
                         Utils.saveStats(stats)
                     end)
                 end
-                if Utils and Utils.flushStats then
-                    pcall(Utils.flushStats)
+                local _env = getgenv()
+                _env.IsServerHopping = true
+                if InstaTpConnection then
+                    InstaTpConnection:Disconnect(); InstaTpConnection = nil
                 end
-                Hop()
+                local flag = Instance.new("BoolValue")
+                flag.Name = "CombatEscape"
+                flag.Parent = workspace
+                task.spawn(function()
+                    while flag.Parent do
+                        local char = lp.Character
+                        if char then
+                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                local pos = hrp.Position
+                                hrp.CFrame = CFrame.new(pos.X, pos.Y + 273861, pos.Z)
+                            end
+                        end
+                        task.wait(0.05)
+                    end
+                end)
+                WaitForCombatEnd(30)
+                task.wait(1)
+                if Utils and Utils.flushStats then
+                    pcall(function() Utils.flushStats() end)
+                end
+                local PlayerGui = lp.PlayerGui
+                if not PlayerGui:FindFirstChild("ServerBrowser") then
+                    local _env2 = getgenv()
+                    _env2.IsServerHopping = false
+                    return
+                end
+                PlayerGui.ServerBrowser.Enabled = true
+                task.wait(0.1)
+                local Filters = PlayerGui.ServerBrowser.Frame:FindFirstChild("Filters")
+                local SearchRegion = Filters and Filters:FindFirstChild("SearchRegion")
+                local TextBox = SearchRegion and SearchRegion:FindFirstChild("TextBox")
+                if not TextBox then
+                    local _env3 = getgenv()
+                    _env3.IsServerHopping = false
+                    return
+                end
+                TextBox.Text = Selected_Region
+                task.wait(3)
+                local ScrollingFrame = PlayerGui.ServerBrowser.Frame.ScrollingFrame
+                local FakeScroll = PlayerGui.ServerBrowser.Frame.FakeScroll
+                local Inside = FakeScroll.Inside
+                ScrollingFrame.CanvasPosition = Vector2.new(0, math.random(100, 4000))
+                task.wait(0.1)
+                local currentJobId = game.JobId
+                task.spawn(function()
+                    while _env.IsServerHopping do
+                        task.wait(0.3)
+                        pcall(function()
+                            local ErrorGui = game:GetService("CoreGui"):FindFirstChild("RobloxPromptGui")
+                                or game:GetService("CoreGui"):FindFirstChild("ErrorGui")
+                                or game:GetService("CoreGui"):FindFirstChild("TeleportGui")
+                            if ErrorGui then
+                                for _, btn in ipairs(ErrorGui:GetDescendants()) do
+                                    if btn:IsA("TextButton") and (
+                                        btn.Text:lower():find("ok") or
+                                        btn.Text:lower():find("close") or
+                                        btn.Text:lower():find("dismiss")
+                                    ) then
+                                        btn:Activate()
+                                        task.wait(0.2)
+                                    end
+                                end
+                            end
+                            local teleportFailed = game:GetService("CoreGui"):FindFirstChildWhichIsA("ScreenGui", true)
+                            if teleportFailed then
+                                for _, lbl in ipairs(teleportFailed:GetDescendants()) do
+                                    if lbl:IsA("TextLabel") and lbl.Text:find("773") then
+                                        for _, btn in ipairs(teleportFailed:GetDescendants()) do
+                                            if btn:IsA("TextButton") then btn:Activate() end
+                                        end
+                                    end
+                                end
+                            end
+                        end)
+                    end
+                end)
+                local failedJobs = {}
+                while true do
+                    task.wait(0.5)
+                    for _, template in ipairs(Inside:GetChildren()) do
+                        if template.Name == "Template" then
+                            local joinButton = template:FindFirstChild("Join")
+                            if joinButton then
+                                local job = joinButton:GetAttribute("Job")
+                                if job and tostring(job):find("-", 1, true) then
+                                    job = tostring(job)
+                                    if job ~= currentJobId and not failedJobs[job] then
+                                        local success = pcall(function()
+                                            TeleportService:TeleportToPlaceInstance(game.PlaceId, job)
+                                        end)
+                                        if not success then
+                                            pcall(function()
+                                                TeleportService:TeleportToServer(job)
+                                            end)
+                                        end
+                                        task.wait(5)
+                                        if game.JobId == currentJobId then
+                                            failedJobs[job] = true
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end
-
-            function Main.hopDirect()
-                Hop()
-            end
-    
             local FruitConfigs = {
                 ["Dragon"]   = { ToolName = "Dragon-Dragon",                         RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
                 ["T-Rex"]    = { ToolName = "T-Rex-T-Rex",                           RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 3 } end },
@@ -6766,11 +6000,9 @@ _modules["main"] = function()
                 ["Control"]  = { ToolName = "Control-Control",                        RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
                 ["Mammoth"]  = { ToolName = "Mammoth-Mammoth",                        RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
             }
-
             local function ResolveFruitConfig()
                 return FruitConfigs[SELECTED_FRUIT]
             end
-    
             local function EquipFruit()
                 local config = ResolveFruitConfig()
                 if not config then return false end
@@ -6787,7 +6019,6 @@ _modules["main"] = function()
                 end
                 return false
             end
-    
             local function FruitAttackPlayer()
                 local config = ResolveFruitConfig()
                 if not config then return end
@@ -6795,9 +6026,7 @@ _modules["main"] = function()
                 if not myChar then return end
                 local myHRP = myChar:FindFirstChild("HumanoidRootPart")
                 if not myHRP then return end
-
                 local direction = Vector3.new(0, -0.9, 0.03)
-
                 local tool = myChar:FindFirstChild(config.ToolName)
                 if not tool then
                     EquipFruit()
@@ -6812,7 +6041,6 @@ _modules["main"] = function()
                     remote:FireServer(unpack(args))
                 end)
             end
-    
             local function GetAllValidPlayers()
                 local validPlayers = {}
                 for _, player in pairs(Players:GetPlayers()) do
@@ -6822,7 +6050,6 @@ _modules["main"] = function()
                 end
                 return validPlayers
             end
-    
             function StartInstaTeleport()
                 if InstaTpConnection then InstaTpConnection:Disconnect() end
                 InstaTpConnection = RunService.Stepped:Connect(function()
@@ -6874,7 +6101,6 @@ _modules["main"] = function()
                     end)
                 end)
             end
-    
             local function OnCharacterDeath()
                 if InstaTpConnection then
                     InstaTpConnection:Disconnect(); InstaTpConnection = nil
@@ -6901,25 +6127,20 @@ _modules["main"] = function()
                     newHumanoid.Died:Connect(function() OnCharacterDeath() end)
                 end
             end
-    
             lp.CharacterAdded:Connect(function(character)
                 local humanoid = character:WaitForChild("Humanoid", 10)
                 if humanoid then
                     humanoid.Died:Connect(function() OnCharacterDeath() end)
                 end
             end)
-    
             if lp.Character then
                 local humanoid = lp.Character:FindFirstChild("Humanoid")
                 if humanoid then
                     humanoid.Died:Connect(function() OnCharacterDeath() end)
                 end
             end
-    
             StartInstaTeleport()
-    
             if InitialBounty == 0 then InitialBounty = GetCurrentBounty() end
-    
             local LastKnownBounty = GetCurrentBounty()
             pcall(function()
                 local leaderstats = lp:WaitForChild("leaderstats", 5)
@@ -6952,10 +6173,8 @@ _modules["main"] = function()
                     LastKnownBounty = newBounty
                 end)
             end)
-    
-            print("[LeoHub] [HYPER] All systems initialized — starting combat loops")
-    
-            print("[LeoHub] [HYPER] Starting M1 attack loop")
+            print("[LeoBounty] [HYPER] All systems initialized — starting combat loops")
+            print("[LeoBounty] [HYPER] Starting M1 attack loop")
             task.spawn(function()
                 while true do
                     task.wait(0.01)
@@ -6965,8 +6184,7 @@ _modules["main"] = function()
                     end)
                 end
             end)
-    
-            print("[LeoHub] [HYPER] Starting target cycle loop")
+            print("[LeoBounty] [HYPER] Starting target cycle loop")
             task.spawn(function()
                 task.wait(3)
                 local currentIndex = 1
@@ -6975,7 +6193,6 @@ _modules["main"] = function()
                         PerformHealthEscape()
                         task.wait(1)
                     end
-    
                     local validPlayers = GetAllValidPlayers()
                     if #validPlayers > 0 then
                         if currentIndex > #validPlayers or currentIndex < 1 then currentIndex = 1 end
@@ -6999,53 +6216,39 @@ _modules["main"] = function()
                     task.wait(0.4)
                 end
             end)
-    
             local function antimover()
                 local character = lp.Character
                 if character and not character:FindFirstChild("AntiMover") then
                     Instance.new("Folder", character).Name = "AntiMover"
                 end
             end
-    
             local function v4()
-                pcall(function()
-                    local backpack = lp:FindFirstChild("Backpack")
-                    if not backpack then return end
-                    local awakening = backpack:FindFirstChild("Awakening")
-                    if not awakening then return end
-                    local remote = awakening:FindFirstChild("RemoteFunction")
-                    if not remote then return end
-                    remote:InvokeServer(true)
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                    task.wait(0.05)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-                end)
+                local args = { true }
+                lp:WaitForChild("Backpack"):WaitForChild("Awakening"):WaitForChild("RemoteFunction"):InvokeServer(unpack(
+                args))
+                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
+                task.wait(0.05)
+                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
             end
-    
-            print("[LeoHub] [HYPER] Starting T-Rex combat loop")
+            print("[LeoBounty] [HYPER] Starting T-Rex combat loop")
             local Buso = { "Buso" }
             local SafeZoneActive = false
             task.spawn(function()
                 while true do
                     task.wait(0.001)
-    
                     local player = Players.LocalPlayer
                     local char = player.Character
                     if not char then continue end
-    
                     local hrp = char:FindFirstChild("HumanoidRootPart")
                     if not hrp then continue end
-    
                     local humanoid = char:FindFirstChild("Humanoid")
                     if not humanoid then continue end
-    
                     pcall(function()
                         local trex = player.Backpack:FindFirstChild("T-Rex-T-Rex")
                         if trex then
                             humanoid:EquipTool(trex)
                         end
                     end)
-    
                     pcall(function()
                         if SelectedPlayer then
                             local target = Players:FindFirstChild(SelectedPlayer)
@@ -7067,27 +6270,19 @@ _modules["main"] = function()
                             end
                         end
                     end)
-    
                     pcall(function()
                         ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(Buso)
                     end)
                 end
             end)
-    
-            print("[LeoHub] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
-
-            spawn(function()
-                while true do
-                    local found = CheckEvents()
-                    if found then
-                        task.wait(1800)
-                    else
-                        Hop()
-                    end
-                    task.wait(10)
+            print("[LeoBounty] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
+            task.spawn(function()
+                task.wait(10) 
+                while not getgenv().LeoBountyShuttingDown do
+                    pcall(CheckGameEvents)
+                    task.wait(30) 
                 end
             end)
-
             while wait(1) do
                 pcall(function()
                     PvpEnable()
@@ -7095,108 +6290,83 @@ _modules["main"] = function()
                     v4()
                 end)
             end
-    
             end, function(e)
                 return tostring(e) .. "\n" .. debug.traceback()
             end)
             if not ok then
-                warn("[LeoHub] [HYPER] FATAL ERROR: " .. tostring(err))
+                warn("[LeoBounty] [HYPER] FATAL ERROR: " .. tostring(err))
             end
-        end) -- End task.spawn
+        end) 
     end
-    
     function Main.stop()
         Main.Running = false
-        getgenv().LeoHubShuttingDown = true
-    
+        getgenv().LeoBountyShuttingDown = true
         for _, conn in pairs(Main.Connections) do
             pcall(function() conn:Disconnect() end)
         end
         Main.Connections = {}
-    
         if Utils and Utils.flushStats then
             pcall(function() Utils.flushStats() end)
         end
-    
-        print("[LeoHub] [*] Script stopped - all connections cleaned up")
+        print("[LeoBounty] [*] Script stopped - all connections cleaned up")
     end
-    
     return Main
 end
-
 repeat task.wait() until game:IsLoaded()
-
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
-
 local _loadErrors = {}
-
 local function loadModule(name)
     if _modules[name] then
         local ok, result = pcall(_modules[name])
         if ok then
-            print("[LeoHub] [+] Module loaded: " .. name)
+            print("[LeoBounty] [+] Module loaded: " .. name)
             return result
         else
-            local errMsg = "[LeoHub] [!] Module error (" .. name .. "): " .. tostring(result)
+            local errMsg = "[LeoBounty] [!] Module error (" .. name .. "): " .. tostring(result)
             warn(errMsg)
             table.insert(_loadErrors, { module = name, error = tostring(result), time = os.time() })
             error(errMsg)
         end
     end
-    local errMsg = "[LeoHub] [!] Module not found: " .. name
+    local errMsg = "[LeoBounty] [!] Module not found: " .. name
     warn(errMsg)
     table.insert(_loadErrors, { module = name, error = "not found", time = os.time() })
     error(errMsg)
 end
-
-print("[LeoHub] Loading modules...")
-
+print("[LeoBounty] Loading modules...")
 local Utils = loadModule("utils")
 local Config = loadModule("config")
 local Auth = loadModule("auth")
 local UI = loadModule("ui")
 local Main = loadModule("main")
-
-print("[LeoHub] Modules loaded!")
-
+print("[LeoBounty] Modules loaded!")
 Config.init()
 Auth.init(Utils)
-
-print("[LeoHub] Config: Fruit=" .. Config.get("Fruit") .. ", Region=" .. Config.get("Region") .. ", Faction=" .. Config.get("Faction"))
-
-print("[LeoHub] Initializing UI...")
-
+print("[LeoBounty] Config: Fruit=" .. Config.get("Fruit") .. ", Region=" .. Config.get("Region") .. ", Faction=" .. Config.get("Faction"))
+print("[LeoBounty] Initializing UI...")
 UI.init(Utils, Config, Auth)
-
-print("[LeoHub] UI ready! Waiting for authentication...")
-
+print("[LeoBounty] UI ready! Waiting for authentication...")
 task.spawn(function()
     while not Auth.isAuthenticated() do
         task.wait(0.5)
     end
-    
-    print("[LeoHub] Authenticated! Loading character...")
-    
+    print("[LeoBounty] Authenticated! Loading character...")
     Main.init(Utils, Config, UI)
-    
     while not Config.isConfigured() do
         task.wait(0.5)
     end
-    print("[LeoHub] Fully configured! Proceeding...")
-
+    print("[LeoBounty] Fully configured! Proceeding...")
     local playerGui
     repeat
         task.wait()
         playerGui = lp:FindFirstChild("PlayerGui")
     until playerGui
-
     local mainGui
     repeat
         task.wait()
         mainGui = playerGui:FindFirstChild("Main (minimal)")
     until mainGui
-
     local btn
     local faction = Config.get("Faction") or "Pirate"
     local factionContainer = faction == "Marine" and "Marines" or "Pirates"
@@ -7208,13 +6378,11 @@ task.spawn(function()
             and mainGui.ChooseTeam.Container[factionContainer]:FindFirstChild("Frame")
             and mainGui.ChooseTeam.Container[factionContainer].Frame:FindFirstChild("TextButton")
     until btn
-
     local char, hum
     local attempt = 0
     repeat
         task.wait(0.5)
         attempt = attempt + 1
-        
         pcall(function()
             if firesignal then
                 firesignal(btn.Activated)
@@ -7231,36 +6399,27 @@ task.spawn(function()
                 end
             end
         end)
-        
         if lp.Character then
             char = lp.Character
             hum = char:FindFirstChild("Humanoid")
         end
-        
         if attempt > 10 then
-            print("[LeoHub] [!] Auto-team selection taking too long. Click it manually!")
+            print("[LeoBounty] [!] Auto-team selection taking too long. Click it manually!")
         end
-    until (char and hum) or getgenv().LeoHubShuttingDown
-
+    until (char and hum) or getgenv().LeoBountyShuttingDown
     local hrp
     repeat
         task.wait()
         hrp = char:FindFirstChild("HumanoidRootPart")
     until hrp
-
-    print("[LeoHub] Character loaded! Starting main logic...")
-    
+    print("[LeoBounty] Character loaded! Starting main logic...")
     Main.start()
 end)
-
 local UserInputService = game:GetService("UserInputService")
-
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    
     if input.KeyCode == Enum.KeyCode.RightControl then
         UI.toggle()
     end
 end)
-
-print("[LeoHub] Ready! Press RightControl to toggle UI.")
+print("[LeoBounty] Ready! Press RightControl to toggle UI.")
