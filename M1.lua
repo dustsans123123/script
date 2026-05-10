@@ -1,6459 +1,811 @@
-repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
-getgenv().Config = {
-    Fruit = "T-Rex",
-    Region = "Singapore",
-    Faction = "Pirate",
-    Webhook = "",
-    ChangeTeamAt30M = true,
-    AutoKillAt30M = true,
-    TransformTRex = true,
-    StartupSound = true,
-    SoundUrl = "",
-    HideProfile = false,
-    Background = "",
+local Players           = game:GetService("Players")
+local TeleportService   = game:GetService("TeleportService")
+local player            = Players.LocalPlayer
+local CONFIG = {
+    TeleportDistance      = 2,
+    SilentTeleport        = true,
+    CheckSafeZone         = true,
+    GhostResetInterval    = 0.5,
+    RecentlyKilledTimeout = 9999,
+    NoHitTimeout          = 5,
+    BlacklistTimeout      = 60,
+    AttackInterval        = 0.03,
+    SweepSpeed            = 0.04,
+    HopDelay              = 3,
+    AutoRejoin            = true,
+    AutoJoinTeam          = true,
+    Team                  = "Marines",
+    PreferredRegion       = "sing",
+    SpawnAltitude         = 2000,
 }
-local _BUILD_VERSION = "7.4"
-local _BUILD_ID = "36ae3bc8057b"
-local _BUILD_BRAND = "LEO PREMIUM FREE"
-local _SAFE = {}
-do
-    _SAFE.pcall    = pcall
-    _SAFE.type     = type
-    _SAFE.tostring = tostring
-    _SAFE.tonumber = tonumber
-    _SAFE.rawget   = rawget
-    _SAFE.rawset   = rawset
-    _SAFE.select   = select
-    _SAFE.pairs    = pairs
-    _SAFE.ipairs   = ipairs
-    _SAFE.next     = next
-    _SAFE.unpack   = unpack or table.unpack
-    _SAFE.error    = error
-    _SAFE.setmetatable = setmetatable
-    _SAFE.getmetatable = getmetatable
-    _SAFE.require  = require
-    _SAFE.string_sub    = string.sub
-    _SAFE.string_byte   = string.byte
-    _SAFE.string_char   = string.char
-    _SAFE.string_format = string.format
-    _SAFE.string_len    = string.len
-    _SAFE.string_find   = string.find
-    _SAFE.string_rep    = string.rep
-    _SAFE.string_lower  = string.lower
-    _SAFE.string_upper  = string.upper
-    _SAFE.string_gsub   = string.gsub
-    _SAFE.string_match  = string.match
-    _SAFE.string_gmatch = string.gmatch
-    _SAFE.math_floor  = math.floor
-    _SAFE.math_random = math.random
-    _SAFE.math_abs    = math.abs
-    _SAFE.math_max    = math.max
-    _SAFE.math_min    = math.min
-    _SAFE.math_huge   = math.huge
-    _SAFE.os_time  = os.time
-    _SAFE.os_clock = os.clock
-    _SAFE.table_insert = table.insert
-    _SAFE.table_remove = table.remove
-    _SAFE.table_concat = table.concat
-    _SAFE.table_sort   = table.sort
-    _SAFE.task_spawn = task.spawn
-    _SAFE.task_wait  = task.wait
-    _SAFE.task_defer = task.defer
-    _SAFE.task_delay = task.delay
-    _SAFE.game = game
-    _SAFE.workspace = workspace
-    _SAFE.pcall(function()
-        if getgenv then _SAFE.getgenv = getgenv end
-        if iscclosure then _SAFE.iscclosure = iscclosure end
-        if islclosure then _SAFE.islclosure = islclosure end
-        if getrawmetatable then _SAFE.getrawmetatable = getrawmetatable end
-        if hookfunction then _SAFE.hookfunction = hookfunction end
-        if newcclosure then _SAFE.newcclosure = newcclosure end
+local STATS_FILE            = "Zeroxhub.json"
+local totalBountyGlobal     = 0
+local totalTimeGlobal       = 0
+local sessionBounty         = 0
+
+local function autoJoinTeam()
+    if not CONFIG.AutoJoinTeam then return end
+    local teamStr = CONFIG.Team or "Marines"
+    pcall(function()
+        local remote = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") and game:GetService("ReplicatedStorage").Remotes:FindFirstChild("CommF_")
+        if remote then remote:InvokeServer("SetTeam", teamStr) end
     end)
-    local _bootClean = true
-    _SAFE.pcall(function()
-        if _SAFE.iscclosure then
-            local criticals = {
-                _SAFE.pcall, _SAFE.type, _SAFE.tostring, _SAFE.rawget,
-                _SAFE.pairs, _SAFE.ipairs, _SAFE.next, _SAFE.select,
-            }
-            for _, fn in _SAFE.ipairs(criticals) do
-                if not _SAFE.iscclosure(fn) then
-                    _bootClean = false
-                end
-            end
-        end
-    end)
-    if not _bootClean then
-        warn("[Leo] [!] Anti-hook bootstrap: hooks detected at load time!")
-    end
-    if _SAFE.getgenv then
-        _SAFE.getgenv()._SAFE = _SAFE
-    end
 end
-local _MODULE_HASHES = {
-    ["auth"] = "c0f3e36203d0d0ef",
-    ["config"] = "7370ab45e28aca46",
-    ["main"] = "5da4ec19e7c28208",
-    ["security"] = "c9e5ad457a0a1584",
-    ["ui"] = "a218d189e9e7189b",
-    ["utils"] = "d46572fe53b674e6",
-}
-local _modules = {}
-_modules["security"] = function()
-    local Security = {}
-    local Utils = nil
-    local HttpService = game:GetService("HttpService")
-    local Players = game:GetService("Players")
-    local _violations = {}
-    local _violationCount = 0
-    local _degraded = false
-    local _scanCount = 0
-    local function _s(bytes)
-        local chars = {}
-        for i = 1, #bytes do
-            chars[i] = string.char(bytes[i])
-        end
-        return table.concat(chars)
-    end
-    local _STR = {
-        request      = _s({ 114, 101, 113, 117, 101, 115, 116 }),
-        http_request = _s({ 104, 116, 116, 112, 95, 114, 101, 113, 117, 101, 115, 116 }),
-        namecall     = _s({ 95, 95, 110, 97, 109, 101, 99, 97, 108, 108 }),
-        index        = _s({ 95, 95, 105, 110, 100, 101, 120 }),
-        C_source     = _s({ 91, 67, 93 }),
+task.spawn(autoJoinTeam)
+local recentlyKilled    = {}
+local hitTracker        = {}
+local isRunning         = false
+local currentTarget     = nil
+local cachedRemote      = nil
+local cachedTool        = nil
+local cachedM1Active    = nil
+local lastTargetPos     = nil
+local lastTargetDir     = Vector3.new(0, 0, -1)
+local sessionStartTime  = os.time()
+local targetStartTime   = nil
+local targetStartHealth = nil
+local noTargetSince     = nil
+local isHopping         = false
+local PLACE_ID = game.PlaceId
+local JOB_ID   = game.JobId
+
+local function getRandomOffset()
+    return Vector3.new(
+        (math.random()-0.5)*0.5,
+        (math.random()-0.5)*0.5,
+        (math.random()-0.5)*0.5
+    )
+end
+
+local function formatTime(sec)
+    local h = math.floor(sec/3600)
+    local m = math.floor((sec%3600)/60)
+    local s = sec % 60
+    if h > 0 then return string.format("%02d:%02d:%02d",h,m,s)
+    else return string.format("%02d:%02d",m,s) end
+end
+
+local HttpService = game:GetService("HttpService")
+local function saveStats()
+    local data = {
+        TotalBounty = totalBountyGlobal,
+        TotalTime   = totalTimeGlobal + (os.time() - sessionStartTime)
     }
-    local function _isHooked(func)
-        if type(func) ~= "function" then return true end
-        if iscclosure and not iscclosure(func) then return true end
-        if islclosure and islclosure(func) then return true end
-        if debug and debug.info then
-            local s, source = pcall(debug.info, func, "s")
-            if s and source and source ~= _STR.C_source then return true end
-        end
-        return false
-    end
-    local function _getCriticalFunctions()
-        local criticals = {}
-        local checks = {
-            { pcall,    "pcall" },
-            { type,     "type" },
-            { tostring, "tostring" },
-            { rawget,   "rawget" },
-            { rawset,   "rawset" },
-        }
-        for _, item in ipairs(checks) do
-            if item[1] then table.insert(criticals, item) end
-        end
-        if string then
-            if string.sub then table.insert(criticals, { string.sub, "string.sub" }) end
-            if string.byte then table.insert(criticals, { string.byte, "string.byte" }) end
-        end
-        if os and os.time then
-            table.insert(criticals, { os.time, "os.time" })
-        end
-        pcall(function()
-            table.insert(criticals, { HttpService.JSONEncode, "HttpService.JSONEncode" })
-            table.insert(criticals, { HttpService.JSONDecode, "HttpService.JSONDecode" })
-        end)
-        pcall(function()
-            if getgenv then
-                local genv = getgenv()
-                local reqFunc = genv[_STR.request] or genv[_STR.http_request]
-                if reqFunc then table.insert(criticals, { reqFunc, "NetworkHandler" }) end
-            end
-        end)
-        return criticals
-    end
-    function Security.checkFunctionIntegrity()
-        local violations = {}
-        local criticals = _getCriticalFunctions()
-        for _, item in ipairs(criticals) do
-            if item[1] and _isHooked(item[1]) then
-                table.insert(violations, item[2])
-            end
-        end
-        return #violations == 0, violations
-    end
-    function Security.verifyFunction(func, name)
-        if not func then return false end
-        if _isHooked(func) then
-            Security._recordViolation("hooked_function", name or "unknown")
-            return false
-        end
-        return true
-    end
-    function Security._checkMetamethods()
-        local clean = true
-        pcall(function()
-            if not getrawmetatable then return end
-            local gameMt = getrawmetatable(game)
-            if gameMt then
-                local ncHook = rawget(gameMt, _STR.namecall)
-                if ncHook and islclosure and islclosure(ncHook) then
-                    clean = false
-                end
-            end
-        end)
-        return clean
-    end
-    function Security._recordViolation(category, detail)
-        _violationCount = _violationCount + 1
-        table.insert(_violations, {
-            category = category,
-            detail = detail or "",
-            time = os.time(),
-        })
-    end
-    function Security.getViolationCount()
-        return _violationCount
-    end
-    function Security.isDegraded()
-        return _degraded
-    end
-    local function _silentDegrade(reason)
-        if _degraded then return end
-        _degraded = true
-        task.spawn(function()
-            task.wait(math.random(10, 30))
-            pcall(function()
-                if getgenv then
-                    local env = getgenv()
-                    env.LeoBountyShuttingDown = true
-                end
-            end)
-        end)
-    end
-    function Security.runFullScan()
-        _scanCount = _scanCount + 1
-        local allClean = true
-        local reasons = {}
-        local funcOk, funcViolations = Security.checkFunctionIntegrity()
-        if not funcOk then
-            allClean = false
-            for _, v in ipairs(funcViolations) do
-                Security._recordViolation("function_hooked", v)
-                table.insert(reasons, "Hooked: " .. v)
-            end
-        end
-        if not Security._checkMetamethods() then
-            allClean = false
-            Security._recordViolation("metamethod_hooked", "Game metamethods tampered")
-            table.insert(reasons, "Metamethod hook detected")
-        end
-        return allClean, reasons
-    end
-    function Security.startHeartbeat()
-        task.spawn(function()
-            task.wait(math.random(30, 60))
-            while true do
-                task.wait(math.random(45, 120))
-                pcall(function()
-                    if getgenv and getgenv().LeoBountyShuttingDown then return end
-                end)
-                local clean, reasons = Security.runFullScan()
-                if not clean and not _degraded then
-                    _silentDegrade(table.concat(reasons, "; "))
-                end
-            end
-        end)
-    end
-    function Security.getSafeRequestFunction()
-        local reqFunc = nil
-        pcall(function()
-            if getgenv then
-                local env = getgenv()
-                reqFunc = env[_STR.request] or env[_STR.http_request]
-            end
-        end)
-        if not reqFunc then
-            reqFunc = request or http_request or (syn and syn.request) or (http and http.request)
-        end
-        if reqFunc and _isHooked(reqFunc) then
-            Security._recordViolation("hooked_request", "HTTP request function hooked")
-            local fallbacks = { request, http_request, syn and syn.request, http and http.request }
-            for _, fb in ipairs(fallbacks) do
-                if fb and not _isHooked(fb) then return fb end
-            end
-            _silentDegrade("All HTTP functions hooked")
-            return nil
-        end
-        return reqFunc
-    end
-    function Security.init(utilsModule)
-        Utils = utilsModule
-        local clean, reasons = Security.runFullScan()
-        if clean then
-            print("[Leo-Security] [+] Initial scan: CLEAN")
-        else
-            print("[Leo-Security] [!] Initial scan: " .. #reasons .. " issue(s)")
-        end
-        return clean
-    end
-    return Security
+    pcall(function() writefile(STATS_FILE, HttpService:JSONEncode(data)) end)
 end
-_modules["utils"] = function()
-    local Utils = {}
-    local HttpService = game:GetService("HttpService")
-    local Players = game:GetService("Players")
-    local UserInputService = game:GetService("UserInputService")
-    local TweenService = game:GetService("TweenService")
-    local GuiService = game:GetService("GuiService")
-    local lp = Players.LocalPlayer
-    Utils.ROOT_FOLDER = "LeoBounty"
-    Utils.DATA_FOLDER = "Leo/Data"
-    Utils.IMAGES_FOLDER = "Leo/Assets/Images"
-    Utils.SOUNDS_FOLDER = "Leo/Assets/Sounds"
-    Utils.API_BASE = ""
-    Utils.KEY_FILE = "Leo/Data/LeoBounty.nxs"
-    Utils.STATS_FILE = "Leo/Data/LeoBounty_Stats.nxs"
-    Utils.CLIENT_VERSION = "6.6"
-    Utils.AUTH_URL = Utils.API_BASE 
-    Utils.SAVE_INTERVAL = 10 
-    Utils._statsLastSaved = 0
-    Utils._statsDirty = false
-    Utils._statsCache = nil
-    function Utils.httpPost(url, body, headers)
-        headers = headers or {}
-        headers["Content-Type"] = headers["Content-Type"] or "application/json"
-        local requestFn = request or http_request or (http and http.request) or (syn and syn.request)
-        if requestFn then
-            local ok, response = pcall(requestFn, {
-                Url = url,
-                Method = "POST",
-                Headers = headers,
-                Body = (type(body) == "string") and body or HttpService:JSONEncode(body),
-            })
-            if ok and response then
-                return response
+
+local function loadStats()
+    pcall(function()
+        if isfile(STATS_FILE) then
+            local content = readfile(STATS_FILE)
+            local data = HttpService:JSONDecode(content)
+            totalBountyGlobal = data.TotalBounty or 0
+            totalTimeGlobal   = data.TotalTime or 0
+        end
+    end)
+end
+loadStats()
+
+local function isInSafeZone(targetChar)
+    if not targetChar then return false end
+    if targetChar == player.Character then
+        local pg = player:FindFirstChild("PlayerGui")
+        local main = pg and pg:FindFirstChild("Main")
+        local bhl = main and main:FindFirstChild("BottomHUDList")
+        local szUI = bhl and bhl:FindFirstChild("SafeZone")
+        if szUI and szUI.Visible then return true end
+    end
+    local root = targetChar:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
+    local folder = workspace:FindFirstChild("_WorldOrigin")
+        and workspace._WorldOrigin:FindFirstChild("SafeZones")
+    if not folder then return false end
+    local pos = root.Position
+    for _, zone in pairs(folder:GetChildren()) do
+        if zone:IsA("BasePart") then
+            local lp   = zone.CFrame:PointToObjectSpace(pos)
+            local half = zone.Size / 2
+            if math.abs(lp.X)<=half.X and math.abs(lp.Y)<=half.Y and math.abs(lp.Z)<=half.Z then
+                return true
             end
         end
-        local ok2, response2 = pcall(function()
-            return HttpService:RequestAsync({
-                Url = url,
-                Method = "POST",
-                Headers = headers,
-                Body = (type(body) == "string") and body or HttpService:JSONEncode(body),
-            })
-        end)
-        if ok2 and response2 then
-            return response2
+    end
+    return false
+end
+
+local function physicalEscape()
+    local char = player.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    pcall(function()
+        for i = 1, 3 do
+            root.CFrame = root.CFrame * CFrame.new(0, 0, -50)
+            task.wait(0.05)
         end
-        return nil
-    end
-    Utils.BANKAI_FILE = "Leo/Assets/Sounds/bankai.mp3"
-    Utils.LOGO_FILE = "Leo/Assets/Images/LeoLogo.png"
-    Utils.BANKAI_URL = "https://raw.githubusercontent.com/Ryu-Dev-here/assetsfora/main/bankai.mp3"
-    Utils.LOGO_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoJ-_el71Qlnx-WnINYQmN9GFtl3GP7o5jYw&s"
-    Utils._statsCache = nil
-    Utils._statsLastSaved = 0
-    Utils._statsDirty = false
-    Utils.SAVE_INTERVAL = 10 
-    Utils._bankaiSound = nil
-    function Utils.initFolders()
-        pcall(function()
-            local makefolder = makefolder or function() end
-            local isfolder = isfolder or function() return false end
-            local folders = {
-                Utils.ROOT_FOLDER,
-                Utils.DATA_FOLDER,
-                "Leo/Assets",
-                Utils.IMAGES_FOLDER,
-                Utils.SOUNDS_FOLDER
-            }
-            for _, folder in ipairs(folders) do
-                if not isfolder(folder) then
-                    makefolder(folder)
-                end
-            end
-            print("[LeoBounty] [+] Workspace folders initialized")
-        end)
-    end
-    Utils.initFolders()
-    local ENCRYPT_KEY = "45b090e9af3bd54b67216a6d6a8e40bf66eba58cb4adc4286d97ff92137d1bdf"
-    local NXS_HEADER = "NXS"
-    local NXS_VERSION = 2
-    local NXS_SEPARATOR = "|"
-    local FNV_OFFSET = 2166136261
-    local FNV_PRIME = 16777619
-    local function fnv1aHash(data)
-        local hash = FNV_OFFSET
-        for i = 1, #data do
-            hash = bit32.bxor(hash, data:byte(i))
-            hash = bit32.band(hash * FNV_PRIME, 0xFFFFFFFF)
-        end
-        return string.format("%08X", hash)
-    end
-    local function xorEncrypt(data, key)
-        local result = {}
-        for i = 1, #data do
-            local keyChar = key:byte(((i - 1) % #key) + 1)
-            local dataChar = data:byte(i)
-            table.insert(result, string.char(bit32.bxor(dataChar, keyChar)))
-        end
-        return table.concat(result)
-    end
-    local function toHex(str)
-        local hex = {}
-        for i = 1, #str do
-            table.insert(hex, string.format("%02x", str:byte(i)))
-        end
-        return table.concat(hex)
-    end
-    local function fromHex(hexStr)
-        local result = {}
-        for i = 1, #hexStr, 2 do
-            local byte = tonumber(hexStr:sub(i, i + 1), 16)
-            if byte then
-                table.insert(result, string.char(byte))
-            end
-        end
-        return table.concat(result)
-    end
-    function Utils.encrypt(data)
-        local encrypted = xorEncrypt(data, ENCRYPT_KEY)
-        return toHex(encrypted)
-    end
-    function Utils.decrypt(hexData)
-        local encrypted = fromHex(hexData)
-        return xorEncrypt(encrypted, ENCRYPT_KEY)
-    end
-    function Utils.encryptNXSv2(data)
-        local encrypted = Utils.encrypt(data)
-        local checksum = fnv1aHash(data)
-        return NXS_HEADER ..
-            NXS_SEPARATOR .. tostring(NXS_VERSION) .. NXS_SEPARATOR .. checksum .. NXS_SEPARATOR .. encrypted
-    end
-    function Utils.decryptNXSv2(content)
-        if not content or content == "" then
-            return nil, "Empty content"
-        end
-        if content:sub(1, 4) == NXS_HEADER .. NXS_SEPARATOR then
-            local parts = {}
-            for part in content:gmatch("([^" .. NXS_SEPARATOR .. "]+)") do
-                table.insert(parts, part)
-            end
-            if #parts >= 4 then
-                local version = tonumber(parts[2])
-                local storedChecksum = parts[3]
-                local encryptedData = parts[4]
-                local decrypted = Utils.decrypt(encryptedData)
-                if not decrypted then
-                    return nil, "Decryption failed"
-                end
-                local calculatedChecksum = fnv1aHash(decrypted)
-                if calculatedChecksum ~= storedChecksum then
-                    return nil, "Checksum mismatch - file corrupted"
-                end
-                return decrypted, nil
-            end
-            return nil, "Invalid NXS v2 format"
-        end
-        local decrypted = Utils.decrypt(content)
-        if decrypted and #decrypted > 0 then
-            return decrypted, "migrated_from_v1"
-        end
-        return nil, "Unknown format"
-    end
-    function Utils.verifyNXSIntegrity(content)
-        if not content or content == "" then
-            return false, "Empty content"
-        end
-        if content:sub(1, 4) ~= NXS_HEADER .. NXS_SEPARATOR then
-            return false, "Not NXS v2 format"
-        end
-        local _, err = Utils.decryptNXSv2(content)
-        if err and err ~= "migrated_from_v1" then
-            return false, err
-        end
-        return true, nil
-    end
-    function Utils._getHWIDLegacy()
-        local hwid = {}
-        pcall(function()
-            if gethwid then
-                hwid.exploit_hwid = gethwid()
-            elseif KRNL_HWID then
-                hwid.exploit_hwid = KRNL_HWID
-            elseif getexecutorname then
-                hwid.exploit_hwid = getexecutorname() .. "_" .. tostring(lp.UserId)
-            else
-                hwid.exploit_hwid = "user_" .. tostring(lp.UserId)
-            end
-        end)
-        hwid.roblox_userid = tostring(lp.UserId)
-        return hwid
-    end
-    function Utils.httpRequest(options)
-        local success, response
-        local httpFuncs = { request, http_request, syn and syn.request, http and http.request, fluxus and fluxus.request }
-        for _, func in ipairs(httpFuncs) do
-            if func then
-                success, response = pcall(function()
-                    return func(options)
-                end)
-                if success and response then
-                    return response, nil
-                end
-            end
-        end
-        return nil, "No HTTP function available"
-    end
-    Utils.LEO_LOGO = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoJ-_el71Qlnx-WnINYQmN9GFtl3GP7o5jYw&s"
-    Utils.LEO_BANNER = ""
-    local function textDisplay(content, id)
-        local comp = { type = 10, content = content }
-        if id then comp.id = id end
-        return comp
-    end
-    local function separator(spacing, divider)
-        return { type = 14, spacing = spacing or 1, divider = divider ~= false }
-    end
-    local function section(text, thumbnailUrl)
-        local comp = {
-            type = 9,
-            components = { { type = 10, content = text } }
-        }
-        if thumbnailUrl then
-            comp.accessory = {
-                type = 11,
-                media = { url = thumbnailUrl }
-            }
-        end
-        return comp
-    end
-    local function container(components, accentColor, spoiler)
-        local comp = {
-            type = 17,
-            components = components,
-        }
-        if accentColor then comp.accent_color = accentColor end
-        if spoiler then comp.spoiler = true end
-        return comp
-    end
-    function Utils.sendWebhook(webhookUrl, data)
-        if not webhookUrl or webhookUrl == "" then return false end
-        if not data.components then
-            return Utils.sendWebhookEmbed(webhookUrl, data)
-        end
-        local url = webhookUrl
-        if not url:find("with_components") then
-            url = url .. (url:find("?") and "&" or "?") .. "with_components=true"
-        end
-        local payload = HttpService:JSONEncode({
-            username = "Leo",
-            avatar_url = Utils.LEO_LOGO,
-            flags = 32768, 
-            components = data.components or {}
-        })
-        local response, err = Utils.httpRequest({
-            Url = url,
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = payload
-        })
-        return response and (response.StatusCode == 200 or response.StatusCode == 204)
-    end
-    function Utils.sendWebhookEmbed(webhookUrl, data)
-        if not webhookUrl or webhookUrl == "" then return false end
-        local embed = {
-            title = data.title or "LeoBounty",
-            description = data.description or "",
-            color = data.color or 10181046,
-            fields = data.fields or {},
-            author = {
-                name = "Leo",
-                icon_url = Utils.LEO_LOGO,
-                url = ""
-            },
-            thumbnail = { url = data.thumbnail or Utils.LEO_LOGO },
-            footer = {
-                text = "LeoBounty v" .. Utils.CLIENT_VERSION .. " | By: Leo Hub",
-                icon_url = Utils.LEO_LOGO
-            },
-            timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
-        }
-        if data.image then embed.image = { url = data.image } end
-        local payload = HttpService:JSONEncode({
-            username = "Leo",
-            avatar_url = Utils.LEO_LOGO,
-            embeds = { embed }
-        })
-        local response, err = Utils.httpRequest({
-            Url = webhookUrl,
-            Method = "POST",
-            Headers = { ["Content-Type"] = "application/json" },
-            Body = payload
-        })
-        return response and response.StatusCode == 204
-    end
-    function Utils.notifyKill(webhookUrl, targetName, bountyGained, totalStats, extraInfo)
-        extraInfo = extraInfo or {}
-        local currentBounty = Utils.getCurrentBounty()
-        local fruitUsed = extraInfo.fruit or "Unknown"
-        local regionName = extraInfo.region or "Unknown"
-        local factionName = extraInfo.faction or "Unknown"
-        local statName = (factionName == "Marine") and "Honor" or "Bounty"
-        local statPrefix = (factionName == "Marine") and "★" or "$"
-        return Utils.sendWebhook(webhookUrl, {
-            components = {
-                container({
-                    textDisplay("# ⚔️ KILL CONFIRMED"),
-                    separator(1, true),
-                    section(
-                        "**Target:** `" .. targetName .. "`\n" ..
-                        "**" .. statName .. " Gained:** `+" .. Utils.formatNumber(bountyGained) .. "`\n" ..
-                        "**Fruit Used:** `" .. fruitUsed .. "`",
-                        Utils.LEO_LOGO
-                    ),
-                    separator(1, true),
-                    textDisplay("### 📊 Session Stats"),
-                    section(
-                        "**Total Kills:** `" .. tostring(totalStats.totalKills) .. "`\n" ..
-                        "**Total " ..
-                        statName .. ":** `" .. statPrefix .. Utils.formatNumber(totalStats.totalBountyGained) .. "`\n" ..
-                        "**Current " .. statName .. ":** `" .. statPrefix .. Utils.formatNumber(currentBounty) .. "`"
-                    ),
-                    separator(1, true),
-                    textDisplay(
-                        "-# 🌎 " ..
-                        regionName .. " • ⚓ " .. factionName .. " • ⏱ " .. Utils.formatTime(totalStats.totalPlayTime) ..
-                        " • 🔄 " .. tostring(totalStats.serversHopped) .. " hops\n" ..
-                        "-# 👤 " .. lp.Name .. " • LeoBounty v" .. Utils.CLIENT_VERSION
-                    ),
-                }, 15158332), 
-            }
-        })
-    end
-    function Utils.notifyServerHop(webhookUrl, reason, stats, extraInfo)
-        extraInfo = extraInfo or {}
-        local regionName = extraInfo.region or "Unknown"
-        local factionName = extraInfo.faction or "Pirate"
-        local statPrefix = (factionName == "Marine") and "★" or "$"
-        return Utils.sendWebhook(webhookUrl, {
-            components = {
-                container({
-                    textDisplay("# 🔄 SERVER HOP"),
-                    separator(1, true),
-                    section(
-                        "**Reason:** " .. (reason or "No valid targets found") .. "\n" ..
-                        "**Total Hops:** `" .. tostring(stats.serversHopped) .. "`\n" ..
-                        "**Session Kills:** `" .. tostring(stats.totalKills) .. "`\n" ..
-                        "**Target Region:** `" .. regionName .. "`",
-                        Utils.LEO_LOGO
-                    ),
-                    separator(1, true),
-                    textDisplay(
-                        "-# " ..
-                        statPrefix ..
-                        Utils.formatNumber(stats.totalBountyGained) ..
-                        " gained • ⏱ " .. Utils.formatTime(stats.totalPlayTime) ..
-                        " • 👤 " .. lp.Name
-                    ),
-                }, 3447003), 
-            }
-        })
-    end
-    function Utils.notifyAchievement(webhookUrl, achievement, stats)
-        return Utils.sendWebhook(webhookUrl, {
-            components = {
-                container({
-                    textDisplay("# 🏆 ACHIEVEMENT UNLOCKED"),
-                    separator(1, true),
-                    textDisplay("## " .. achievement),
-                    separator(1, true),
-                    section(
-                        "**Total Kills:** `" .. tostring(stats.totalKills) .. "`\n" ..
-                        "**Total Bounty:** `$" .. Utils.formatNumber(stats.totalBountyGained) .. "`\n" ..
-                        "**Play Time:** `" .. Utils.formatTime(stats.totalPlayTime) .. "`",
-                        Utils.LEO_LOGO
-                    ),
-                }, 16766720), 
-            }
-        })
-    end
-    function Utils.notifyStart(webhookUrl, config)
-        local factionName = config.Faction or "Pirate"
-        return Utils.sendWebhook(webhookUrl, {
-            components = {
-                container({
-                    textDisplay("# ▶️ LEOBOUNTY STARTED"),
-                    separator(1, true),
-                    section(
-                        "**Fruit:** `" .. (config.Fruit or "T-Rex") .. "`\n" ..
-                        "**Region:** `" .. (config.Region or "Brazil") .. "`\n" ..
-                        "**Faction:** `" .. factionName .. "`\n" ..
-                        "**Player:** `" .. lp.Name .. "`",
-                        Utils.LEO_LOGO
-                    ),
-                    separator(1, true),
-                    textDisplay("-# LeoBounty v" .. Utils.CLIENT_VERSION .. " • Blox Fruits • By: Leo Hub"),
-                }, 5763719), 
-            }
-        })
-    end
-    function Utils.saveKey(key)
-        pcall(function()
-            if writefile then
-                local encrypted = Utils.encryptNXSv2(key)
-                writefile(Utils.KEY_FILE, encrypted)
-            end
-        end)
-    end
-    function Utils.loadKey()
-        local key = nil
-        pcall(function()
-            if isfile and isfile(Utils.KEY_FILE) then
-                local content = readfile(Utils.KEY_FILE)
-                local decrypted, err = Utils.decryptNXSv2(content)
-                if decrypted then
-                    key = decrypted
-                    if err == "migrated_from_v1" then
-                        Utils.saveKey(decrypted)
-                        print("[LeoBounty] [+] Key file migrated to NXS v2 format")
-                    end
-                end
-            end
-        end)
-        return key
-    end
-    function Utils.clearKey()
-        pcall(function()
-            if isfile and isfile(Utils.KEY_FILE) and delfile then
-                delfile(Utils.KEY_FILE)
-            end
-        end)
-    end
-    function Utils.loadStats()
-        if Utils._statsCache then
-            return Utils._statsCache
-        end
-        local defaultStats = {
-            totalBountyGained = 0,
-            totalKills = 0,
-            sessionStartTime = os.time(),
-            sessionKills = 0,
-            sessionBounty = 0,
-            killFeed = {},
-            totalPlayTime = 0,
-            serversHopped = 0,
-            autoServersHopped = 0, 
-            lastUpdated = os.time()
-        }
-        local stats = nil
-        pcall(function()
-            if isfile and isfile(Utils.STATS_FILE) then
-                local content = readfile(Utils.STATS_FILE)
-                local decrypted, err = Utils.decryptNXSv2(content)
-                if decrypted then
-                    stats = HttpService:JSONDecode(decrypted)
-                    if err == "migrated_from_v1" then
-                        Utils._statsCache = stats
-                        Utils._writeStatsToDisk(stats)
-                        print("[LeoBounty] [+] Stats file migrated to NXS v2 format")
-                    end
-                else
-                    print("[LeoBounty] [!] Stats file corrupted: " .. (err or "unknown"))
-                end
-            end
-        end)
-        if stats then
-            for key, value in pairs(defaultStats) do
-                if stats[key] == nil then
-                    stats[key] = value
-                end
-            end
-            Utils._statsCache = stats
-            return stats
-        end
-        Utils._statsCache = defaultStats
-        return defaultStats
-    end
-    function Utils._writeStatsToDisk(stats)
-        pcall(function()
-            if writefile then
-                stats.lastUpdated = os.time()
-                local json = HttpService:JSONEncode(stats)
-                local encrypted = Utils.encryptNXSv2(json)
-                writefile(Utils.STATS_FILE, encrypted)
-                Utils._statsLastSaved = os.time()
-                Utils._statsDirty = false
-            end
-        end)
-    end
-    function Utils.saveStats(stats)
-        Utils._statsCache = stats
-        Utils._statsDirty = true
-        if os.time() - Utils._statsLastSaved >= Utils.SAVE_INTERVAL then
-            Utils._writeStatsToDisk(stats)
-        end
-    end
-    function Utils.flushStats()
-        if Utils._statsCache and Utils._statsDirty then
-            Utils._writeStatsToDisk(Utils._statsCache)
-        end
-    end
-    function Utils.updateStats(bountyGained, kills)
-        local stats = Utils.loadStats()
-        stats.totalBountyGained = (stats.totalBountyGained or 0) + (bountyGained or 0)
-        stats.totalKills = (stats.totalKills or 0) + (kills or 0)
-        stats.sessionBounty = (stats.sessionBounty or 0) + (bountyGained or 0)
-        stats.sessionKills = (stats.sessionKills or 0) + (kills or 0)
-        Utils.saveStats(stats)
-        if kills and kills > 0 then
-            Utils.flushStats()
-        end
-        return stats
-    end
-    function Utils.addKillFeedEntry(entry)
-        local stats = Utils.loadStats()
-        if not stats.killFeed then stats.killFeed = {} end
-        table.insert(stats.killFeed, 1, entry) 
-        if #stats.killFeed > 20 then
-            table.remove(stats.killFeed) 
-        end
-        Utils.saveStats(stats)
-        Utils.flushStats()
-    end
-    function Utils.incrementServerHops()
-        local stats = Utils.loadStats()
-        stats.serversHopped = (stats.serversHopped or 0) + 1
-        Utils.saveStats(stats)
-        Utils.flushStats() 
-        return stats
-    end
-    function Utils.incrementAutoServerHops()
-        local stats = Utils.loadStats()
-        stats.autoServersHopped = (stats.autoServersHopped or 0) + 1
-        Utils.saveStats(stats)
-        Utils.flushStats() 
-        return stats
-    end
-    function Utils.updatePlayTime(additionalSeconds)
-        local stats = Utils.loadStats()
-        stats.totalPlayTime = (stats.totalPlayTime or 0) + (additionalSeconds or 0)
-        Utils.saveStats(stats) 
-        return stats
-    end
-    function Utils.resetStats()
-        local freshStats = {
-            totalBountyGained = 0,
-            totalKills = 0,
-            sessionStartTime = os.time(),
-            totalPlayTime = 0,
-            serversHopped = 0,
-            autoServersHopped = 0,
-            lastUpdated = os.time()
-        }
-        Utils._statsCache = freshStats
-        Utils._writeStatsToDisk(freshStats)
-        return freshStats
-    end
-    Utils.IMAGE_CACHE_FOLDER = "Leo/Assets/Images"
-    Utils._imageHashCache = {}
-    function Utils.getImageHash(url)
-        if not url or url == "" then return nil end
-        return fnv1aHash(url):sub(1, 8)
-    end
-    function Utils.cacheImage(url, forceRedownload)
-        if not url or url == "" then return nil end
-        if url:match("^rbxassetid://") or url:match("^rbxthumb://") then
-            return url
-        end
-        local getAsset = getcustomasset or getsynasset
-        local isFile = isfile or function() return false end
-        local writeFile = writefile or function() end
-        local delFile = delfile or function() end
-        if not getAsset or not writeFile then
-            return url
-        end
-        local hash = Utils.getImageHash(url)
-        if not hash then return url end
-        local fileName = Utils.IMAGE_CACHE_FOLDER .. "/img_" .. hash .. ".png"
-        if Utils._imageHashCache[hash] and not forceRedownload then
-            return Utils._imageHashCache[hash]
-        end
-        if forceRedownload then
-            pcall(function() if isFile(fileName) then delFile(fileName) end end)
-        end
-        if isFile(fileName) then
-            local asset = getAsset(fileName)
-            Utils._imageHashCache[hash] = asset
-            return asset
-        end
-        local success, content = pcall(function()
-            return game:HttpGet(url)
-        end)
-        if success and content and #content > 100 then
-            pcall(function() writeFile(fileName, content) end)
-            local asset = getAsset(fileName)
-            Utils._imageHashCache[hash] = asset
-            return asset
-        end
-        return url
-    end
-    function Utils.notify(title, text, duration)
-        duration = duration or 5
-        local uiRef = nil
-        pcall(function() uiRef = getgenv()._LeoUI end)
-        if uiRef and uiRef.showIslandNotification and uiRef.DynamicIsland then
-            local displayText = text or title
-            if title and text and title ~= "" and not text:find(title) then
-                displayText = text
-            end
-            uiRef.showIslandNotification(displayText, nil, math.min(duration, 5))
-            return
-        end
-        pcall(function()
-            game:GetService("StarterGui"):SetCore("SendNotification", {
-                Title = title,
-                Text = text,
-                Duration = duration
-            })
-        end)
-    end
-    function Utils.formatTime(seconds)
-        seconds = math.floor(seconds or 0)
-        local hours = math.floor(seconds / 3600)
-        local minutes = math.floor((seconds % 3600) / 60)
-        local secs = seconds % 60
-        if hours > 0 then
-            return string.format("%dh %dm %ds", hours, minutes, secs)
-        elseif minutes > 0 then
-            return string.format("%dm %ds", minutes, secs)
-        else
-            return string.format("%ds", secs)
-        end
-    end
-    function Utils.formatNumber(num)
-        num = num or 0
-        if num >= 1000000 then
-            return string.format("%.1fM", num / 1000000)
-        elseif num >= 1000 then
-            return string.format("%.1fK", num / 1000)
-        else
-            return tostring(math.floor(num))
-        end
-    end
-    function Utils.getScreenSize()
-        local camera = workspace.CurrentCamera
-        if camera then
-            return camera.ViewportSize
-        end
-        return Vector2.new(1920, 1080)
-    end
-    function Utils.isMobile()
-        return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-    end
-    function Utils.getScaleFactor()
-        local screenSize = Utils.getScreenSize()
-        local baseWidth = 1920
-        local scale = math.clamp(screenSize.X / baseWidth, 0.5, 1.5)
-        return scale
-    end
-    function Utils.scaledSize(width, height)
-        local scale = Utils.getScaleFactor()
-        return UDim2.new(0, width * scale, 0, height * scale)
-    end
-    function Utils.scaledPosition(xScale, xOffset, yScale, yOffset)
-        local scale = Utils.getScaleFactor()
-        return UDim2.new(xScale, xOffset * scale, yScale, yOffset * scale)
-    end
-    function Utils.makeDraggable(frame, dragHandle)
-        dragHandle = dragHandle or frame
-        local dragging = false
-        local dragStart = nil
-        local startPos = nil
-        dragHandle.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = frame.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-        local dragConnection = UserInputService.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
-                    input.UserInputType == Enum.UserInputType.Touch) then
-                local delta = input.Position - dragStart
-                local newPos = UDim2.new(
-                    startPos.X.Scale, startPos.X.Offset + delta.X,
-                    startPos.Y.Scale, startPos.Y.Offset + delta.Y
-                )
-                TweenService:Create(frame, TweenInfo.new(0.05), { Position = newPos }):Play()
-            end
-        end)
-        return dragConnection
-    end
-    function Utils.autoResize(frame, baseWidth, baseHeight, minScale, maxScale)
-        minScale = minScale or 0.5
-        maxScale = maxScale or 1.5
-        local function updateSize()
-            local screenSize = Utils.getScreenSize()
-            local scaleX = screenSize.X / 1920
-            local scaleY = screenSize.Y / 1080
-            local scale = math.clamp(math.min(scaleX, scaleY), minScale, maxScale)
-            local newWidth = baseWidth * scale
-            local newHeight = baseHeight * scale
-            frame.Size = UDim2.new(0, newWidth, 0, newHeight)
-            frame.Position = UDim2.new(0.5, -newWidth / 2, 0.5, -newHeight / 2)
-        end
-        updateSize()
-        workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateSize)
-        return updateSize
-    end
-    function Utils.tween(object, properties, duration, style, direction)
-        duration = duration or 0.3
-        style = style or Enum.EasingStyle.Quart
-        direction = direction or Enum.EasingDirection.Out
-        local tweenInfo = TweenInfo.new(duration, style, direction)
-        local t = TweenService:Create(object, tweenInfo, properties)
-        t:Play()
-        return t
-    end
-    function Utils.fadeIn(object, targetTransparency, duration)
-        targetTransparency = targetTransparency or 0.25
-        object.BackgroundTransparency = 1
-        object.Visible = true
-        return Utils.tween(object, { BackgroundTransparency = targetTransparency }, duration or 0.3)
-    end
-    function Utils.fadeOut(object, duration, callback)
-        local t = Utils.tween(object, { BackgroundTransparency = 1 }, duration or 0.3)
-        t.Completed:Connect(function()
-            object.Visible = false
-            if callback then callback() end
-        end)
-        return t
-    end
-    function Utils.removeTouchInterest()
-        pcall(function()
-            local count = 0
-            for _, descendant in ipairs(workspace:GetDescendants()) do
-                if descendant:IsA("TouchTransmitter") then
-                    descendant:Destroy()
-                    count = count + 1
-                    if count % 50 == 0 then
-                        task.wait()
-                    end
-                end
-            end
-        end)
-    end
-    function Utils.getPlayerLevel(player)
-        local data = player:FindFirstChild("Data")
-        if data then
-            local level = data:FindFirstChild("Level")
-            if level and level.Value then
-                return tonumber(level.Value) or 0
-            end
-        end
-        return 0
-    end
-    function Utils.getCurrentBounty()
-        local leaderstats = lp:FindFirstChild("leaderstats")
-        if leaderstats then
-            local bounty = leaderstats:FindFirstChild("Bounty/Honor")
-            if bounty then
-                return tonumber(bounty.Value) or 0
-            end
-        end
-        return 0
-    end
-    function Utils.downloadBankaiSound(customUrl)
-        local soundUrl = (customUrl and customUrl ~= "") and customUrl or Utils.BANKAI_URL
-        local soundFile = (customUrl and customUrl ~= "")
-            and (Utils.SOUNDS_FOLDER .. "/custom_" .. soundUrl:gsub("%W", ""):sub(-20) .. ".mp3")
-            or Utils.BANKAI_FILE
-        local isFile = isfile or function() return false end
-        local writeFile = writefile or function() end
-        if isFile(soundFile) then
-            print("[LeoBounty] [*] Sound already cached")
-            return soundFile
-        end
-        local success, content = pcall(function()
-            return game:HttpGet(soundUrl)
-        end)
-        if success and content and #content > 1000 then
-            pcall(function()
-                writeFile(soundFile, content)
-            end)
-            print("[LeoBounty] [+] Sound downloaded and cached")
-            return soundFile
-        end
-        print("[LeoBounty] [!] Failed to download sound")
-        return nil
-    end
-    function Utils.playBankaiSound(customUrl)
-        local SoundService = game:GetService("SoundService")
-        local getAsset = getcustomasset or getsynasset
-        local isFile = isfile or function() return false end
-        local soundFile = Utils.downloadBankaiSound(customUrl)
-        if not soundFile or not isFile(soundFile) then
-            return false
-        end
-        pcall(function()
-            if Utils._bankaiSound then
-                Utils._bankaiSound:Stop()
-                Utils._bankaiSound:Destroy()
-            end
-            local sound = Instance.new("Sound")
-            sound.Name = "LeoBankai"
-            sound.Volume = 1
-            sound.PlayOnRemove = false
-            if getAsset then
-                sound.SoundId = getAsset(soundFile)
-            end
-            sound.Parent = SoundService
-            sound:Play()
-            Utils._bankaiSound = sound
-            sound.Ended:Connect(function()
-                pcall(function()
-                    sound:Destroy()
-                end)
-                if Utils._bankaiSound == sound then
-                    Utils._bankaiSound = nil
-                end
-            end)
-        end)
-        print("[LeoBounty] [>] Playing startup sound")
+        root.CFrame = root.CFrame * CFrame.new(0, 500, 0)
+    end)
+end
+
+local function shouldIgnore(targetPlayer, targetChar)
+    if not targetPlayer or not targetChar then return true end
+    if player.Team and player.Team.Name == "Marines" and targetPlayer.Team and targetPlayer.Team.Name == "Marines" then
         return true
     end
-    function Utils.stopBankaiSound()
-        if Utils._bankaiSound then
+    if CONFIG.CheckSafeZone and isInSafeZone(targetChar) then return true end
+    if targetChar:FindFirstChildOfClass("ForceField") then return true end
+    local killTime = recentlyKilled[targetPlayer.Name]
+    if killTime and os.time()-killTime < CONFIG.RecentlyKilledTimeout then
+        return true
+    elseif killTime then
+        recentlyKilled[targetPlayer.Name] = nil
+    end
+    local tracker = hitTracker[targetPlayer.Name]
+    if tracker and tracker.blacklistedUntil then
+        if os.time() < tracker.blacklistedUntil then return true
+        else hitTracker[targetPlayer.Name] = nil end
+    end
+    return false
+end
+
+local function getPlayerLevel(p)
+    local ls = p:FindFirstChild("leaderstats")
+    if ls then
+        for _, n in ipairs({"Level","Lv","level","LVL","EXP","Rank"}) do
+            local v = ls:FindFirstChild(n)
+            if v then return tostring(v.Value) end
+        end
+    end
+    for _, child in pairs(p:GetChildren()) do
+        local lv = child:FindFirstChild("Level") or child:FindFirstChild("Lv")
+        if lv then return tostring(lv.Value) end
+    end
+    return "?"
+end
+
+local function scanRemoteInTool(tool)
+    if not tool then return nil, nil end
+    local r = tool:FindFirstChild("LeftClickRemote")
+    local m = tool:FindFirstChild("M1Active")
+    if r then return r, m end
+    for _, child in pairs(tool:GetChildren()) do
+        if child:IsA("Model") then
+            r = child:FindFirstChild("LeftClickRemote")
+            if r then return r, child:FindFirstChild("M1Active") end
+        end
+    end
+    return nil, nil
+end
+
+local FRUIT_NAMES = {
+    "t-rex", "trex", "dragon", "kitsune", "empyrean", "pain", "control",
+    "mammoth", "leopard", "yeti", "gas", "lightning", "magma", "quake",
+    "buddha", "shadow", "venom", "soul", "dough", "string", "spider",
+    "phoenix", "rubber", "gravity", "bomb", "spike", "flame", "ice",
+    "sand", "dark", "light", "love", "door", "smoke", "barrier",
+}
+
+local function isFruitTool(tool)
+    if not tool then return false end
+    local name = tool.Name:lower()
+    for _, fn in ipairs(FRUIT_NAMES) do
+        if name:find(fn, 1, true) then return true end
+    end
+    local r = tool:FindFirstChild("LeftClickRemote")
+    if r then return true end
+    for _, child in pairs(tool:GetChildren()) do
+        if child:IsA("Model") and child:FindFirstChild("LeftClickRemote") then
+            return true
+        end
+    end
+    return false
+end
+
+local function equipAndCache()
+    local char = player.Character
+    if not char then return false end
+    local tool = char:FindFirstChildOfClass("Tool")
+    if tool then
+        local r, m = scanRemoteInTool(tool)
+        if r then
+            cachedTool = tool
+            cachedRemote = r
+            cachedM1Active = m
+            return true
+        end
+    end
+    for _, item in pairs(player.Backpack:GetChildren()) do
+        if item:IsA("Tool") and isFruitTool(item) then
+            local hum = char:FindFirstChild("Humanoid")
+            if hum then pcall(function() hum:EquipTool(item) end) end
+            return false
+        end
+    end
+    return false
+end
+
+local function ghostReset()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChild("Humanoid")
+    if not hum or hum.Health <= 0 then return end
+    local myRoot = char:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return end
+    if not currentTarget then return end
+    hum.Health = 0
+    if currentTarget then
+        local targetChar = currentTarget.Character
+        local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+        if targetRoot then
+            lastTargetPos = targetRoot.Position
             pcall(function()
-                Utils._bankaiSound:Stop()
-                Utils._bankaiSound:Destroy()
+                myRoot.CFrame = CFrame.new(
+                    targetRoot.Position + Vector3.new(0, 0, CONFIG.TeleportDistance),
+                    targetRoot.Position
+                )
             end)
-            Utils._bankaiSound = nil
-        end
-    end
-    local _raw_type = type
-    local _raw_pcall = pcall
-    local _raw_tostring = tostring
-    local _raw_table_insert = table.insert
-    local _raw_table_concat = table.concat
-    local _raw_getService = game.GetService
-    local _raw_gethwid = gethwid
-    local _raw_getexecutorhwid = getexecutorhwid
-    local _raw_identifyexecutor = identifyexecutor
-    local _raw_get_hwid = get_hwid
-    local _raw_gethwidstr = gethwidstr
-    local _raw_getmachineinfo = getmachineinfo
-    local _raw_syn_hwid = syn and syn.hwid
-    local _raw_fluxus_hwid = fluxus and fluxus.hwid
-    function Utils.getNetworkIdentifiers()
-        local identifiers = {}
-        local hwid_funcs = {
-            _raw_gethwid, _raw_getexecutorhwid, _raw_identifyexecutor,
-            _raw_syn_hwid, _raw_fluxus_hwid,
-            _raw_get_hwid, _raw_gethwidstr
-        }
-        for _, func in ipairs(hwid_funcs) do
-            if _raw_type(func) == "function" then
-                local success, result = _raw_pcall(func)
-                if success and result and _raw_type(result) == "string" then
-                    _raw_table_insert(identifiers, result)
-                end
+            lastTargetDir = (targetRoot.Position - myRoot.Position).Unit
+            if cachedRemote then
+                pcall(function() cachedRemote:FireServer(lastTargetDir, 1) end)
             end
         end
-        local execName = "unknown"
-        _raw_pcall(function()
-            if _raw_identifyexecutor then
-                execName = _raw_identifyexecutor()
-            elseif _raw_getexecutorhwid then
-                execName = "synapse"
-            end
-        end)
-        _raw_table_insert(identifiers, "exec:" .. _raw_tostring(execName))
-        _raw_pcall(function()
-            local uis = _raw_getService(game, "UserInputService")
-            local deviceType = uis.TouchEnabled and "touch" or "desktop"
-            local gamepad = uis.GamepadEnabled and "gp" or "nogp"
-            local keyboard = uis.KeyboardEnabled and "kb" or "nokb"
-            _raw_table_insert(identifiers, "input:" .. deviceType .. "_" .. gamepad .. "_" .. keyboard)
-        end)
-        _raw_pcall(function()
-            if _raw_getmachineinfo then
-                local info = _raw_getmachineinfo()
-                if info and info.MachineGUID then
-                    _raw_table_insert(identifiers, "guid:" .. _raw_tostring(info.MachineGUID))
-                end
-            end
-        end)
-        return identifiers
     end
-    function Utils.getHWID()
-        local hwid = nil
-        local hwid_funcs = { gethwid, getexecutorhwid, syn and syn.hwid, fluxus and fluxus.hwid, get_hwid }
-        for _, func in ipairs(hwid_funcs) do
-            if type(func) == "function" then
-                local success, result = pcall(func)
-                if success and result and type(result) == "string" and #result > 10 then
-                    hwid = result
+    pcall(function() hum:BreakJoints() end)
+end
+
+local function fireRemote(dir)
+    local remote = cachedRemote
+    if not remote or not remote.Parent then cachedRemote = nil; return false end
+    if cachedM1Active then pcall(function() cachedM1Active.Value = true end) end
+    local ok = pcall(function() remote:FireServer(dir, 1) end)
+    if cachedM1Active then pcall(function() cachedM1Active.Value = false end) end
+    return ok
+end
+
+local function normalAttack(targetChar)
+    local targetRoot = targetChar:FindFirstChild("HumanoidRootPart")
+    if not targetRoot or not cachedRemote then return false end
+    lastTargetPos = targetRoot.Position
+    local myChar  = player.Character
+    local myRoot  = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if myRoot then
+        pcall(function()
+            myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, CONFIG.TeleportDistance)
+        end)
+    end
+    local dir = Vector3.new(0,0,-1)
+    if myRoot and myRoot.Parent then
+        local d = (targetRoot.Position + getRandomOffset() - myRoot.Position).Unit
+        if d.Magnitude > 0.001 then dir = d end
+    end
+    lastTargetDir = dir
+    local ok = fireRemote(dir)
+    return ok
+end
+
+local function onKill(killedPlayer)
+    recentlyKilled[killedPlayer.Name] = os.time()
+    if currentTarget == killedPlayer then
+        sessionBounty     = sessionBounty + 1
+        totalBountyGlobal = totalBountyGlobal + 1
+        saveStats()
+        currentTarget     = nil
+        targetStartTime   = nil
+        targetStartHealth = nil
+        noTargetSince     = nil
+    end
+end
+
+local function setupKillDetector(p)
+    if p == player then return end
+    local function hook(char)
+        local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 3)
+        if hum then hum.Died:Connect(function() onKill(p) end) end
+    end
+    if p.Character then hook(p.Character) end
+    p.CharacterAdded:Connect(function(c) task.wait(0.5); hook(c) end)
+end
+
+for _, p in pairs(Players:GetPlayers()) do setupKillDetector(p) end
+Players.PlayerAdded:Connect(setupKillDetector)
+
+local function fetchServerList()
+    local url = ("https://games.roblox.com/v1/games/%d/servers/Public?sortOrder=Desc&limit=100"):format(PLACE_ID)
+    local body = nil
+    local methods = {
+        function() return game:HttpGet(url, true) end,
+        function()
+            local req = (syn and syn.request) or request or (http and http.request)
+            if req then
+                local res = req({ Url = url, Method = "GET" })
+                return res and res.Body
+            end
+        end,
+    }
+    for _, fn in ipairs(methods) do
+        local ok, result = pcall(fn)
+        if ok and result and #result > 10 then body = result; break end
+    end
+    if not body then return nil end
+    local ok2, decoded = pcall(function() return HttpService:JSONDecode(body) end)
+    if ok2 and decoded and decoded.data then return decoded.data end
+    return nil
+end
+
+local function hopServer()
+    if isHopping then return end
+    isHopping = true
+    saveStats()
+    task.spawn(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local HS = game:GetService("HttpService")
+        local url = "https://games.roblox.com/v1/games/" .. PLACE_ID .. "/servers/Public?sortOrder=Asc&limit=100&_rnd=" .. math.random(1, 9999)
+        local ok, result = pcall(function()
+            return HS:JSONDecode(game:HttpGet(url))
+        end)
+        if ok and result and result.data then
+            for _, s in pairs(result.data) do
+                if s.playing < s.maxPlayers and s.id ~= JOB_ID then
+                    pcall(function()
+                        RS.__ServerBrowser:InvokeServer("teleport", s.id)
+                    end)
+                    task.wait(5)
                     break
                 end
             end
         end
-        if not hwid then
-            local components = Utils.getNetworkIdentifiers()
-            pcall(function()
-                table.insert(components, "uid:" .. tostring(lp.UserId))
-            end)
-            local composite = table.concat(components, "|")
-            hwid = Utils.simpleHash(composite)
-        end
-        if hwid then
-            hwid = tostring(hwid):upper():gsub("[%s%-]", "")
-            if #hwid > 64 then
-                hwid = hwid:sub(1, 64)
-            end
-        end
-        return hwid or "FALLBACK_" .. tostring(lp.UserId)
-    end
-    function Utils.simpleHash(str)
-        local hash = 0
-        local salt = 0x5bd1e995
-        for i = 1, #str do
-            local char = str:byte(i)
-            hash = bit32.bxor(hash, char)
-            hash = bit32.band(hash * salt, 0xFFFFFFFF)
-            hash = bit32.bxor(hash, bit32.rshift(hash, 15))
-        end
-        return string.format("%08X%08X",
-            bit32.band(hash, 0xFFFFFFFF),
-            bit32.band(hash * 0x1b873593, 0xFFFFFFFF)
-        )
-    end
-    function Utils.getMachineGUID()
-        local guid = nil
-        pcall(function()
-            if getmachineinfo then
-                local info = getmachineinfo()
-                if info and info.MachineGUID then
-                    guid = info.MachineGUID
-                end
-            end
-        end)
-        pcall(function()
-            if not guid and syn and syn.machine_id then
-                guid = syn.machine_id()
-            end
-        end)
-        return guid
-    end
-    Utils.DEBUG_FILE = "Leo/debug.nxs"
-    Utils._debugLog = {}
-    Utils._debugMaxEntries = 200
-    Utils._debugStartTime = os.time()
-    Utils.DEBUG_LEVELS = {
-        INFO = "INFO",
-        WARN = "WARN",
-        ERROR = "ERROR",
-        PERF = "PERF",
-    }
-    function Utils.logDebug(level, category, message, data)
-        level = level or Utils.DEBUG_LEVELS.INFO
-        category = category or "General"
-        local entry = {
-            time = os.time(),
-            elapsed = os.time() - Utils._debugStartTime,
-            level = level,
-            category = category,
-            message = tostring(message),
-            data = data,
-        }
-        table.insert(Utils._debugLog, entry)
-        while #Utils._debugLog > Utils._debugMaxEntries do
-            table.remove(Utils._debugLog, 1)
-        end
-        if level == Utils.DEBUG_LEVELS.ERROR then
-            Utils.saveDebugFile()
-        end
-    end
-    function Utils.logError(err, context)
-        Utils.logDebug(Utils.DEBUG_LEVELS.ERROR, context or "Runtime", tostring(err), {
-            traceback = debug and debug.traceback and debug.traceback() or "N/A",
-        })
-    end
-    function Utils.logPerformance(metric, value, threshold)
-        threshold = threshold or 0
-        if value > threshold then
-            Utils.logDebug(Utils.DEBUG_LEVELS.PERF, "Performance", metric .. " = " .. tostring(value), {
-                metric = metric,
-                value = value,
-                threshold = threshold,
-            })
-        end
-    end
-    function Utils.saveDebugFile()
-        pcall(function()
-            if not writefile then return end
-            local debugData = {
-                version = Utils.CLIENT_VERSION,
-                userId = tostring(lp.UserId),
-                userName = lp.Name,
-                sessionStart = Utils._debugStartTime,
-                savedAt = os.time(),
-                executor = "unknown",
-                entries = Utils._debugLog,
-                systemInfo = {},
-            }
-            pcall(function()
-                if identifyexecutor then
-                    debugData.executor = identifyexecutor()
-                end
-            end)
-            pcall(function()
-                local viewport = workspace.CurrentCamera.ViewportSize
-                debugData.systemInfo.screen = math.floor(viewport.X) .. "x" .. math.floor(viewport.Y)
-            end)
-            pcall(function()
-                local uis = game:GetService("UserInputService")
-                debugData.systemInfo.mobile = uis.TouchEnabled and not uis.KeyboardEnabled
-            end)
-            pcall(function()
-                debugData.systemInfo.fps = math.floor(1 / game:GetService("RunService").RenderStepped:Wait())
-            end)
-            pcall(function()
-                local stats = game:GetService("Stats")
-                debugData.systemInfo.ping = stats:GetValue("DataPing")
-            end)
-            local json = HttpService:JSONEncode(debugData)
-            local encrypted = Utils.encryptNXSv2(json)
-            writefile(Utils.DEBUG_FILE, encrypted)
-        end)
-    end
-    function Utils.loadDebugFile()
-        local debugData = nil
-        pcall(function()
-            if isfile and isfile(Utils.DEBUG_FILE) then
-                local content = readfile(Utils.DEBUG_FILE)
-                local decrypted, err = Utils.decryptNXSv2(content)
-                if decrypted then
-                    debugData = HttpService:JSONDecode(decrypted)
-                end
-            end
-        end)
-        return debugData
-    end
-    function Utils.getDebugPayload()
-        local debugData = {
-            version = Utils.CLIENT_VERSION,
-            userId = tostring(lp.UserId),
-            userName = lp.Name,
-            hwid = Utils.getHWID(),
-            sessionStart = Utils._debugStartTime,
-            sentAt = os.time(),
-            executor = "unknown",
-            entryCount = #Utils._debugLog,
-            errors = {},
-            performance = {},
-            warnings = {},
-            systemInfo = {},
-        }
-        pcall(function()
-            if identifyexecutor then
-                debugData.executor = identifyexecutor()
-            end
-        end)
-        pcall(function()
-            local viewport = workspace.CurrentCamera.ViewportSize
-            debugData.systemInfo.screen = math.floor(viewport.X) .. "x" .. math.floor(viewport.Y)
-        end)
-        pcall(function()
-            local uis = game:GetService("UserInputService")
-            debugData.systemInfo.mobile = uis.TouchEnabled and not uis.KeyboardEnabled
-        end)
-        for _, entry in ipairs(Utils._debugLog) do
-            if entry.level == Utils.DEBUG_LEVELS.ERROR then
-                table.insert(debugData.errors, entry)
-            elseif entry.level == Utils.DEBUG_LEVELS.PERF then
-                table.insert(debugData.performance, entry)
-            elseif entry.level == Utils.DEBUG_LEVELS.WARN then
-                table.insert(debugData.warnings, entry)
-            end
-        end
-        return HttpService:JSONEncode(debugData)
-    end
-    return Utils
+        isHopping = false
+    end)
 end
-_modules["config"] = function()
-    local HttpService = game:GetService("HttpService")
-    local Config = {}
-    Config.CONFIG_FILE = "Leo/Data/config.json"
-    local Utils = nil
-    local USER_CONFIG = {
-        Fruit = "T-Rex",        
-        Region = "Singapore",   
-        Faction = "Auto",       
-        StartupSound = true,    
-        SoundUrl = "",          
-        Webhook = "",           
-        Background = "",        
-        ChangeTeamAt30M = true, 
-        AutoKillAt30M = true,   
-        HideProfile = false,    
-        TransformTRex = true,   
-    }
-    local INTERNAL = {
-        AttackRange = 100,
-        AttackDuration = 32,
-        LevelRange = 700, 
-        PredictionTime = 0.25,
-        YOffset = 1,
-        AutoFarm = true,
-        AutoBuso = true,
-        AutoPvp = true,
-        AutoServerHop = true,
-        AntiSeat = true,
-        KickRejoin = true,
-        MinimizeKey = Enum.KeyCode.RightControl,
-    }
-    Config.FRUITS = {
-        ["T-Rex"] = {
-            ToolName = "T-Rex-T-Rex",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 3 }
-            end
-        },
-        ["Dragon"] = {
-            ToolName = "Dragon-Dragon",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Kitsune"] = {
-            ToolName = "Kitsune-Kitsune",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Empyrean"] = {
-            ToolName = "Empyrean (Kitsune)-Empyrean (Kitsune)",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Pain"] = {
-            ToolName = "Pain-Pain",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Control"] = {
-            ToolName = "Control-Control",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Mammoth"] = {
-            ToolName = "Mammoth-Mammoth",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Gas"] = {
-            ToolName = "Gas-Gas",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Leopard"] = {
-            ToolName = "Leopard-Leopard",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-        ["Yeti"] = {
-            ToolName = "Yeti-Yeti",
-            RemoteName = "LeftClickRemote",
-            Args = function(direction)
-                return { Vector3.new(direction.X, direction.Y, direction.Z), 1 }
-            end
-        },
-    }
-    Config.REGIONS = {
-        "Brazil",
-        "Japan",
-        "Singapore",
-        "Hong Kong",
-        "India",
-        "Australia",
-        "Germany",
-        "Netherlands",
-        "Poland",
-        "California",
-        "Oregon",
-        "Virginia",
-        "Miami",
-        "Texas",
-    }
-    Config.FACTIONS = { "Auto", "Pirate", "Marine" }
-    function Config.init(utilsModule)
-        Utils = utilsModule
-        local persistedConfig, isFirstRun = Config.loadFromFile()
-        local userConfig = getgenv().Config or {}
-        Config._isFirstRun = isFirstRun
-        local mergedConfig = {}
-        if persistedConfig then
-            for key, value in pairs(persistedConfig) do
-                mergedConfig[key] = value
-            end
-        end
-        for key, value in pairs(userConfig) do
-            mergedConfig[key] = value
-        end
-        local finalConfig = {}
-        for key, value in pairs(INTERNAL) do
-            finalConfig[key] = value
-        end
-        if mergedConfig.Fruit and Config.FRUITS[mergedConfig.Fruit] then
-            finalConfig.Fruit = mergedConfig.Fruit
-        else
-            finalConfig.Fruit = USER_CONFIG.Fruit
-        end
-        if mergedConfig.Region and table.find(Config.REGIONS, mergedConfig.Region) then
-            finalConfig.Region = mergedConfig.Region
-        else
-            finalConfig.Region = USER_CONFIG.Region
-        end
-        if mergedConfig.Faction and table.find(Config.FACTIONS, mergedConfig.Faction) then
-            finalConfig.Faction = mergedConfig.Faction
-        else
-            finalConfig.Faction = USER_CONFIG.Faction
-        end
-        if mergedConfig.StartupSound ~= nil then
-            finalConfig.v4Sound = mergedConfig.StartupSound == true
-        else
-            finalConfig.v4Sound = USER_CONFIG.StartupSound
-        end
-        finalConfig.Webhook = mergedConfig.Webhook or USER_CONFIG.Webhook
-        finalConfig.SoundUrl = mergedConfig.SoundUrl or USER_CONFIG.SoundUrl
-        finalConfig.Background = mergedConfig.Background or USER_CONFIG.Background
-        if mergedConfig.ChangeTeamAt30M ~= nil then
-            finalConfig.ChangeTeamAt30M = mergedConfig.ChangeTeamAt30M == true
-        else
-            finalConfig.ChangeTeamAt30M = USER_CONFIG.ChangeTeamAt30M
-        end
-        if mergedConfig.AutoKillAt30M ~= nil then
-            finalConfig.AutoKillAt30M = mergedConfig.AutoKillAt30M == true
-        else
-            finalConfig.AutoKillAt30M = USER_CONFIG.AutoKillAt30M
-        end
-        if mergedConfig.HideProfile ~= nil then
-            finalConfig.HideProfile = mergedConfig.HideProfile == true
-        else
-            finalConfig.HideProfile = USER_CONFIG.HideProfile
-        end
-        if mergedConfig.TransformTRex ~= nil then
-            finalConfig.TransformTRex = mergedConfig.TransformTRex == true
-        else
-            finalConfig.TransformTRex = USER_CONFIG.TransformTRex
-        end
-        finalConfig.SwapAt30m = finalConfig.ChangeTeamAt30M
-        finalConfig.WebhookOnKill = true
-        finalConfig.WebhookOnHop = true
-        finalConfig.FreeKeyEnabled = true
-        Config.Values = finalConfig
-        Config.saveToFile()
-        print("[LeoBounty] [+] Config initialized")
-        return finalConfig
-    end
-    local function _getFS()
-        if getgenv and getgenv()._NP_FS then
-            return getgenv()._NP_FS
-        end
-        return {
-            canSave = pcall(function() return writefile end) and writefile ~= nil,
-            writeFile = function(p, c) pcall(function() writefile(p, c) end) end,
-            readFile = function(p)
-                local r; pcall(function() r = readfile(p) end); return r
-            end,
-            fileExists = function(p)
-                local r = false; pcall(function() if isfile then r = isfile(p) end end); return r
-            end,
-            folderExists = function(p)
-                local r = false; pcall(function() if isfolder then r = isfolder(p) end end); return r
-            end,
-            makeFolder = function(p) pcall(function() if makefolder then makefolder(p) end end) end,
-            normalizePath = function(p) return p and p:gsub("\\", "/") or "" end,
-        }
-    end
-    function Config.loadFromFile()
-        local fs = _getFS()
-        if not fs.canSave then return nil, true end
-        local config = nil
-        local isFirstRun = false
-        if not fs.fileExists(Config.CONFIG_FILE) then
-            local oldFile = "Leo/Data/LeoBounty_Config.nxs"
-            if fs.fileExists(oldFile) then
-                print("[LeoBounty] [!] Old .nxs config found, migrating to JSON format")
-            end
-            return nil, true
-        end
-        local content = fs.readFile(Config.CONFIG_FILE)
-        if not content or content == "" then
-            return nil, true
-        end
-        local success, decoded = pcall(HttpService.JSONDecode, HttpService, content)
-        if success and type(decoded) == "table" then
-            config = decoded
-        else
-            print("[LeoBounty] [!] Config file corrupted, using defaults")
-        end
-        return config, isFirstRun
-    end
-    function Config.saveToFile()
-        if not Config.Values then return end
-        local fs = _getFS()
-        if not fs.canSave then return end
-        if not fs.folderExists("Leo") then fs.makeFolder("Leo") end
-        if not fs.folderExists("Leo/Data") then fs.makeFolder("Leo/Data") end
-        local saveData = {
-            Fruit = Config.Values.Fruit,
-            Region = Config.Values.Region,
-            Faction = Config.Values.Faction,
-            StartupSound = Config.Values.v4Sound,
-            SoundUrl = Config.Values.SoundUrl,
-            Webhook = Config.Values.Webhook,
-            Background = Config.Values.Background,
-            ChangeTeamAt30M = Config.Values.ChangeTeamAt30M,
-            AutoKillAt30M = Config.Values.AutoKillAt30M,
-            WebhookOnKill = Config.Values.WebhookOnKill,
-            HideProfile = Config.Values.HideProfile,
-            TransformTRex = Config.Values.TransformTRex,
-        }
-        local success, json = pcall(HttpService.JSONEncode, HttpService, saveData)
-        if success then
-            fs.writeFile(Config.CONFIG_FILE, json)
-        end
-    end
-    function Config.get(key)
-        if not Config.Values then Config.init() end
-        return Config.Values[key]
-    end
-    function Config.set(key, value)
-        if not Config.Values then Config.init() end
-        local changed = false
-        if key == "Fruit" and Config.FRUITS[value] then
-            Config.Values.Fruit = value
-            changed = true
-        elseif key == "Region" and table.find(Config.REGIONS, value) then
-            Config.Values.Region = value
-            changed = true
-        elseif key == "Faction" and table.find(Config.FACTIONS, value) then
-            Config.Values.Faction = value
-            changed = true
-        elseif key == "StartupSound" or key == "v4Sound" then
-            Config.Values.v4Sound = value == true
-            changed = true
-        elseif key == "Webhook" then
-            Config.Values.Webhook = value
-            changed = true
-        elseif key == "SoundUrl" then
-            Config.Values.SoundUrl = value
-            changed = true
-        elseif key == "Background" then
-            Config.Values.Background = value
-            changed = true
-        elseif key == "ChangeTeamAt30M" or key == "SwapAt30m" then
-            Config.Values.ChangeTeamAt30M = value == true
-            Config.Values.SwapAt30m = value == true
-            changed = true
-        elseif key == "AutoKillAt30M" then
-            Config.Values.AutoKillAt30M = value == true
-            changed = true
-        elseif key == "WebhookOnKill" then
-            Config.Values.WebhookOnKill = value == true
-            changed = true
-        elseif key == "HideProfile" then
-            Config.Values.HideProfile = value == true
-            changed = true
-        elseif key == "TransformTRex" then
-            Config.Values.TransformTRex = value == true
-            changed = true
-        end
-        if changed then
-            Config.saveToFile()
-        end
-    end
-    function Config.getFruitConfig()
-        if not Config.Values then Config.init() end
-        return Config.FRUITS[Config.Values.Fruit]
-    end
-    function Config.getFruitList()
-        local list = {}
-        for name, _ in pairs(Config.FRUITS) do
-            table.insert(list, name)
-        end
-        table.sort(list)
-        return list
-    end
-    function Config.isFirstRun()
-        return Config._isFirstRun == true
-    end
-    function Config.isConfigured()
-        if getgenv().Config then return true end
-        if not Config.Values then return false end
-        local fruit = Config.Values.Fruit or ""
-        local region = Config.Values.Region or ""
-        local faction = Config.Values.Faction or ""
-        if fruit == "" and region == "" and faction == "" then
-            return false
-        end
-        return true
-    end
-    return Config
-end
-_modules["auth"] = function()
-    local Auth = {}
-    Auth.IsAuthenticated = true
-    Auth.KeyData = { key = "bypass", expiresIn = 999999, isFreeKey = true, isPremium = false, discordLinked = false }
-    function Auth.init(utilsModule) end
-    function Auth.isAuthenticated() return true end
-    function Auth.validateKey(key, callback) callback(true, "OK") end
-    function Auth.tryCachedKey(callback) callback(true, "Auto-login") end
-    function Auth.requestFreeKey(callback) callback(true, "OK") end
-    function Auth.getFreeKeyStatus(callback) callback(true, {}) end
-    function Auth.logout() end
-    function Auth.isFreeKey() return true end
-    function Auth.isPremium() return false end
-    function Auth.isDiscordLinked() return false end
-    function Auth.openGetKeyPage() return "" end
-    function Auth.getRemainingTime() return 999999 end
-    return Auth
-end
-_modules["ui"] = function()
-    local Players = game:GetService("Players")
-    local TweenService = game:GetService("TweenService")
-    local UserInputService = game:GetService("UserInputService")
-    local RunService = game:GetService("RunService")
-    local CoreGui = game:GetService("CoreGui")
-    local Lighting = game:GetService("Lighting")
-    local HttpService = game:GetService("HttpService")
-    local lp = Players.LocalPlayer
-    local Utils, Config, Auth
-    local IMAGE_FOLDER = "Leo/Assets/Images"
-    pcall(function()
-        if makefolder then
-            makefolder("Leo")
-            makefolder("Leo/Assets")
-            makefolder("Leo/Assets/Images")
+
+if CONFIG.AutoRejoin then
+    local GuiService = game:GetService("GuiService")
+    GuiService.ErrorMessageChanged:Connect(function(msg)
+        task.wait(2)
+        pcall(function() TeleportService:TeleportToPlaceInstance(PLACE_ID, JOB_ID) end)
+    end)
+    player.AncestryChanged:Connect(function(_, parent)
+        if not parent and not isHopping then
+            task.wait(2)
+            pcall(function() TeleportService:TeleportToPlaceInstance(PLACE_ID, JOB_ID) end)
         end
     end)
-    local function getImageUrl(url, forceRedownload)
-        if not url or url == "" then return "" end
-        if url:match("^rbxassetid://") or url:match("^rbxthumb://") then
-            return url
-        end
-        local getAsset = getcustomasset or getsynasset
-        local isFile = isfile or function(file) return false end
-        local writeFile = writefile or function(file, content) end
-        local delFile = delfile or function(file) end
-        local request = request or http_request or (http and http.request) or (syn and syn.request)
-        if getAsset and writeFile then
-            local ext = url:match("%.(%w+)$") or "png"
-            if ext ~= "png" and ext ~= "webp" and ext ~= "jpg" and ext ~= "jpeg" and ext ~= "gif" then
-                ext = "png"
-            end
-            local fileName = IMAGE_FOLDER .. "/leo_" .. url:gsub("%W", ""):sub(-30) .. "." .. ext
-            if forceRedownload then
-                pcall(function() if isFile(fileName) then delFile(fileName) end end)
-            end
-            if isFile(fileName) then
-                return getAsset(fileName)
-            end
-            local success, content = pcall(function()
-                return game:HttpGet(url)
-            end)
-            if success and content and #content > 100 then
-                pcall(function() writeFile(fileName, content) end)
-                return getAsset(fileName)
-            end
-        end
-        return url 
-    end
-    local LOGO_URL = getImageUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoJ-_el71Qlnx-WnINYQmN9GFtl3GP7o5jYw&s")
-    local CURSOR_URL = getImageUrl("https://raw.githubusercontent.com/Ryu-Dev-here/assetsfora/main/cursor.png")
-    local Colors = {
-        Background = Color3.fromRGB(12, 12, 15),
-        Surface = Color3.fromRGB(28, 28, 36),
-        SurfaceLight = Color3.fromRGB(42, 42, 55),
-        Primary = Color3.fromRGB(170, 130, 255),
-        PrimaryMuted = Color3.fromRGB(140, 100, 230),
-        Accent = Color3.fromRGB(200, 160, 255),
-        Text = Color3.fromRGB(245, 245, 250),
-        TextSecondary = Color3.fromRGB(170, 170, 190),
-        TextMuted = Color3.fromRGB(110, 110, 130),
-        Success = Color3.fromRGB(80, 220, 120),
-        Warning = Color3.fromRGB(240, 200, 80),
-        Error = Color3.fromRGB(240, 80, 80),
-        Border = Color3.fromRGB(60, 60, 75),
-        BorderLight = Color3.fromRGB(80, 80, 100),
-    }
-    local Fonts = {
-        Title = Enum.Font.GothamBold,
-        Heading = Enum.Font.GothamSemibold,
-        Body = Enum.Font.Gotham,
-        Small = Enum.Font.Gotham,
-    }
-    local FontSizes = {
-        Title = 18,
-        Heading = 14,
-        Body = 13,
-        Small = 11,
-    }
-    local Layout = {
-        mainWidth = 550,
-        mainHeight = 380,
-        minWidth = 450,
-        minHeight = 320,
-        maxWidth = 800,
-        maxHeight = 600,
-        leftPanelWidth = 180,
-        padding = 12,
-        gap = 8,
-        radius = 10,
-    }
-    local UI = {
-        Gui = nil,
-        MainFrame = nil,
-        KeyScreen = nil,
-        Dashboard = nil,
-        Elements = {},
-        Stats = {totalKills = 0, totalBountyGained = 0, totalPlayTime = 0, serversHopped = 0},
-        IsMinimized = false,
-        Blur = nil,
-        Connections = {}, 
-        KillFeed = {}, 
-    }
-    local function tween(obj, props, duration, style, dir)
-        local info = TweenInfo.new(duration or 0.3, style or Enum.EasingStyle.Quint, dir or Enum.EasingDirection.Out)
-        TweenService:Create(obj, info, props):Play()
-    end
-    local function createCorner(parent, radius)
-        local corner = Instance.new("UICorner")
-        corner.CornerRadius = UDim.new(0, radius or Layout.radius)
-        corner.Parent = parent
-        return corner
-    end
-    local function createStroke(parent, color, thickness, transparency)
-        local stroke = Instance.new("UIStroke")
-        stroke.Color = color or Colors.Border
-        stroke.Thickness = thickness or 1
-        stroke.Transparency = transparency or 0
-        stroke.Parent = parent
-        return stroke
-    end
-    local function formatNumber(n)
-        if n >= 1000000 then
-            return string.format("%.1fM", n / 1000000)
-        elseif n >= 1000 then
-            return string.format("%.1fK", n / 1000)
-        end
-        return tostring(n)
-    end
-    local function formatTime(seconds)
-        seconds = math.floor(seconds or 0)
-        local h = math.floor(seconds / 3600)
-        local m = math.floor((seconds % 3600) / 60)
-        if h > 0 then
-            return string.format("%dh %dm", h, m)
-        else
-            return string.format("%dm", m)
-        end
-    end
-    local function createLoadingSpinner(parent, size, color)
-        size = size or 24
-        color = color or Colors.Primary
-        local container = Instance.new("Frame")
-        container.Name = "LoadingSpinner"
-        container.BackgroundTransparency = 1
-        container.AnchorPoint = Vector2.new(0.5, 0.5)
-        container.Size = UDim2.new(0, size, 0, size)
-        container.Parent = parent
-        local numDots = 8
-        for i = 1, numDots do
-            local dot = Instance.new("Frame")
-            dot.Name = "Dot" .. i
-            dot.BackgroundColor3 = color
-            dot.Size = UDim2.new(0, size/6, 0, size/6)
-            dot.AnchorPoint = Vector2.new(0.5, 0.5)
-            local angle = (i - 1) * (360 / numDots)
-            local radius = size / 2.5
-            local x = math.cos(math.rad(angle)) * radius
-            local y = math.sin(math.rad(angle)) * radius
-            dot.Position = UDim2.new(0.5, x, 0.5, y)
-            dot.BackgroundTransparency = (i - 1) / numDots
-            dot.Parent = container
-            createCorner(dot, size/12)
-        end
-        local rotation = 0
-        local connection
-        connection = RunService.RenderStepped:Connect(function()
-            if not container.Parent then
-                connection:Disconnect()
-                return
-            end
-            rotation = (rotation + 5) % 360
-            container.Rotation = rotation
-        end)
-        table.insert(UI.Connections, connection)
-        container.Destroying:Connect(function()
-            if connection then connection:Disconnect() end
-        end)
-        return container
-    end
-    local function pulseElement(element, color, duration)
-        color = color or Colors.Primary
-        duration = duration or 0.5
-        if element:IsA("TextLabel") or element:IsA("TextButton") then
-            local originalColor = element.TextColor3
-            tween(element, {TextColor3 = color}, duration * 0.3)
-            task.delay(duration * 0.3, function()
-                tween(element, {TextColor3 = originalColor}, duration * 0.7)
-            end)
-        else
-            local originalColor = element.BackgroundColor3
-            tween(element, {BackgroundColor3 = color}, duration * 0.3)
-            task.delay(duration * 0.3, function()
-                tween(element, {BackgroundColor3 = originalColor}, duration * 0.7)
-            end)
-        end
-    end
-    local function animateEntrance(element, direction, duration)
-        direction = direction or "up"
-        duration = duration or 0.4
-        local offsets = {
-            up = UDim2.new(0, 0, 0, 30),
-            down = UDim2.new(0, 0, 0, -30),
-            left = UDim2.new(0, 30, 0, 0),
-            right = UDim2.new(0, -30, 0, 0),
-        }
-        local originalPos = element.Position
-        element.Position = originalPos + offsets[direction]
-        if element:IsA("GuiObject") then
-            element.BackgroundTransparency = 1
-        end
-        tween(element, {Position = originalPos}, duration, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-        if element:IsA("Frame") and element.BackgroundTransparency ~= 1 then
-            tween(element, {BackgroundTransparency = 0}, duration * 0.8)
-        end
-    end
-    local function addScaleHover(button)
-        local originalSize = button.Size
-        button.MouseEnter:Connect(function()
-            tween(button, {Size = UDim2.new(
-                originalSize.X.Scale * 1.05, 
-                originalSize.X.Offset * 1.05,
-                originalSize.Y.Scale * 1.05,
-                originalSize.Y.Offset * 1.05
-            )}, 0.15)
-        end)
-        button.MouseLeave:Connect(function()
-            tween(button, {Size = originalSize}, 0.15)
-        end)
-    end
-    local function createPanel(parent, position, size, color)
-        local panel = Instance.new("Frame")
-        panel.Name = "Panel"
-        panel.BackgroundColor3 = color or Colors.Surface
-        panel.BorderSizePixel = 0
-        panel.Position = position or UDim2.new(0, 0, 0, 0)
-        panel.Size = size or UDim2.new(1, 0, 1, 0)
-        panel.Parent = parent
-        createCorner(panel)
-        return panel
-    end
-    local function createText(parent, text, options)
-        options = options or {}
-        local label = Instance.new("TextLabel")
-        label.Name = options.name or "Text"
-        label.BackgroundTransparency = 1
-        label.Position = options.position or UDim2.new(0, 0, 0, 0)
-        label.Size = options.size or UDim2.new(1, 0, 0, FontSizes[options.variant or "Body"])
-        label.Font = Fonts[options.variant or "Body"] or Fonts.Body
-        label.Text = text
-        label.TextColor3 = options.color or Colors.Text
-        label.TextSize = FontSizes[options.variant or "Body"] or 13
-        label.TextXAlignment = options.align or Enum.TextXAlignment.Left
-        label.TextYAlignment = options.valign or Enum.TextYAlignment.Center
-        label.Parent = parent
-        return label
-    end
-    local function createButton(parent, text, position, size, options)
-        options = options or {}
-        local btn = Instance.new("TextButton")
-        btn.Name = options.name or "Button"
-        btn.BackgroundColor3 = options.color or Colors.Primary
-        btn.BorderSizePixel = 0
-        btn.Position = position or UDim2.new(0, 0, 0, 0)
-        btn.Size = size or UDim2.new(1, 0, 0, 36)
-        btn.Font = Fonts.Heading
-        btn.Text = text
-        btn.TextColor3 = Colors.Text
-        btn.TextSize = FontSizes.Body
-        btn.AutoButtonColor = false
-        btn.AnchorPoint = Vector2.new(0, 0)
-        btn.Parent = parent
-        createCorner(btn, 6)
-        local originalSize = btn.Size
-        btn.MouseEnter:Connect(function()
-            tween(btn, {BackgroundColor3 = options.hoverColor or Colors.PrimaryMuted}, 0.15)
-        end)
-        btn.MouseLeave:Connect(function()
-            tween(btn, {BackgroundColor3 = options.color or Colors.Primary}, 0.15)
-        end)
-        btn.MouseButton1Down:Connect(function()
-            tween(btn, {
-                Size = UDim2.new(originalSize.X.Scale * 0.97, originalSize.X.Offset * 0.97,
-                                 originalSize.Y.Scale, math.max(originalSize.Y.Offset - 2, 28))
-            }, 0.08, Enum.EasingStyle.Quad)
-        end)
-        btn.MouseButton1Up:Connect(function()
-            tween(btn, {Size = originalSize}, 0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-        end)
-        return btn
-    end
-    local function createInput(parent, placeholder, position, size)
-        local container = Instance.new("Frame")
-        container.Name = "InputContainer"
-        container.BackgroundColor3 = Colors.SurfaceLight
-        container.BorderSizePixel = 0
-        container.Position = position or UDim2.new(0, 0, 0, 0)
-        container.Size = size or UDim2.new(1, 0, 0, 42)
-        container.Parent = parent
-        createCorner(container, 6)
-        createStroke(container, Colors.Border)
-        local input = Instance.new("TextBox")
-        input.Name = "Input"
-        input.BackgroundTransparency = 1
-        input.Position = UDim2.new(0, 12, 0, 0)
-        input.Size = UDim2.new(1, -24, 1, 0)
-        input.Font = Fonts.Body
-        input.PlaceholderText = placeholder or ""
-        input.PlaceholderColor3 = Colors.TextMuted
-        input.Text = ""
-        input.TextColor3 = Colors.Text
-        input.TextSize = FontSizes.Body
-        input.TextXAlignment = Enum.TextXAlignment.Left
-        input.ClearTextOnFocus = false
-        input.Parent = container
-        input.Focused:Connect(function()
-            tween(container, {BackgroundColor3 = Colors.Surface}, 0.15)
-        end)
-        input.FocusLost:Connect(function()
-            tween(container, {BackgroundColor3 = Colors.SurfaceLight}, 0.15)
-        end)
-        return container, input
-    end
-    local function createStatCard(parent, label, value, position, size, icon, accentColor)
-        icon = icon or ""
-        accentColor = accentColor or Colors.Primary
-        local card = Instance.new("Frame")
-        card.Name = label .. "Card"
-        card.BackgroundColor3 = Colors.SurfaceLight
-        card.BackgroundTransparency = 0.15
-        card.BorderSizePixel = 0
-        card.Position = position or UDim2.new(0, 0, 0, 0)
-        card.Size = size or UDim2.new(0.48, 0, 0, 60)
-        card.Parent = parent
-        createCorner(card, 8)
-        local accentBar = Instance.new("Frame")
-        accentBar.Name = "AccentBar"
-        accentBar.BackgroundColor3 = accentColor
-        accentBar.BackgroundTransparency = 0.3
-        accentBar.BorderSizePixel = 0
-        accentBar.Position = UDim2.new(0, 0, 0, 0)
-        accentBar.Size = UDim2.new(0, 3, 1, 0)
-        accentBar.ZIndex = 2
-        accentBar.Parent = card
-        if icon ~= "" then
-            local iconLabel = Instance.new("TextLabel")
-            iconLabel.Name = "Icon"
-            iconLabel.BackgroundTransparency = 1
-            iconLabel.Position = UDim2.new(0, 10, 0, 8)
-            iconLabel.Size = UDim2.new(0, 16, 0, 14)
-            iconLabel.Font = Enum.Font.GothamBold
-            iconLabel.Text = icon
-            iconLabel.TextColor3 = accentColor
-            iconLabel.TextSize = 12
-            iconLabel.TextXAlignment = Enum.TextXAlignment.Left
-            iconLabel.Parent = card
-        end
-        local labelText = createText(card, label, {
-            position = UDim2.new(0, icon ~= "" and 28 or 10, 0, 8),
-            size = UDim2.new(1, -(icon ~= "" and 38 or 20), 0, 14),
-            variant = "Small",
-            color = Colors.TextSecondary,
-        })
-        labelText.TextXAlignment = Enum.TextXAlignment.Left
-        labelText.Font = Enum.Font.GothamSemibold
-        local valueText = createText(card, value, {
-            name = "Value",
-            position = UDim2.new(0, 10, 0, 26),
-            size = UDim2.new(1, -20, 0, 20),
-            variant = "Title",
-            color = Colors.Text,
-        })
-        valueText.TextXAlignment = Enum.TextXAlignment.Left
-        valueText.Font = Enum.Font.GothamBold
-        valueText.TextSize = 16
-        return card, valueText
-    end
-    local function createKeyScreen(parent, onSuccess)
-        local screen = Instance.new("Frame")
-        screen.Name = "KeyScreen"
-        screen.BackgroundTransparency = 1
-        screen.Position = UDim2.new(0, 0, 0, 0)
-        screen.Size = UDim2.new(1, 0, 1, 0)
-        screen.ClipsDescendants = true
-        screen.Parent = parent
-        local content = Instance.new("Frame")
-        content.Name = "Content"
-        content.BackgroundTransparency = 1
-        content.AnchorPoint = Vector2.new(0.5, 0.5)
-        content.Position = UDim2.new(0.5, 0, 0.5, 0)
-        content.Size = UDim2.new(0.9, 0, 0.95, 0)
-        content.Parent = screen
-        local listLayout = Instance.new("UIListLayout")
-        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        listLayout.Padding = UDim.new(0, 4)
-        listLayout.Parent = content
-        local sizeConstraint = Instance.new("UISizeConstraint")
-        sizeConstraint.MaxSize = Vector2.new(280, 9999)
-        sizeConstraint.Parent = content
-        local logoContainer = Instance.new("Frame")
-        logoContainer.Name = "LogoWrap"
-        logoContainer.BackgroundTransparency = 1
-        logoContainer.Size = UDim2.new(1, 0, 0, 0) 
-        logoContainer.LayoutOrder = 1
-        logoContainer.Parent = content
-        local logo = Instance.new("ImageLabel")
-        logo.Name = "Logo"
-        logo.BackgroundTransparency = 1
-        logo.AnchorPoint = Vector2.new(0.5, 0)
-        logo.Position = UDim2.new(0.5, 0, 0, 0)
-        logo.Image = LOGO_URL
-        logo.ScaleType = Enum.ScaleType.Fit
-        logo.Parent = logoContainer
-        local title = Instance.new("TextLabel")
-        title.Name = "Title"
-        title.BackgroundTransparency = 1
-        title.Size = UDim2.new(1, 0, 0, 20)
-        title.Font = Fonts.Heading
-        title.Text = "Enter License Key"
-        title.TextColor3 = Colors.Text
-        title.TextSize = FontSizes.Heading
-        title.TextXAlignment = Enum.TextXAlignment.Center
-        title.TextScaled = true
-        title.LayoutOrder = 2
-        title.Parent = content
-        local inputContainer, keyInput = createInput(content, "XXXX-XXXX-XXXX-XXXX",
-            nil, UDim2.new(1, 0, 0, 36))
-        inputContainer.LayoutOrder = 3
-        local status = createText(content, "", {
-            name = "Status",
-            size = UDim2.new(1, 0, 0, 14),
-            variant = "Small",
-            color = Colors.TextMuted,
-            align = Enum.TextXAlignment.Center,
-        })
-        status.LayoutOrder = 4
-        local validateBtn = createButton(content, "Validate",
-            nil, UDim2.new(1, 0, 0, 32))
-        validateBtn.LayoutOrder = 5
-        local getKeyRow = Instance.new("Frame")
-        getKeyRow.Name = "GetKeyRow"
-        getKeyRow.BackgroundTransparency = 1
-        getKeyRow.Size = UDim2.new(1, 0, 0, 28)
-        getKeyRow.LayoutOrder = 6
-        getKeyRow.Parent = content
-        local getKeyBtn = createButton(getKeyRow, "Get Free Key",
-            UDim2.new(0, 32, 0, 0), UDim2.new(1, -32, 0, 28),
-            {color = Colors.SurfaceLight, hoverColor = Colors.PrimaryMuted, name = "GetKeyBtn"})
-        getKeyBtn.TextColor3 = Colors.Accent
-        local DISCORD_IMG_KEY = getImageUrl("https://static.vecteezy.com/system/resources/previews/006/892/625/large_2x/discord-logo-icon-editorial-free-vector.jpg")
-        local discordBtn = Instance.new("ImageButton")
-        discordBtn.Name = "DiscordIcon"
-        discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-        discordBtn.BorderSizePixel = 0
-        discordBtn.Position = UDim2.new(0, 0, 0, 0)
-        discordBtn.Size = UDim2.new(0, 28, 0, 28)
-        discordBtn.Image = DISCORD_IMG_KEY
-        discordBtn.ScaleType = Enum.ScaleType.Fit
-        discordBtn.AutoButtonColor = false
-        discordBtn.Parent = getKeyRow
-        createCorner(discordBtn, 6)
-        task.defer(function()
-            if not screen.Parent then return end
-            local parentH = screen.AbsoluteSize.Y
-            local logoSize = math.clamp(math.floor(parentH * 0.25), 30, 80)
-            logoContainer.Size = UDim2.new(1, 0, 0, logoSize)
-            logo.Size = UDim2.new(0, logoSize, 0, logoSize)
-        end)
-        local sizeChangedConn = screen:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-            local parentH = screen.AbsoluteSize.Y
-            local logoSize = math.clamp(math.floor(parentH * 0.25), 30, 80)
-            logoContainer.Size = UDim2.new(1, 0, 0, logoSize)
-            logo.Size = UDim2.new(0, logoSize, 0, logoSize)
-        end)
-        table.insert(UI.Connections, sizeChangedConn)
-        discordBtn.MouseEnter:Connect(function()
-            tween(discordBtn, {BackgroundColor3 = Color3.fromRGB(110, 120, 255)}, 0.15)
-        end)
-        discordBtn.MouseLeave:Connect(function()
-            tween(discordBtn, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.15)
-        end)
-        discordBtn.MouseButton1Click:Connect(function()
-            pcall(function()
-                local HttpService = game:GetService("HttpService")
-                local req = (request or http_request or (syn and syn.request) or (http and http.request))
-                if req then
-                    req({
-                        Url = "http://127.0.0.1:6463/rpc?v=1",
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json", ["origin"] = "https://discord.com"},
-                        Body = HttpService:JSONEncode({args = {code = "raservices"}, cmd = "INVITE_BROWSER", nonce = "."})
-                    })
-                end
-            end)
-            pcall(function() setclipboard("https://discord.gg/W68jqAaAUk") end)
-            tween(discordBtn, {BackgroundColor3 = Colors.Success}, 0.2)
-            task.delay(1, function()
-                if discordBtn and discordBtn.Parent then
-                    tween(discordBtn, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.3)
-                end
-            end)
-        end)
-        getKeyBtn.MouseButton1Click:Connect(function()
-            if Auth and Auth.openGetKeyPage then
-                Auth.openGetKeyPage()
-            end
-            local originalText = getKeyBtn.Text
-            local originalColor = getKeyBtn.TextColor3
-            getKeyBtn.Text = "Link Copied!"
-            getKeyBtn.TextColor3 = Colors.Success
-            pulseElement(getKeyBtn, Colors.Success, 0.4)
-            task.delay(2, function()
-                if getKeyBtn and getKeyBtn.Parent then
-                    getKeyBtn.Text = originalText
-                    getKeyBtn.TextColor3 = originalColor
-                end
-            end)
-        end)
-        validateBtn.MouseButton1Click:Connect(function()
-            local key = keyInput.Text
-            if key == "" then
-                status.Text = "Please enter a key"
-                status.TextColor3 = Colors.Warning
-                return
-            end
-            status.Text = "Validating..."
-            status.TextColor3 = Colors.TextMuted
-            validateBtn.Text = ""
-            local spinner = createLoadingSpinner(validateBtn, 20, Colors.Text)
-            spinner.Position = UDim2.new(0.5, 0, 0.5, 0)
-            if Auth then
-                Auth.validateKey(key, function(success, message, data)
-                    if spinner then spinner:Destroy() end
-                    if success then
-                        status.Text = "✓ Valid"
-                        status.TextColor3 = Colors.Success
-                        pulseElement(status, Colors.Success)
-                        validateBtn.Text = "✓"
-                        task.wait(0.5)
-                        if onSuccess then onSuccess() end
-                    else
-                        status.Text = message or "Invalid key"
-                        status.TextColor3 = Colors.Error
-                        validateBtn.Text = "Validate"
-                        pulseElement(status, Colors.Error)
-                    end
-                end)
-            else
-                if spinner then spinner:Destroy() end
-                status.Text = "Auth not available"
-                status.TextColor3 = Colors.Error
-                validateBtn.Text = "Validate"
-            end
-        end)
-        return screen, keyInput, status
-    end
-    local function createConfigPopup(screenGui)
-        local existing = screenGui:FindFirstChild("ConfigPopup")
-        if existing then existing:Destroy() return end
-        local overlay = Instance.new("Frame")
-        overlay.Name = "ConfigPopup"
-        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        overlay.BackgroundTransparency = 0.4
-        overlay.BorderSizePixel = 0
-        overlay.Position = UDim2.new(0, 0, 0, 0)
-        overlay.Size = UDim2.new(1, 0, 1, 0)
-        overlay.ZIndex = 200
-        overlay.Parent = screenGui
-        local popup = Instance.new("Frame")
-        popup.Name = "PopupCard"
-        popup.BackgroundColor3 = Colors.Background
-        popup.BorderSizePixel = 0
-        popup.AnchorPoint = Vector2.new(0.5, 0.5)
-        popup.Position = UDim2.new(0.5, 0, 0.5, 20)
-        popup.Size = UDim2.new(0, 360, 0, 480)
-        popup.ZIndex = 201
-        popup.ClipsDescendants = true
-        popup.Parent = overlay
-        createCorner(popup, 10)
-        createStroke(popup, Colors.Border, 1)
-        popup.BackgroundTransparency = 1
-        tween(popup, {BackgroundTransparency = 0, Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.3, Enum.EasingStyle.Back)
-        local headerBar = Instance.new("Frame")
-        headerBar.Name = "Header"
-        headerBar.BackgroundColor3 = Colors.Surface
-        headerBar.BorderSizePixel = 0
-        headerBar.Position = UDim2.new(0, 0, 0, 0)
-        headerBar.Size = UDim2.new(1, 0, 0, 40)
-        headerBar.ZIndex = 202
-        headerBar.Parent = popup
-        local isFirstRun = Config and Config.isFirstRun()
-        local titleText = isFirstRun and "⚡ Welcome to LeoBounty!" or "⚙ Configuration"
-        local titleLabel = createText(headerBar, titleText, {
-            position = UDim2.new(0, 14, 0, 0),
-            size = UDim2.new(0.7, 0, 1, 0),
-            variant = "Heading",
-            color = isFirstRun and Colors.Primary or Colors.Text,
-        })
-        titleLabel.ZIndex = 203
-        local dragging = false
-        local dragStart, startPos
-        headerBar.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                dragging = true
-                dragStart = input.Position
-                startPos = popup.Position
-                input.Changed:Connect(function()
-                    if input.UserInputState == Enum.UserInputState.End then
-                        dragging = false
-                    end
-                end)
-            end
-        end)
-        headerBar.InputChanged:Connect(function(input)
-            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-                local delta = input.Position - dragStart
-                popup.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-            end
-        end)
-        local closeBtn = Instance.new("TextButton")
-        closeBtn.Name = "Close"
-        closeBtn.BackgroundColor3 = Colors.Error
-        closeBtn.BackgroundTransparency = 0.9
-        closeBtn.Position = UDim2.new(1, -36, 0, 4)
-        closeBtn.Size = UDim2.new(0, 32, 0, 32)
-        closeBtn.Font = Fonts.Body
-        closeBtn.Text = "X"
-        closeBtn.TextColor3 = Colors.Error
-        closeBtn.TextSize = 14
-        closeBtn.ZIndex = 203
-        closeBtn.AutoButtonColor = false
-        closeBtn.Parent = headerBar
-        createCorner(closeBtn, 6)
-        closeBtn.MouseEnter:Connect(function()
-            tween(closeBtn, {BackgroundTransparency = 0.5, TextColor3 = Colors.Text}, 0.15)
-        end)
-        closeBtn.MouseLeave:Connect(function()
-            tween(closeBtn, {BackgroundTransparency = 0.9, TextColor3 = Colors.Error}, 0.15)
-        end)
-        local function closePopup()
-            tween(popup, {BackgroundTransparency = 1, Position = UDim2.new(0.5, 0, 0.5, 20)}, 0.2)
-            tween(overlay, {BackgroundTransparency = 1}, 0.2)
-            task.delay(0.25, function() overlay:Destroy() end)
-        end
-        closeBtn.MouseButton1Click:Connect(closePopup)
-        overlay.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 or
-               input.UserInputType == Enum.UserInputType.Touch then
-                local pos = input.Position
-                if pos.X < popup.AbsolutePosition.X or 
-                   pos.X > popup.AbsolutePosition.X + popup.AbsoluteSize.X or
-                   pos.Y < popup.AbsolutePosition.Y or
-                   pos.Y > popup.AbsolutePosition.Y + popup.AbsoluteSize.Y then
-                    closePopup()
-                end
-            end
-        end)
-        local content = Instance.new("ScrollingFrame")
-        content.Name = "Content"
-        content.BackgroundTransparency = 1
-        content.Position = UDim2.new(0, 0, 0, 44)
-        content.Size = UDim2.new(1, 0, 1, -44)
-        content.CanvasSize = UDim2.new(0, 0, 0, 0)
-        content.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        content.ScrollBarThickness = 3
-        content.ScrollBarImageColor3 = Colors.TextMuted
-        content.ZIndex = 202
-        content.Parent = popup
-        local listLayout = Instance.new("UIListLayout")
-        listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        listLayout.Padding = UDim.new(0, 2)
-        listLayout.Parent = content
-        local contentPad = Instance.new("UIPadding")
-        contentPad.PaddingLeft = UDim.new(0, 14)
-        contentPad.PaddingRight = UDim.new(0, 14)
-        contentPad.PaddingTop = UDim.new(0, 8)
-        contentPad.PaddingBottom = UDim.new(0, 14)
-        contentPad.Parent = content
-        local function createEnhancedDropdownRow(parent, label, options, currentValue, onChanged, layoutOrder)
-            local row = Instance.new("Frame")
-            row.Name = label .. "Row"
-            row.BackgroundTransparency = 1
-            row.Size = UDim2.new(1, 0, 0, 60)
-            row.LayoutOrder = layoutOrder or 0
-            row.ZIndex = 202
-            row.Parent = parent
-            local lbl = createText(row, label, {
-                position = UDim2.new(0, 0, 0, 0),
-                size = UDim2.new(1, 0, 0, 18),
-                variant = "Small",
-                color = Colors.TextSecondary,
-            })
-            lbl.ZIndex = 203
-            local dropdownContainer = Instance.new("Frame")
-            dropdownContainer.Name = "DropdownContainer"
-            dropdownContainer.BackgroundColor3 = Colors.SurfaceLight
-            dropdownContainer.BorderSizePixel = 0
-            dropdownContainer.Position = UDim2.new(0, 0, 0, 22)
-            dropdownContainer.Size = UDim2.new(1, 0, 0, 34)
-            dropdownContainer.ZIndex = 203
-            dropdownContainer.Parent = row
-            createCorner(dropdownContainer, 6)
-            createStroke(dropdownContainer, Colors.Border, 1)
-            local dropBtn = Instance.new("TextButton")
-            dropBtn.Name = "MainButton"
-            dropBtn.BackgroundTransparency = 1
-            dropBtn.Size = UDim2.new(1, 0, 1, 0)
-            dropBtn.Font = Fonts.Body
-            dropBtn.Text = "  " .. tostring(currentValue) .. "  ▼"
-            dropBtn.TextColor3 = Colors.Text
-            dropBtn.TextSize = 12
-            dropBtn.TextXAlignment = Enum.TextXAlignment.Left
-            dropBtn.AutoButtonColor = false
-            dropBtn.ZIndex = 204
-            dropBtn.Parent = dropdownContainer
-            local arrow = Instance.new("TextLabel")
-            arrow.Name = "Arrow"
-            arrow.BackgroundTransparency = 1
-            arrow.Position = UDim2.new(1, -20, 0, 0)
-            arrow.Size = UDim2.new(0, 16, 1, 0)
-            arrow.Font = Fonts.Body
-            arrow.Text = "▼"
-            arrow.TextColor3 = Colors.TextMuted
-            arrow.TextSize = 10
-            arrow.TextXAlignment = Enum.TextXAlignment.Center
-            arrow.ZIndex = 205
-            arrow.Parent = dropdownContainer
-            dropBtn.MouseEnter:Connect(function()
-                tween(dropdownContainer, {BackgroundColor3 = Colors.Surface}, 0.15)
-                tween(arrow, {TextColor3 = Colors.Primary}, 0.15)
-            end)
-            dropBtn.MouseLeave:Connect(function()
-                tween(dropdownContainer, {BackgroundColor3 = Colors.SurfaceLight}, 0.15)
-                tween(arrow, {TextColor3 = Colors.TextMuted}, 0.15)
-            end)
-            local function showDropdown()
-                local overlay = Instance.new("Frame")
-                overlay.Name = "DropdownOverlay"
-                overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-                overlay.BackgroundTransparency = 0.3
-                overlay.Position = UDim2.new(0, 0, 0, 0)
-                overlay.Size = UDim2.new(1, 0, 1, 0)
-                overlay.ZIndex = 300
-                overlay.Parent = screenGui
-                local listContainer = Instance.new("Frame")
-                listContainer.Name = "OptionsList"
-                listContainer.BackgroundColor3 = Colors.Background
-                listContainer.BorderSizePixel = 0
-                listContainer.Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y + 2)
-                listContainer.Size = UDim2.new(0, dropdownContainer.AbsoluteSize.X, 0, math.min(#options * 28 + 8, 200))
-                listContainer.ZIndex = 301
-                listContainer.Parent = overlay
-                createCorner(listContainer, 6)
-                createStroke(listContainer, Colors.Border, 1)
-                listContainer.BackgroundTransparency = 1
-                listContainer.Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y)
-                tween(listContainer, {
-                    BackgroundTransparency = 0,
-                    Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y + 2)
-                }, 0.2, Enum.EasingStyle.Back)
-                local scrollFrame = Instance.new("ScrollingFrame")
-                scrollFrame.Name = "ScrollFrame"
-                scrollFrame.BackgroundTransparency = 1
-                scrollFrame.Position = UDim2.new(0, 4, 0, 4)
-                scrollFrame.Size = UDim2.new(1, -8, 1, -8)
-                scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #options * 28)
-                scrollFrame.ScrollBarThickness = 4
-                scrollFrame.ScrollBarImageColor3 = Colors.TextMuted
-                scrollFrame.ZIndex = 302
-                scrollFrame.Parent = listContainer
-                local listLayout = Instance.new("UIListLayout")
-                listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-                listLayout.Padding = UDim.new(0, 2)
-                listLayout.Parent = scrollFrame
-                for i, option in ipairs(options) do
-                    local optionBtn = Instance.new("TextButton")
-                    optionBtn.Name = "Option_" .. tostring(i)
-                    optionBtn.BackgroundTransparency = option == currentValue and 0.7 or 1
-                    optionBtn.BackgroundColor3 = option == currentValue and Colors.Primary or Colors.SurfaceLight
-                    optionBtn.BorderSizePixel = 0
-                    optionBtn.Size = UDim2.new(1, 0, 0, 26)
-                    optionBtn.Font = Fonts.Body
-                    optionBtn.Text = "  " .. tostring(option)
-                    optionBtn.TextColor3 = option == currentValue and Colors.Text or Colors.TextSecondary
-                    optionBtn.TextSize = 11
-                    optionBtn.TextXAlignment = Enum.TextXAlignment.Left
-                    optionBtn.LayoutOrder = i
-                    optionBtn.ZIndex = 303
-                    optionBtn.Parent = scrollFrame
-                    createCorner(optionBtn, 4)
-                    optionBtn.MouseEnter:Connect(function()
-                        if option ~= currentValue then
-                            tween(optionBtn, {BackgroundTransparency = 0.8, BackgroundColor3 = Colors.Surface}, 0.1)
-                        end
-                    end)
-                    optionBtn.MouseLeave:Connect(function()
-                        if option ~= currentValue then
-                            tween(optionBtn, {BackgroundTransparency = 1, BackgroundColor3 = Colors.SurfaceLight}, 0.1)
-                        end
-                    end)
-                    optionBtn.MouseButton1Click:Connect(function()
-                        dropBtn.Text = "  " .. tostring(option) .. "  ▼"
-                        tween(listContainer, {
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y)
-                        }, 0.2, Enum.EasingStyle.Back)
-                        task.delay(0.2, function()
-                            overlay:Destroy()
-                        end)
-                        if onChanged then
-                            onChanged(option)
-                        end
-                        pulseElement(dropdownContainer, Colors.Primary, 0.3)
-                    end)
-                end
-                overlay.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                       input.UserInputType == Enum.UserInputType.Touch then
-                        local pos = input.Position
-                        local listPos = listContainer.AbsolutePosition
-                        local listSize = listContainer.AbsoluteSize
-                        if pos.X < listPos.X or pos.X > listPos.X + listSize.X or
-                           pos.Y < listPos.Y or pos.Y > listPos.Y + listSize.Y then
-                            tween(listContainer, {
-                                BackgroundTransparency = 1,
-                                Position = UDim2.new(0, dropdownContainer.AbsolutePosition.X, 0, dropdownContainer.AbsolutePosition.Y + dropdownContainer.AbsoluteSize.Y)
-                            }, 0.2, Enum.EasingStyle.Back)
-                            task.delay(0.2, function()
-                                overlay:Destroy()
-                            end)
-                        end
-                    end
-                end)
-            end
-            dropBtn.MouseButton1Click:Connect(function()
-                showDropdown()
-            end)
-            return row
-        end
-        local function createToggleRow(parent, label, currentValue, onChanged, layoutOrder)
-            local row = Instance.new("Frame")
-            row.Name = label .. "Row"
-            row.BackgroundTransparency = 1
-            row.Size = UDim2.new(1, 0, 0, 36)
-            row.LayoutOrder = layoutOrder or 0
-            row.ZIndex = 202
-            row.Parent = parent
-            local lbl = createText(row, label, {
-                position = UDim2.new(0, 0, 0, 0),
-                size = UDim2.new(0.7, 0, 1, 0),
-                variant = "Small",
-                color = Colors.Text,
-            })
-            lbl.ZIndex = 203
-            local toggleBg = Instance.new("Frame")
-            toggleBg.Name = "ToggleBg"
-            toggleBg.BackgroundColor3 = currentValue and Colors.Success or Colors.SurfaceLight
-            toggleBg.BorderSizePixel = 0
-            toggleBg.AnchorPoint = Vector2.new(1, 0.5)
-            toggleBg.Position = UDim2.new(1, 0, 0.5, 0)
-            toggleBg.Size = UDim2.new(0, 40, 0, 20)
-            toggleBg.ZIndex = 203
-            toggleBg.Parent = row
-            createCorner(toggleBg, 10)
-            local toggleKnob = Instance.new("Frame")
-            toggleKnob.Name = "Knob"
-            toggleKnob.BackgroundColor3 = Colors.Text
-            toggleKnob.BorderSizePixel = 0
-            toggleKnob.Position = currentValue and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
-            toggleKnob.Size = UDim2.new(0, 16, 0, 16)
-            toggleKnob.ZIndex = 204
-            toggleKnob.Parent = toggleBg
-            createCorner(toggleKnob, 8)
-            local isOn = currentValue
-            local function toggle()
-                isOn = not isOn
-                tween(toggleBg, {BackgroundColor3 = isOn and Colors.Success or Colors.SurfaceLight}, 0.2)
-                tween(toggleKnob, {Position = isOn and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)}, 0.2, Enum.EasingStyle.Back)
-                if onChanged then onChanged(isOn) end
-            end
-            local toggleBtn = Instance.new("TextButton")
-            toggleBtn.Name = "ToggleHit"
-            toggleBtn.BackgroundTransparency = 1
-            toggleBtn.Size = UDim2.new(1, 0, 1, 0)
-            toggleBtn.Text = ""
-            toggleBtn.ZIndex = 205
-            toggleBtn.Parent = toggleBg
-            toggleBtn.MouseButton1Click:Connect(toggle)
-            return row
-        end
-        local function createSectionLabel(parent, text, layoutOrder)
-            local lbl = createText(parent, text, {
-                size = UDim2.new(1, 0, 0, 24),
-                variant = "Heading",
-                color = Colors.Primary,
-            })
-            lbl.LayoutOrder = layoutOrder
-            lbl.ZIndex = 203
-            return lbl
-        end
-        local function createTextInputRow(parent, label, currentValue, placeholder, onChanged, layoutOrder)
-            local row = Instance.new("Frame")
-            row.Name = label .. "Row"
-            row.BackgroundTransparency = 1
-            row.Size = UDim2.new(1, 0, 0, 56)
-            row.LayoutOrder = layoutOrder or 0
-            row.ZIndex = 202
-            row.Parent = parent
-            local lbl = createText(row, label, {
-                position = UDim2.new(0, 0, 0, 0),
-                size = UDim2.new(1, 0, 0, 18),
-                variant = "Small",
-                color = Colors.TextSecondary,
-            })
-            lbl.ZIndex = 203
-            local inputBox = Instance.new("TextBox")
-            inputBox.Name = "Input"
-            inputBox.BackgroundColor3 = Colors.SurfaceLight
-            inputBox.BorderSizePixel = 0
-            inputBox.Position = UDim2.new(0, 0, 0, 20)
-            inputBox.Size = UDim2.new(1, 0, 0, 32)
-            inputBox.Font = Fonts.Body
-            inputBox.Text = currentValue or ""
-            inputBox.PlaceholderText = placeholder or ""
-            inputBox.PlaceholderColor3 = Colors.TextMuted
-            inputBox.TextColor3 = Colors.Text
-            inputBox.TextSize = 11
-            inputBox.TextXAlignment = Enum.TextXAlignment.Left
-            inputBox.ClearTextOnFocus = false
-            inputBox.ZIndex = 203
-            inputBox.Parent = row
-            createCorner(inputBox, 5)
-            createStroke(inputBox, Colors.Border, 1)
-            local inputPad = Instance.new("UIPadding")
-            inputPad.PaddingLeft = UDim.new(0, 8)
-            inputPad.PaddingRight = UDim.new(0, 8)
-            inputPad.Parent = inputBox
-            inputBox.Focused:Connect(function()
-                tween(inputBox, {BackgroundColor3 = Colors.Surface}, 0.1)
-            end)
-            inputBox.FocusLost:Connect(function()
-                tween(inputBox, {BackgroundColor3 = Colors.SurfaceLight}, 0.1)
-                if onChanged then onChanged(inputBox.Text) end
-            end)
-            return row
-        end
-        createSectionLabel(content, "Combat", 1)
-        local fruitList = Config.getFruitList()
-        for i, fruit in ipairs(fruitList) do
-        end
-        createEnhancedDropdownRow(content, "Fruit", fruitList, Config.get("Fruit"), function(val)
-            Config.set("Fruit", val)
-        end, 2)
-        for i, faction in ipairs(Config.FACTIONS) do
-        end
-        createEnhancedDropdownRow(content, "Faction", Config.FACTIONS, Config.get("Faction"), function(val)
-            Config.set("Faction", val)
-        end, 3)
-        createSectionLabel(content, "Server", 4)
-        for i, region in ipairs(Config.REGIONS) do
-        end
-        createEnhancedDropdownRow(content, "Region", Config.REGIONS, Config.get("Region"), function(val)
-            Config.set("Region", val)
-        end, 5)
-        createSectionLabel(content, "30M Threshold", 6)
-        createToggleRow(content, "Notify Team Change", Config.get("ChangeTeamAt30M"), function(val)
-            Config.set("ChangeTeamAt30M", val)
-        end, 7)
-        createToggleRow(content, "Auto Kill Roblox", Config.get("AutoKillAt30M"), function(val)
-            Config.set("AutoKillAt30M", val)
-        end, 8)
-        createSectionLabel(content, "Other", 9)
-        createToggleRow(content, "Startup Sound", Config.get("v4Sound"), function(val)
-            Config.set("StartupSound", val)
-        end, 10)
-        createTextInputRow(content, "Custom Sound URL", Config.get("SoundUrl") or "", "https://example.com/sound.mp3", function(val)
-            Config.set("SoundUrl", val)
-        end, 10.3)
-        createToggleRow(content, "Hide User Profile", Config.get("HideProfile"), function(val)
-            Config.set("HideProfile", val)
-        end, 10.5)
-        createToggleRow(content, "Auto T-Rex Transform", Config.get("TransformTRex"), function(val)
-            Config.set("TransformTRex", val)
-        end, 10.6)
-        createTextInputRow(content, "Custom Background URL", Config.get("Background") or "", "https://example.com/image.png or .webp", function(val)
-            Config.set("Background", val)
-            if val and val ~= "" then
-                task.spawn(function()
-                    pcall(function()
-                        local newAsset = getImageUrl(val, true)
-                        if UI.BackgroundImage and newAsset and newAsset ~= "" then
-                            UI.BackgroundImage.Image = newAsset
-                            UI.BackgroundUrl = val
-                        end
-                    end)
-                end)
-            end
-        end, 10.7)
-        createSectionLabel(content, "Discord", 11)
-        createTextInputRow(content, "Webhook URL", Config.get("Webhook") or "", "https://discord.com/api/webhooks/...", function(val)
-            Config.set("Webhook", val)
-        end, 12)
-        local testWebhookBtn = Instance.new("TextButton")
-        testWebhookBtn.Name = "TestWebhook"
-        testWebhookBtn.BackgroundColor3 = Colors.SurfaceLight
-        testWebhookBtn.BorderSizePixel = 0
-        testWebhookBtn.Position = UDim2.new(0, 14, 0, 0)
-        testWebhookBtn.Size = UDim2.new(1, -28, 0, 28)
-        testWebhookBtn.Font = Fonts.Body
-        testWebhookBtn.Text = "Test Webhook"
-        testWebhookBtn.TextColor3 = Colors.Text
-        testWebhookBtn.TextSize = 11
-        testWebhookBtn.ZIndex = 203
-        testWebhookBtn.LayoutOrder = 12.5
-        testWebhookBtn.Parent = content
-        createCorner(testWebhookBtn, 5)
-        createStroke(testWebhookBtn, Colors.Border, 1)
-        testWebhookBtn.MouseEnter:Connect(function()
-            tween(testWebhookBtn, {BackgroundColor3 = Colors.Surface}, 0.15)
-        end)
-        testWebhookBtn.MouseLeave:Connect(function()
-            tween(testWebhookBtn, {BackgroundColor3 = Colors.SurfaceLight}, 0.15)
-        end)
-        testWebhookBtn.MouseButton1Click:Connect(function()
-            local webhookUrl = Config.get("Webhook") or ""
-            if webhookUrl == "" or not webhookUrl:match("https://discord.com/api/webhooks/") then
-                Utils.notify("LeoBounty", "[!] Please enter a valid Discord webhook URL")
-                return
-            end
-            task.spawn(function()
-                local success = Utils.sendWebhook(webhookUrl, {
-                    title = "LeoBounty Test",
-                    description = "Webhook connection successful! 🎯",
-                    color = 0x5865F2,
-                    fields = {
-                        {name = "Version", value = "v6.5", inline = true},
-                        {name = "Status", value = "✅ Online", inline = true}
-                    }
-                })
-                if success then
-                    pulseElement(testWebhookBtn, Colors.Success, 0.3)
-                    Utils.notify("LeoBounty", "[+] Webhook test successful!")
-                else
-                    pulseElement(testWebhookBtn, Colors.Error, 0.3)
-                    Utils.notify("LeoBounty", "[!] Webhook test failed!")
-                end
-            end)
-        end)
-        createToggleRow(content, "Notify on Kill", Config.get("WebhookOnKill") ~= false, function(val)
-            Config.set("WebhookOnKill", val)
-        end, 13)
-        local saveBtn = Instance.new("TextButton")
-        saveBtn.Name = "SaveButton"
-        saveBtn.BackgroundColor3 = Colors.Primary
-        saveBtn.BorderSizePixel = 0
-        saveBtn.Position = UDim2.new(0, 14, 0, 0)
-        saveBtn.Size = UDim2.new(1, -28, 0, 32)
-        saveBtn.Font = Fonts.Body
-        saveBtn.Text = "Save & Close"
-        saveBtn.TextColor3 = Colors.Text
-        saveBtn.TextSize = 12
-        saveBtn.ZIndex = 203
-        saveBtn.LayoutOrder = 14
-        saveBtn.Parent = content
-        createCorner(saveBtn, 6)
-        saveBtn.MouseEnter:Connect(function()
-            tween(saveBtn, {BackgroundColor3 = Colors.PrimaryMuted}, 0.15)
-        end)
-        saveBtn.MouseLeave:Connect(function()
-            tween(saveBtn, {BackgroundColor3 = Colors.Primary}, 0.15)
-        end)
-        saveBtn.MouseButton1Click:Connect(function()
-            Config.saveToFile()
-            pulseElement(saveBtn, Colors.Success, 0.3)
-            Utils.notify("LeoBounty", "[+] Configuration saved!")
-            task.delay(0.4, closePopup)
-        end)
-        local debugBtn = Instance.new("TextButton")
-        debugBtn.Name = "ShareDebugButton"
-        debugBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242) 
-        debugBtn.BorderSizePixel = 0
-        debugBtn.Position = UDim2.new(0, 14, 0, 0)
-        debugBtn.Size = UDim2.new(1, -28, 0, 32)
-        debugBtn.Font = Fonts.Body
-        debugBtn.Text = "\xF0\x9F\x93\xA4 Share Debug File"
-        debugBtn.TextColor3 = Colors.Text
-        debugBtn.TextSize = 12
-        debugBtn.ZIndex = 203
-        debugBtn.LayoutOrder = 15
-        debugBtn.Parent = content
-        createCorner(debugBtn, 6)
-        debugBtn.MouseEnter:Connect(function()
-            tween(debugBtn, {BackgroundColor3 = Color3.fromRGB(100, 115, 255)}, 0.15)
-        end)
-        debugBtn.MouseLeave:Connect(function()
-            tween(debugBtn, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.15)
-        end)
-        debugBtn.MouseButton1Click:Connect(function()
-            debugBtn.Text = "Sending..."
-            task.spawn(function()
-                local ok = false
-                pcall(function()
-                    if Utils and Utils.getDebugPayload and Utils.saveDebugFile then
-                        Utils.saveDebugFile()
-                        local payload = Utils.getDebugPayload()
-                        local response = Utils.httpPost(Utils.AUTH_URL .. "/api/auth/debug", payload, {
-                            ["Content-Type"] = "application/json",
-                        })
-                        if response and (response.StatusCode == 200 or response.StatusCode == 201) then
-                            ok = true
-                        end
-                    end
-                end)
-                if ok then
-                    debugBtn.Text = "\xE2\x9C\x85 Sent!"
-                    pulseElement(debugBtn, Colors.Success, 0.3)
-                    Utils.notify("LeoBounty", "[+] Debug file shared with admins!")
-                else
-                    debugBtn.Text = "\xE2\x9D\x8C Failed"
-                    pulseElement(debugBtn, Colors.Error, 0.3)
-                    Utils.notify("LeoBounty", "[!] Failed to share debug file")
-                end
-                task.delay(2, function()
-                    debugBtn.Text = "\xF0\x9F\x93\xA4 Share Debug File"
-                end)
-            end)
-        end)
-        return overlay
-    end
-    function UI.createDiscordIcon(parent, position, size, zIndex)
-        local DISCORD_URL = "https://discord.gg/W68jqAaAUk"
-        local DISCORD_IMG = getImageUrl("https://static.vecteezy.com/system/resources/previews/006/892/625/large_2x/discord-logo-icon-editorial-free-vector.jpg")
-        zIndex = zIndex or 100
-        local container = Instance.new("ImageButton")
-        container.Name = "DiscordBtn"
-        container.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-        container.BackgroundTransparency = 0
-        container.BorderSizePixel = 0
-        container.Position = position or UDim2.new(1, -28, 0, 0)
-        container.Size = size or UDim2.new(0, 28, 0, 28)
-        container.Image = DISCORD_IMG
-        container.ScaleType = Enum.ScaleType.Fit
-        container.AutoButtonColor = false
-        container.ZIndex = zIndex
-        container.Parent = parent
-        createCorner(container, 6)
-        createStroke(container, Color3.fromRGB(120, 130, 255), 1.5)
-        container.MouseEnter:Connect(function()
-            tween(container, {BackgroundColor3 = Color3.fromRGB(120, 130, 255)}, 0.15)
-            tween(container, {Size = UDim2.new(0, 32, 0, 32)}, 0.1)
-        end)
-        container.MouseLeave:Connect(function()
-            tween(container, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.15)
-            tween(container, {Size = size or UDim2.new(0, 28, 0, 28)}, 0.1)
-        end)
-        container.MouseButton1Click:Connect(function()
-            pcall(function()
-                if setclipboard then
-                    setclipboard(DISCORD_URL)
-                elseif toclipboard then
-                    toclipboard(DISCORD_URL)
-                end
-            end)
-            tween(container, {BackgroundColor3 = Color3.fromRGB(80, 200, 120)}, 0.15)
-            if Utils then Utils.notify("LeoBounty", "[+] Discord invite copied!") end
-            task.delay(1, function()
-                if container and container.Parent then
-                    tween(container, {BackgroundColor3 = Color3.fromRGB(88, 101, 242)}, 0.3)
-                end
-            end)
-        end)
-        return container
-    end
-    function UI.createMinimizeBtn(parent, position, size, zIndex)
-        zIndex = zIndex or 100
-        local minBtn = Instance.new("TextButton")
-        minBtn.Name = "MinimizeBtn"
-        minBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
-        minBtn.BackgroundTransparency = 0
-        minBtn.BorderSizePixel = 0
-        minBtn.Position = position or UDim2.new(1, -28, 0, 0)
-        minBtn.Size = size or UDim2.new(0, 28, 0, 28)
-        minBtn.AutoButtonColor = false
-        minBtn.Text = ""
-        minBtn.ZIndex = zIndex
-        minBtn.Parent = parent
-        createCorner(minBtn, 6)
-        createStroke(minBtn, Color3.fromRGB(100, 100, 120), 1)
-        local dashLabel = Instance.new("TextLabel")
-        dashLabel.Name = "Dash"
-        dashLabel.BackgroundTransparency = 1
-        dashLabel.Size = UDim2.new(1, 0, 1, 0)
-        dashLabel.Text = "—"
-        dashLabel.TextColor3 = Color3.fromRGB(220, 220, 230)
-        dashLabel.TextSize = 18
-        dashLabel.Font = Enum.Font.GothamBold
-        dashLabel.ZIndex = zIndex + 1
-        dashLabel.Parent = minBtn
-        minBtn.MouseEnter:Connect(function()
-            tween(minBtn, {BackgroundColor3 = Color3.fromRGB(90, 90, 105)}, 0.15)
-        end)
-        minBtn.MouseLeave:Connect(function()
-            tween(minBtn, {BackgroundColor3 = Color3.fromRGB(60, 60, 70)}, 0.15)
-        end)
-        minBtn.MouseButton1Click:Connect(function()
-            if UI.MainFrame then
-                local isVisible = UI.MainFrame.Visible
-                if isVisible then
-                    UI.MainFrame.Visible = false
-                    if UI.Blur then UI.Blur.Size = 0 end
-                    if not UI._floatingPill or not UI._floatingPill.Parent then
-                        local screenGui = UI.Gui
-                        local pill = Instance.new("ImageButton")
-                        pill.Name = "LeoFloatingPill"
-                        pill.BackgroundColor3 = Colors.Background
-                        pill.BackgroundTransparency = 0.1
-                        pill.BorderSizePixel = 0
-                        pill.AnchorPoint = Vector2.new(0, 0.5)
-                        pill.Position = UDim2.new(0, 8, 0.5, 0)
-                        pill.Size = UDim2.new(0, 42, 0, 42)
-                        pill.Image = LOGO_URL
-                        pill.ScaleType = Enum.ScaleType.Fit
-                        pill.AutoButtonColor = false
-                        pill.ZIndex = 999
-                        pill.Parent = screenGui
-                        createCorner(pill, 18)
-                        createStroke(pill, Colors.BorderLight, 1.5)
-                        pill.MouseEnter:Connect(function()
-                            tween(pill, {BackgroundTransparency = 0, Size = UDim2.new(0, 48, 0, 48)}, 0.15)
-                        end)
-                        pill.MouseLeave:Connect(function()
-                            tween(pill, {BackgroundTransparency = 0.1, Size = UDim2.new(0, 42, 0, 42)}, 0.15)
-                        end)
-                        pill.MouseButton1Click:Connect(function()
-                            if UI.MainFrame then
-                                UI.MainFrame.Visible = true
-                                if UI.Blur then UI.Blur.Size = 6 end
-                            end
-                            pill:Destroy()
-                            UI._floatingPill = nil
-                        end)
-                        local pillDragging, pillDragStart, pillStartPos = false, nil, nil
-                        pill.InputBegan:Connect(function(input)
-                            if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                               input.UserInputType == Enum.UserInputType.Touch then
-                                pillDragging = true
-                                pillDragStart = input.Position
-                                pillStartPos = pill.Position
-                            end
-                        end)
-                        pill.InputEnded:Connect(function(input)
-                            if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                               input.UserInputType == Enum.UserInputType.Touch then
-                                pillDragging = false
-                            end
-                        end)
-                        local pillDragConn = UserInputService.InputChanged:Connect(function(input)
-                            if pillDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
-                                                 input.UserInputType == Enum.UserInputType.Touch) then
-                                local delta = input.Position - pillDragStart
-                                pill.Position = UDim2.new(pillStartPos.X.Scale, pillStartPos.X.Offset + delta.X,
-                                    pillStartPos.Y.Scale, pillStartPos.Y.Offset + delta.Y)
-                            end
-                        end)
-                        table.insert(UI.Connections, pillDragConn)
-                        UI._floatingPill = pill
-                    end
-                else
-                    UI.MainFrame.Visible = true
-                    if UI.Blur then UI.Blur.Size = 6 end
-                    if UI._floatingPill then
-                        UI._floatingPill:Destroy()
-                        UI._floatingPill = nil
-                    end
-                end
-            end
-        end)
-        return minBtn
-    end
-    local function createDashboard(parent)
-        local dashboard = Instance.new("Frame")
-        dashboard.Name = "Dashboard"
-        dashboard.BackgroundTransparency = 1
-        dashboard.Position = UDim2.new(0, 0, 0, 0)
-        dashboard.Size = UDim2.new(1, 0, 1, 0)
-        dashboard.ClipsDescendants = true
-        dashboard.Visible = false
-        dashboard.Parent = parent
-        local p = Layout.padding
-        local gap = Layout.gap
-        local faction = Config and Config.get("Faction") or "Pirate"
-        local statLabel = (faction == "Marine") and "Honor" or "Bounty"
-        local statPrefix = (faction == "Marine") and "★" or "$"
-        local headerContainer = Instance.new("Frame")
-        headerContainer.Name = "HeaderContainer"
-        headerContainer.BackgroundTransparency = 1
-        headerContainer.Position = UDim2.new(0, p, 0, p)
-        headerContainer.Size = UDim2.new(1, -p*2, 0, 24)
-        headerContainer.Parent = dashboard
-        local header = createText(headerContainer, "LeoBounty v6.5", {
-            position = UDim2.new(0, 0, 0, 0),
-            size = UDim2.new(1, -30, 1, 0),
-            variant = "Title",
-        })
-        local stats = Utils and Utils.loadStats() or {}
-        local sessionLabel = createText(dashboard, "Session: 00:00:00", {
-            name = "SessionTimer",
-            position = UDim2.new(0, p, 0, p + 26),
-            size = UDim2.new(0.5, -p, 0, 16),
-            variant = "Small",
-            color = Colors.TextSecondary,
-        })
-        local keyTimerLabel = createText(dashboard, "", {
-            name = "KeyTimer",
-            position = UDim2.new(0.5, 0, 0, p + 26),
-            size = UDim2.new(0.5, -p, 0, 16),
-            variant = "Small",
-            color = Colors.Primary,
-            align = Enum.TextXAlignment.Right,
-        })
-        local keyBarBg = Instance.new("Frame")
-        keyBarBg.Name = "KeyBarBg"
-        keyBarBg.BackgroundColor3 = Colors.SurfaceLight
-        keyBarBg.BorderSizePixel = 0
-        keyBarBg.Position = UDim2.new(0, p, 0, p + 44)
-        keyBarBg.Size = UDim2.new(1, -p*2, 0, 3)
-        keyBarBg.Parent = dashboard
-        createCorner(keyBarBg, 2)
-        local keyBarFill = Instance.new("Frame")
-        keyBarFill.Name = "Fill"
-        keyBarFill.BackgroundColor3 = Colors.Primary
-        keyBarFill.BorderSizePixel = 0
-        keyBarFill.Size = UDim2.new(1, 0, 1, 0)
-        keyBarFill.Parent = keyBarBg
-        createCorner(keyBarFill, 2)
-        local keyExpiryTotalSeconds = 0
-        local keyExpiryStarted = 0
-        if Auth and Auth.KeyData and Auth.KeyData.expiresIn then
-            keyExpiryTotalSeconds = Auth.KeyData.expiresIn
-            keyExpiryStarted = os.time()
-        end
-        local keyTimerConnection = RunService.Heartbeat:Connect(function()
-            if keyExpiryTotalSeconds <= 0 then
-                keyTimerLabel.Text = "∞ PERMANENT"
-                keyTimerLabel.TextColor3 = Colors.Success
-                keyBarFill.BackgroundColor3 = Colors.Success
-                keyBarFill.Size = UDim2.new(1, 0, 1, 0)
-                keyBarBg.Visible = true
-                return
-            end
-            local elapsed = os.time() - keyExpiryStarted
-            local remaining = keyExpiryTotalSeconds - elapsed
-            if remaining <= 0 then
-                keyTimerLabel.Text = "Expired"
-                keyTimerLabel.TextColor3 = Colors.Error
-                keyBarFill.Size = UDim2.new(0, 0, 1, 0)
-            else
-                local h = math.floor(remaining / 3600)
-                local m = math.floor((remaining % 3600) / 60)
-                local s = remaining % 60
-                keyTimerLabel.Text = string.format("%02d:%02d:%02d", h, m, s)
-                if remaining < 300 then 
-                    keyTimerLabel.TextColor3 = Colors.Error
-                    keyBarFill.BackgroundColor3 = Colors.Error
-                elseif remaining < 3600 then 
-                    keyTimerLabel.TextColor3 = Colors.Warning
-                    keyBarFill.BackgroundColor3 = Colors.Warning
-                else
-                    keyTimerLabel.TextColor3 = Colors.Primary
-                    keyBarFill.BackgroundColor3 = Colors.Primary
-                end
-                local alpha = math.clamp(remaining / keyExpiryTotalSeconds, 0, 1)
-                keyBarFill.Size = UDim2.new(alpha, 0, 1, 0)
-            end
-        end)
-        table.insert(UI.Connections, keyTimerConnection)
-        dashboard.Destroying:Connect(function()
-            if keyTimerConnection then keyTimerConnection:Disconnect() end
-        end)
-        local statsContainer = Instance.new("Frame")
-        statsContainer.Name = "StatsGrid"
-        statsContainer.BackgroundTransparency = 1
-        statsContainer.Position = UDim2.new(0, p, 0, p + 52)
-        statsContainer.Size = UDim2.new(1, -p*2, 0, 110)
-        statsContainer.Parent = dashboard
-        local killsCard, killsValue = createStatCard(statsContainer, "Kills", tostring(stats.sessionKills or 0),
-            UDim2.new(0, 0, 0, 0), UDim2.new(0.5, -gap/2, 0, 48),
-            "+", Colors.Error)
-        killsCard.Name = "KillsCard"
-        local bountyIcon = (statLabel == "Honor") and "⚓︎" or "₿"
-        local bountyAccent = (statLabel == "Honor") and Color3.fromRGB(70, 130, 220) or Color3.fromRGB(230, 180, 50)
-        local bountyCard, bountyValue = createStatCard(statsContainer, statLabel, Utils and Utils.formatNumber(stats.sessionBounty or 0) or "0",
-            UDim2.new(0.5, gap/2, 0, 0), UDim2.new(0.5, -gap/2, 0, 48),
-            bountyIcon, bountyAccent)
-        bountyCard.Name = "BountyCard"
-        local timeCard, timeValue = createStatCard(statsContainer, "Time", "0h 0m",
-            UDim2.new(0, 0, 0, 58), UDim2.new(0.5, -gap/2, 0, 48),
-            "T", Color3.fromRGB(80, 200, 200))
-        timeCard.Name = "TimeCard"
-        local hopsCard, hopsValue = createStatCard(statsContainer, "Hops", "0",
-            UDim2.new(0.5, gap/2, 0, 58), UDim2.new(0.5, -gap/2, 0, 48),
-            ">", Color3.fromRGB(120, 200, 120))
-        hopsCard.Name = "HopsCard"
-        local killFeedContainer = Instance.new("Frame")
-        killFeedContainer.Name = "KillFeedContainer"
-        killFeedContainer.BackgroundColor3 = Colors.SurfaceLight
-        killFeedContainer.BackgroundTransparency = 0.5
-        killFeedContainer.Position = UDim2.new(0, p, 0, p + 160)
-        killFeedContainer.Size = UDim2.new(1, -p*2, 1, -(p + 160 + 50))
-        killFeedContainer.ClipsDescendants = true
-        killFeedContainer.Parent = dashboard
-        createCorner(killFeedContainer, 6)
-        local feedHeader = createText(killFeedContainer, "Kill Feed", {
-            position = UDim2.new(0, 8, 0, 4),
-            size = UDim2.new(1, -16, 0, 16),
-            variant = "Small",
-            color = Colors.TextMuted,
-        })
-        local killFeedScroll = Instance.new("ScrollingFrame")
-        killFeedScroll.Name = "KillFeedScroll"
-        killFeedScroll.BackgroundTransparency = 1
-        killFeedScroll.Position = UDim2.new(0, 4, 0, 22)
-        killFeedScroll.Size = UDim2.new(1, -8, 1, -26)
-        killFeedScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-        killFeedScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-        killFeedScroll.ScrollBarThickness = 2
-        killFeedScroll.ScrollBarImageColor3 = Colors.TextMuted
-        killFeedScroll.Parent = killFeedContainer
-        local feedLayout = Instance.new("UIListLayout")
-        feedLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        feedLayout.Padding = UDim.new(0, 2)
-        feedLayout.Parent = killFeedScroll
-        if stats.killFeed then
-            for _, entry in ipairs(stats.killFeed) do
-                local killEntry = Instance.new("Frame")
-                killEntry.Name = "KillEntry"
-                killEntry.BackgroundColor3 = Colors.Surface
-                killEntry.BackgroundTransparency = 0.3
-                killEntry.Size = UDim2.new(1, 0, 0, 22)
-                killEntry.LayoutOrder = -(entry.time or os.time()) 
-                killEntry.Parent = killFeedScroll
-                createCorner(killEntry, 4)
-                local entryText = Instance.new("TextLabel")
-                entryText.BackgroundTransparency = 1
-                entryText.Position = UDim2.new(0, 6, 0, 0)
-                entryText.Size = UDim2.new(1, -12, 1, 0)
-                entryText.Font = Fonts.Small
-                entryText.Text = "[+] " .. (entry.name or "Target") .. " +" .. (Utils and Utils.formatNumber(entry.bounty or 0) or "0")
-                entryText.TextColor3 = Colors.Success
-                entryText.TextSize = 10
-                entryText.TextXAlignment = Enum.TextXAlignment.Left
-                entryText.Parent = killEntry
-            end
-        end
-        local btnContainer = Instance.new("Frame")
-        btnContainer.Name = "ControlsContainer"
-        btnContainer.BackgroundTransparency = 1
-        btnContainer.Position = UDim2.new(0, p, 1, -p - 36)
-        btnContainer.Size = UDim2.new(1, -p*2, 0, 36)
-        btnContainer.Parent = dashboard
-        local hopBtn = createButton(btnContainer, "Hop", 
-            UDim2.new(0, 0, 0, 0), UDim2.new(0.333, -gap*2/3, 1, 0),
-            {color = Colors.SurfaceLight, hoverColor = Colors.Border})
-        local killGfxBtn = createButton(btnContainer, "Kill GFX", 
-            UDim2.new(0.333, gap/3, 0, 0), UDim2.new(0.333, -gap*2/3, 1, 0),
-            {color = Color3.fromRGB(80, 80, 80), hoverColor = Color3.fromRGB(90, 90, 90)})
-        killGfxBtn.TextColor3 = Colors.TextMuted
-        local stopBtn = createButton(btnContainer, "Stop", 
-            UDim2.new(0.666, gap/3, 0, 0), UDim2.new(0.334, -gap/3, 1, 0),
-            {color = Colors.Error, hoverColor = Color3.fromRGB(180, 60, 60)})
-        killGfxBtn.MouseButton1Click:Connect(function()
-            killGfxBtn.Text = "Soon™"
-            if Utils then Utils.notify("LeoBounty", "Kill GFX is coming soon!") end
-            task.delay(2, function()
-                if killGfxBtn and killGfxBtn.Parent then
-                    killGfxBtn.Text = "Kill GFX"
-                end
-            end)
-        end)
-        UI.Elements.killsValue = killsValue
-        UI.Elements.bountyValue = bountyValue
-        UI.Elements.timeValue = timeValue
-        UI.Elements.hopsValue = hopsValue
-        UI.Elements.killFeedScroll = killFeedScroll
-        UI.Elements.sessionLabel = sessionLabel
-        UI.Elements.keyTimerLabel = keyTimerLabel
-        UI.Elements.keyBarFill = keyBarFill
-        UI.Elements.serverHopBtn = hopBtn
-        UI.Elements.killGfxBtn = killGfxBtn
-        UI.Elements.stopBtn = stopBtn
-        UI.Elements.statPrefix = statPrefix
-        local lastUpdate = 0
-        local statsConnection = RunService.Heartbeat:Connect(function()
-            if os.time() - lastUpdate >= 1 then
-                lastUpdate = os.time()
-                local duration = os.time() - (stats.sessionStartTime or os.time())
-                local h = math.floor(duration / 3600)
-                local m = math.floor((duration % 3600) / 60)
-                local s = duration % 60
-                local timeStr = string.format("%dh %dm", h, m)
-                local sessionStr = string.format("Session: %02d:%02d:%02d", h, m, s)
-                if timeValue then timeValue.Text = timeStr end
-                if sessionLabel then sessionLabel.Text = sessionStr end
-                if hopsValue then hopsValue.Text = tostring(stats.serversHopped or 0) end
-            end
-        end)
-        table.insert(UI.Connections, statsConnection)
-        dashboard.Destroying:Connect(function()
-            if statsConnection then statsConnection:Disconnect() end
-        end)
-        return dashboard
-    end
-    function UI.init(utilsModule, configModule, authModule)
-        Utils = utilsModule
-        Config = configModule
-        Auth = authModule
-        if Utils then UI.Stats = Utils.loadStats() end
-        pcall(function()
-            local uis = game:GetService("UserInputService")
-            local guiService = game:GetService("GuiService")
-            local starterGui = game:GetService("StarterGui")
-            UI._isMobile = uis.TouchEnabled and not uis.KeyboardEnabled
-            if UI._isMobile then
-                pcall(function() uis.MouseIconEnabled = true end)
-                pcall(function() guiService.AutoSelectGuiEnabled = false end)
-                pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.EmotesMenu, false) end)
-                pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.SelfView, false) end)
-                pcall(function() guiService:SetEmotesMenuOpen(false) end)
-                pcall(function() starterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true) end)
-                pcall(function()
-                    local vim = game:GetService("VirtualInputManager")
-                    if vim then
-                        vim:SendKeyEvent(true, Enum.KeyCode.Unknown, false, game)
-                        task.wait(0.01)
-                        vim:SendKeyEvent(false, Enum.KeyCode.Unknown, false, game)
-                    end
-                end)
-                local viewport = workspace.CurrentCamera.ViewportSize
-                local baseW, baseH = 550, 380  
-                local scaleX = viewport.X / (baseW + 60)  
-                local scaleY = viewport.Y / (baseH + 60)
-                local scaleFactor = math.min(scaleX, scaleY)
-                scaleFactor = scaleFactor * 0.50
-                scaleFactor = math.clamp(scaleFactor, 0.45, 0.85)
-                Layout.mainWidth = math.max(250, math.floor(baseW * scaleFactor))
-                Layout.mainHeight = math.max(180, math.floor(baseH * scaleFactor))
-                Layout.leftPanelWidth = math.max(80, math.floor(180 * scaleFactor))
-                Layout.padding = math.max(4, math.floor(12 * scaleFactor))
-                Layout.gap = math.max(3, math.floor(8 * scaleFactor))
-                Layout.radius = math.max(4, math.floor(10 * scaleFactor))
-                Layout.minWidth = math.max(220, Layout.mainWidth - 20)
-                Layout.maxWidth = Layout.mainWidth + 40
-                Layout.minHeight = math.max(160, Layout.mainHeight - 20)
-                Layout.maxHeight = Layout.mainHeight + 40
-                FontSizes.Title = math.max(9, math.floor(18 * scaleFactor))
-                FontSizes.Heading = math.max(8, math.floor(14 * scaleFactor))
-                FontSizes.Body = math.max(7, math.floor(13 * scaleFactor))
-                FontSizes.Small = math.max(6, math.floor(11 * scaleFactor))
-            end
-        end)
-        if Utils and Config and Config.get("v4Sound") then
-            task.spawn(function()
-                local customSoundUrl = Config.get("SoundUrl")
-                Utils.downloadBankaiSound(customSoundUrl)
-            end)
-        end
-        pcall(function()
-            if lp.PlayerGui:FindFirstChild("LeoBountyUI") then
-                lp.PlayerGui.LeoBountyUI:Destroy()
-            end
-            if CoreGui:FindFirstChild("LeoBountyUI") then
-                CoreGui.LeoBountyUI:Destroy()
-            end
-            if Lighting:FindFirstChild("LeoBountyBlur") then
-                Lighting.LeoBountyBlur:Destroy()
-            end
-        end)
-        local screenGui = Instance.new("ScreenGui")
-        screenGui.Name = "LeoBountyUI"
-        screenGui.ResetOnSpawn = false
-        screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        screenGui.IgnoreGuiInset = true
-        pcall(function() screenGui.Parent = CoreGui end)
-        if not screenGui.Parent then
-            screenGui.Parent = lp.PlayerGui
-        end
-        UI.Gui = screenGui
-        local splashFrame = Instance.new("Frame")
-        splashFrame.Name = "SplashScreen"
-        splashFrame.BackgroundColor3 = Color3.fromRGB(8, 8, 18)
-        splashFrame.BackgroundTransparency = 0
-        splashFrame.BorderSizePixel = 0
-        splashFrame.Size = UDim2.new(1, 0, 1, 0)
-        splashFrame.ZIndex = 100
-        splashFrame.ClipsDescendants = true
-        splashFrame.Parent = screenGui
-        local bgGradient = Instance.new("UIGradient")
-        bgGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(8, 8, 25)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(15, 12, 35)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 25)),
-        })
-        bgGradient.Rotation = 45
-        bgGradient.Parent = splashFrame
-        local logoContainer = Instance.new("Frame")
-        logoContainer.Name = "LogoContainer"
-        logoContainer.BackgroundTransparency = 1
-        logoContainer.AnchorPoint = Vector2.new(0.5, 0.5)
-        logoContainer.Position = UDim2.new(0.5, 0, 0.45, 0)
-        logoContainer.Size = UDim2.new(0, 180, 0, 180)
-        logoContainer.ZIndex = 102
-        logoContainer.Parent = splashFrame
-        local NUM_DOTS = 12
-        local dotRing = Instance.new("Frame")
-        dotRing.Name = "DotRing"
-        dotRing.BackgroundTransparency = 1
-        dotRing.AnchorPoint = Vector2.new(0.5, 0.5)
-        dotRing.Position = UDim2.new(0.5, 0, 0.5, 0)
-        dotRing.Size = UDim2.new(1, 20, 1, 20)
-        dotRing.ZIndex = 103
-        dotRing.Parent = logoContainer
-        local dots = {}
-        for i = 1, NUM_DOTS do
-            local angle = (i - 1) * (2 * math.pi / NUM_DOTS)
-            local dotSize = math.max(3, 6 - math.abs(i - NUM_DOTS/2) * 0.5)
-            local dot = Instance.new("Frame")
-            dot.Name = "Dot" .. i
-            dot.BackgroundColor3 = Colors.Primary
-            dot.BackgroundTransparency = 0.3 + (i / NUM_DOTS) * 0.5
-            dot.BorderSizePixel = 0
-            dot.AnchorPoint = Vector2.new(0.5, 0.5)
-            dot.Size = UDim2.new(0, dotSize, 0, dotSize)
-            dot.Position = UDim2.new(0.5 + math.cos(angle) * 0.45, 0, 0.5 + math.sin(angle) * 0.45, 0)
-            dot.ZIndex = 104
-            dot.Parent = dotRing
-            createCorner(dot, dotSize)
-            dots[i] = dot
-        end
-        local logoGlow = Instance.new("ImageLabel")
-        logoGlow.Name = "LogoGlow"
-        logoGlow.BackgroundTransparency = 1
-        logoGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-        logoGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        logoGlow.Size = UDim2.new(0, 140, 0, 140)
-        logoGlow.Image = LOGO_URL
-        logoGlow.ImageTransparency = 0.85
-        logoGlow.ImageColor3 = Colors.Primary
-        logoGlow.ScaleType = Enum.ScaleType.Fit
-        logoGlow.ZIndex = 101
-        logoGlow.Parent = logoContainer
-        local splashLogo = Instance.new("ImageLabel")
-        splashLogo.Name = "SplashLogo"
-        splashLogo.BackgroundTransparency = 1
-        splashLogo.AnchorPoint = Vector2.new(0.5, 0.5)
-        splashLogo.Position = UDim2.new(0.5, 0, 0.5, 0)
-        splashLogo.Size = UDim2.new(0, 120, 0, 120)
-        splashLogo.Image = LOGO_URL
-        splashLogo.ImageTransparency = 1
-        splashLogo.ScaleType = Enum.ScaleType.Fit
-        splashLogo.ZIndex = 105
-        splashLogo.Parent = logoContainer
-        local stageText = Instance.new("TextLabel")
-        stageText.Name = "StageText"
-        stageText.BackgroundTransparency = 1
-        stageText.AnchorPoint = Vector2.new(0.5, 0)
-        stageText.Position = UDim2.new(0.5, 0, 0.62, 0)
-        stageText.Size = UDim2.new(0, 280, 0, 20)
-        stageText.Font = Enum.Font.GothamMedium
-        stageText.Text = "Initializing..."
-        stageText.TextColor3 = Color3.fromRGB(160, 165, 200)
-        stageText.TextSize = 13
-        stageText.TextTransparency = 1
-        stageText.ZIndex = 106
-        stageText.Parent = splashFrame
-        local progressContainer = Instance.new("Frame")
-        progressContainer.Name = "ProgressBar"
-        progressContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-        progressContainer.BackgroundTransparency = 0.5
-        progressContainer.BorderSizePixel = 0
-        progressContainer.AnchorPoint = Vector2.new(0.5, 0)
-        progressContainer.Position = UDim2.new(0.5, 0, 0.67, 0)
-        progressContainer.Size = UDim2.new(0, 220, 0, 4)
-        progressContainer.ZIndex = 106
-        progressContainer.Parent = splashFrame
-        createCorner(progressContainer, 2)
-        local progressFill = Instance.new("Frame")
-        progressFill.Name = "Fill"
-        progressFill.BackgroundColor3 = Colors.Primary
-        progressFill.BorderSizePixel = 0
-        progressFill.Size = UDim2.new(0, 0, 1, 0)
-        progressFill.ZIndex = 107
-        progressFill.Parent = progressContainer
-        createCorner(progressFill, 2)
-        local progressGradient = Instance.new("UIGradient")
-        progressGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Colors.Primary),
-            ColorSequenceKeypoint.new(1, Colors.Accent or Color3.fromRGB(130, 100, 255)),
-        })
-        progressGradient.Parent = progressFill
-        local versionLabel = Instance.new("TextLabel")
-        versionLabel.Name = "Version"
-        versionLabel.BackgroundTransparency = 1
-        versionLabel.AnchorPoint = Vector2.new(0.5, 1)
-        versionLabel.Position = UDim2.new(0.5, 0, 1, -15)
-        versionLabel.Size = UDim2.new(0, 200, 0, 14)
-        versionLabel.Font = Enum.Font.Gotham
-        versionLabel.Text = "LeoBounty v6.5"
-        versionLabel.TextColor3 = Color3.fromRGB(60, 60, 90)
-        versionLabel.TextSize = 10
-        versionLabel.TextTransparency = 1
-        versionLabel.ZIndex = 101
-        versionLabel.Parent = splashFrame
-        local walterLabel = Instance.new("TextLabel")
-        walterLabel.Name = "WalterSanchez"
-        walterLabel.BackgroundTransparency = 1
-        walterLabel.AnchorPoint = Vector2.new(0.5, 0)
-        walterLabel.Position = UDim2.new(0.5, 0, 0.72, 0)
-        walterLabel.Size = UDim2.new(0, 300, 0, 22)
-        walterLabel.Font = Enum.Font.GothamBold
-        walterLabel.Text = "#FREEWALTERSANCHEZ"
-        walterLabel.TextColor3 = Color3.fromRGB(255, 85, 85)
-        walterLabel.TextSize = 16
-        walterLabel.TextTransparency = 1
-        walterLabel.ZIndex = 106
-        walterLabel.Parent = splashFrame
-        local tipsLabel = Instance.new("TextLabel")
-        tipsLabel.Name = "TipsLabel"
-        tipsLabel.BackgroundTransparency = 1
-        tipsLabel.AnchorPoint = Vector2.new(0.5, 0)
-        tipsLabel.Position = UDim2.new(0.5, 0, 0.77, 0)
-        tipsLabel.Size = UDim2.new(0, 350, 0, 18)
-        tipsLabel.Font = Enum.Font.GothamMedium
-        tipsLabel.Text = ""
-        tipsLabel.TextColor3 = Color3.fromRGB(140, 160, 220)
-        tipsLabel.TextSize = 11
-        tipsLabel.TextTransparency = 1
-        tipsLabel.ZIndex = 106
-        tipsLabel.Parent = splashFrame
-        local tipsList = {
-            "💡 TIP: use Angle v4 + Kit for No SUS KILLS",
-            "💡 TIP: Set Region to Auto for fastest hops",
-            "💡 TIP: Use /link in Discord to unlock premium",
-            "💡 TIP: Press RightControl to toggle UI",
-            "💡 TIP: Enable AutoBuso for constant Haki",
-        }
-        local splashActive = true
-        task.spawn(function()
-            for _ = 1, 20 do
-                if not splashActive then break end
-                task.spawn(function()
-                    local particle = Instance.new("Frame")
-                    particle.BackgroundColor3 = Colors.Primary
-                    particle.BackgroundTransparency = math.random(60, 90) / 100
-                    particle.BorderSizePixel = 0
-                    local pSize = math.random(2, 5)
-                    particle.Size = UDim2.new(0, pSize, 0, pSize)
-                    particle.AnchorPoint = Vector2.new(0.5, 0.5)
-                    particle.Position = UDim2.new(math.random() * 0.8 + 0.1, 0, 1.1, 0)
-                    particle.ZIndex = 101
-                    particle.Parent = splashFrame
-                    createCorner(particle, pSize)
-                    local targetY = math.random(-20, 30) / 100
-                    local duration = math.random(20, 40) / 10
-                    tween(particle, {
-                        Position = UDim2.new(particle.Position.X.Scale + (math.random() - 0.5) * 0.2, 0, targetY, 0),
-                        BackgroundTransparency = 1,
-                        Size = UDim2.new(0, 1, 0, 1),
-                    }, duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                    task.wait(duration)
-                    pcall(function() particle:Destroy() end)
-                end)
-                task.wait(math.random(10, 25) / 100)
-            end
-        end)
-        task.spawn(function()
-            local rotation = 0
-            while splashActive and splashFrame.Parent do
-                rotation = rotation + 3
-                for i, dot in ipairs(dots) do
-                    local angle = (i - 1) * (2 * math.pi / NUM_DOTS) + math.rad(rotation)
-                    dot.Position = UDim2.new(0.5 + math.cos(angle) * 0.45, 0, 0.5 + math.sin(angle) * 0.45, 0)
-                    dot.BackgroundTransparency = 0.2 + math.abs(math.sin(angle + rotation * 0.02)) * 0.6
-                end
-                task.wait(1/30)
-            end
-        end)
-        task.spawn(function()
-            while splashActive and splashFrame.Parent do
-                tween(logoGlow, {ImageTransparency = 0.6, Size = UDim2.new(0, 150, 0, 150)}, 1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-                task.wait(1)
-                tween(logoGlow, {ImageTransparency = 0.85, Size = UDim2.new(0, 140, 0, 140)}, 1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
-                task.wait(1)
-            end
-        end)
-        task.spawn(function()
-            local rot = 45
-            while splashActive and splashFrame.Parent do
-                rot = rot + 1
-                bgGradient.Rotation = rot
-                task.wait(1/15)
-            end
-        end)
-        local stages = {
-            {text = "Initializing...", progress = 0.1},
-            {text = "Loading Modules...", progress = 0.3},
-            {text = "Authenticating...", progress = 0.55},
-            {text = "Preparing Dashboard...", progress = 0.8},
-            {text = "Almost Ready...", progress = 0.95},
-            {text = "Ready!", progress = 1.0},
-        }
-        tween(splashLogo, {ImageTransparency = 0}, 0.6)
-        tween(stageText, {TextTransparency = 0.2}, 0.6)
-        tween(versionLabel, {TextTransparency = 0.5}, 1.5)
-        tween(walterLabel, {TextTransparency = 0}, 0.8)
-        tween(tipsLabel, {TextTransparency = 0.3}, 1.0)
-        task.spawn(function()
-            local tipIndex = 1
-            while splashActive do
-                tipsLabel.Text = tipsList[tipIndex]
-                tipIndex = (tipIndex % #tipsList) + 1
-                task.wait(1.5)
-            end
-        end)
-        task.spawn(function()
-            for i, stage in ipairs(stages) do
-                if not splashActive then break end
-                stageText.Text = stage.text
-                tween(progressFill, {Size = UDim2.new(stage.progress, 0, 1, 0)}, 0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                task.wait(0.55)
-            end
-        end)
-        if Utils and Config and Config.get("v4Sound") then
-            task.spawn(function()
-                local customSoundUrl = Config.get("SoundUrl")
-                Utils.playBankaiSound(customSoundUrl)
-            end)
-        end
-        task.wait(3.5)
-        splashActive = false
-        tween(splashFrame, {BackgroundTransparency = 1}, 0.6)
-        tween(splashLogo, {ImageTransparency = 1, Size = UDim2.new(0, 140, 0, 140)}, 0.5)
-        tween(logoGlow, {ImageTransparency = 1}, 0.4)
-        tween(stageText, {TextTransparency = 1}, 0.4)
-        tween(progressContainer, {BackgroundTransparency = 1}, 0.4)
-        tween(progressFill, {BackgroundTransparency = 1}, 0.4)
-        tween(versionLabel, {TextTransparency = 1}, 0.3)
-        tween(walterLabel, {TextTransparency = 1}, 0.3)
-        tween(tipsLabel, {TextTransparency = 1}, 0.3)
-        for _, dot in ipairs(dots) do
-            tween(dot, {BackgroundTransparency = 1}, 0.3)
-        end
-        task.wait(0.7)
-        splashFrame:Destroy()
-        local blur = Instance.new("BlurEffect")
-        blur.Name = "LeoBountyBlur"
-        blur.Size = 0
-        blur.Parent = Lighting
-        UI.Blur = blur
-        tween(blur, {Size = 6}, 0.5)
-        local mainFrame = Instance.new("Frame")
-        mainFrame.Name = "MainFrame"
-        mainFrame.BackgroundColor3 = Colors.Background
-        mainFrame.BorderSizePixel = 0
-        mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-        mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-        mainFrame.Size = UDim2.new(0, Layout.mainWidth, 0, Layout.mainHeight)
-        mainFrame.ClipsDescendants = true
-        mainFrame.Parent = screenGui
-        createCorner(mainFrame, Layout.radius)
-        createStroke(mainFrame, Colors.Border)
-        UI.MainFrame = mainFrame
-        do
-            local isMobile = UI._isMobile
-            local island = Instance.new("Frame")
-            island.Name = "DynamicIsland"
-            island.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
-            island.BackgroundTransparency = 0.25
-            island.BorderSizePixel = 0
-            island.AnchorPoint = Vector2.new(0.5, 0)
-            island.Position = UDim2.new(0.5, 0, 0, isMobile and 44 or 8)
-            island.Size = UDim2.new(0, isMobile and 220 or 280, 0, 30)
-            island.ZIndex = 200
-            island.ClipsDescendants = true
-            island.Parent = screenGui
-            local islandCorner = Instance.new("UICorner")
-            islandCorner.CornerRadius = UDim.new(0, 15)
-            islandCorner.Parent = island
-            local islandStroke = Instance.new("UIStroke")
-            islandStroke.Color = Color3.fromRGB(80, 80, 100)
-            islandStroke.Thickness = 1
-            islandStroke.Transparency = 0.5
-            islandStroke.Parent = island
-            local islandGradient = Instance.new("UIGradient")
-            islandGradient.Color = ColorSequence.new({
-                ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 42, 55)),
-                ColorSequenceKeypoint.new(0.3, Color3.fromRGB(18, 18, 24)),
-                ColorSequenceKeypoint.new(0.7, Color3.fromRGB(14, 14, 18)),
-                ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 26, 35)),
-            })
-            islandGradient.Rotation = 135
-            islandGradient.Parent = island
-            local highlightOverlay = Instance.new("Frame")
-            highlightOverlay.Name = "HighlightOverlay"
-            highlightOverlay.BackgroundTransparency = 1
-            highlightOverlay.BorderSizePixel = 0
-            highlightOverlay.AnchorPoint = island.AnchorPoint
-            highlightOverlay.Position = island.Position
-            highlightOverlay.Size = island.Size
-            highlightOverlay.ZIndex = 201
-            highlightOverlay.Parent = screenGui
-            local glassHighlight = Instance.new("Frame")
-            glassHighlight.Name = "GlassHighlight"
-            glassHighlight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            glassHighlight.BackgroundTransparency = 0.92
-            glassHighlight.BorderSizePixel = 0
-            glassHighlight.Size = UDim2.new(1, 0, 0, 14)
-            glassHighlight.ZIndex = 201
-            glassHighlight.Parent = highlightOverlay
-            local highlightCorner = Instance.new("UICorner")
-            highlightCorner.CornerRadius = UDim.new(0, 15)
-            highlightCorner.Parent = glassHighlight
-            local function createMetric(name, label, order)
-                local container = Instance.new("Frame")
-                container.Name = name
-                container.BackgroundTransparency = 1
-                container.LayoutOrder = order
-                container.Size = UDim2.new(0, isMobile and 62 or 78, 1, 0)
-                container.Parent = island
-                local labelText = Instance.new("TextLabel")
-                labelText.Name = "Label"
-                labelText.BackgroundTransparency = 1
-                labelText.Size = UDim2.new(1, 0, 0, 10)
-                labelText.Position = UDim2.new(0, 0, 0, 3)
-                labelText.Font = Enum.Font.Gotham
-                labelText.Text = label
-                labelText.TextColor3 = Color3.fromRGB(120, 125, 145)
-                labelText.TextSize = 7
-                labelText.TextXAlignment = Enum.TextXAlignment.Center
-                labelText.ZIndex = 202
-                labelText.Parent = container
-                local valueLabel = Instance.new("TextLabel")
-                valueLabel.Name = "Value"
-                valueLabel.BackgroundTransparency = 1
-                valueLabel.Size = UDim2.new(1, 0, 0, 14)
-                valueLabel.Position = UDim2.new(0, 0, 0, 13)
-                valueLabel.Font = Enum.Font.GothamBold
-                valueLabel.Text = "---"
-                valueLabel.TextColor3 = Color3.fromRGB(52, 211, 153)
-                valueLabel.TextSize = isMobile and 10 or 11
-                valueLabel.TextXAlignment = Enum.TextXAlignment.Center
-                valueLabel.ZIndex = 202
-                valueLabel.Parent = container
-                return valueLabel
-            end
-            local islandLayout = Instance.new("UIListLayout")
-            islandLayout.FillDirection = Enum.FillDirection.Horizontal
-            islandLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            islandLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-            islandLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            islandLayout.Padding = UDim.new(0, 0)
-            islandLayout.Parent = island
-            local function createDivider(order)
-                local div = Instance.new("Frame")
-                div.Name = "Div"
-                div.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-                div.BackgroundTransparency = 0.6
-                div.BorderSizePixel = 0
-                div.Size = UDim2.new(0, 1, 0, 18)
-                div.LayoutOrder = order
-                div.Parent = island
-            end
-            local pingValue = createMetric("Ping", "PING", 1)
-            createDivider(2)
-            local lossValue = createMetric("Loss", "LOSS", 3)
-            createDivider(4)
-            local fpsValue = createMetric("FPS", "FPS", 5)
-            local function getColor(value, goodMax, warnMax)
-                if value <= goodMax then
-                    return Color3.fromRGB(52, 211, 153)
-                elseif value <= warnMax then
-                    return Color3.fromRGB(251, 191, 36)
-                else
-                    return Color3.fromRGB(239, 68, 68)
-                end
-            end
-            if isMobile then
-                createDivider(6)
-                local resizeBtnContainer = Instance.new("Frame")
-                resizeBtnContainer.Name = "ResizeButtons"
-                resizeBtnContainer.BackgroundTransparency = 1
-                resizeBtnContainer.Size = UDim2.new(0, 50, 1, 0)
-                resizeBtnContainer.LayoutOrder = 7
-                resizeBtnContainer.Parent = island
-                local resizeLayout = Instance.new("UIListLayout")
-                resizeLayout.FillDirection = Enum.FillDirection.Horizontal
-                resizeLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-                resizeLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-                resizeLayout.Padding = UDim.new(0, 2)
-                resizeLayout.Parent = resizeBtnContainer
-                local sizes = {
-                    {label = "S", scale = 0.45},
-                    {label = "M", scale = 0.60},
-                    {label = "L", scale = 0.80},
-                }
-                for i, sizeOpt in ipairs(sizes) do
-                    local btn = Instance.new("TextButton")
-                    btn.Name = "Size" .. sizeOpt.label
-                    btn.BackgroundColor3 = Color3.fromRGB(50, 52, 65)
-                    btn.BackgroundTransparency = 0.4
-                    btn.BorderSizePixel = 0
-                    btn.Size = UDim2.new(0, 14, 0, 14)
-                    btn.Font = Enum.Font.GothamBold
-                    btn.Text = sizeOpt.label
-                    btn.TextColor3 = Color3.fromRGB(180, 185, 200)
-                    btn.TextSize = 7
-                    btn.LayoutOrder = i
-                    btn.ZIndex = 203
-                    btn.Parent = resizeBtnContainer
-                    local btnCorner = Instance.new("UICorner")
-                    btnCorner.CornerRadius = UDim.new(0, 4)
-                    btnCorner.Parent = btn
-                    btn.MouseButton1Click:Connect(function()
-                        if UI.MainFrame then
-                            local baseW, baseH = 550, 380
-                            local newW = math.floor(baseW * sizeOpt.scale)
-                            local newH = math.floor(baseH * sizeOpt.scale)
-                            local newLeftW = math.max(80, math.floor(180 * sizeOpt.scale))
-                            tween(UI.MainFrame, {Size = UDim2.new(0, newW, 0, newH)}, 0.25)
-                            task.wait(0.3)
-                            local leftPanel = UI.MainFrame:FindFirstChild("LeftPanel")
-                            if leftPanel then
-                                leftPanel.Size = UDim2.new(0, newLeftW, 1, 0)
-                            end
-                            local rightPanel = UI.MainFrame:FindFirstChild("RightPanel")
-                            if rightPanel then
-                                rightPanel.Position = UDim2.new(0, newLeftW, 0, 0)
-                                rightPanel.Size = UDim2.new(1, -newLeftW, 1, 0)
-                            end
-                            local dragHandle = UI.MainFrame:FindFirstChild("DragHandle")
-                            if dragHandle then
-                                dragHandle.Position = UDim2.new(0, newLeftW, 0, 0)
-                                dragHandle.Size = UDim2.new(1, -newLeftW, 0, 40)
-                            end
-                        end
-                        tween(btn, {BackgroundColor3 = Color3.fromRGB(52, 211, 153)}, 0.1)
-                        task.delay(0.3, function()
-                            tween(btn, {BackgroundColor3 = Color3.fromRGB(50, 52, 65)}, 0.2)
-                        end)
-                    end)
-                end
-                island.Size = UDim2.new(0, 280, 0, 30)
-            end
-            task.spawn(function()
-                local frameCount = 0
-                local lastTime = tick()
-                local highSendWarnedAt = 0
-                local fpsConn = RunService.Heartbeat:Connect(function()
-                    frameCount = frameCount + 1
-                end)
-                table.insert(UI.Connections, fpsConn)
-                while screenGui and screenGui.Parent do
-                    task.wait(0.5)
-                    local now = tick()
-                    local elapsed = now - lastTime
-                    local currentFps = math.floor(frameCount / math.max(elapsed, 0.001))
-                    frameCount = 0
-                    lastTime = now
-                    local ping = 0
-                    pcall(function()
-                        local ps = game:GetService("Stats"):FindFirstChild("PerformanceStats")
-                        if ps then
-                            local p = ps:FindFirstChild("Ping")
-                            if p then
-                                ping = math.floor(p:GetValue())
-                            end
-                        end
-                    end)
-                    if ping == 0 then
-                        pcall(function()
-                            local network = game:GetService("Stats"):FindFirstChild("Network")
-                            if network then
-                                local serverItem = network:FindFirstChild("ServerStatsItem")
-                                if serverItem then
-                                    local dp = serverItem:FindFirstChild("Data Ping")
-                                    if dp then ping = math.floor(dp:GetValue()) end
-                                end
-                            end
-                        end)
-                    end
-                    if ping == 0 then
-                        pcall(function()
-                            local nc = game:GetService("NetworkClient")
-                            if nc and nc.GetNetworkPing then
-                                ping = math.floor(nc:GetNetworkPing() * 1000)
-                            end
-                        end)
-                    end
-                    local packetLoss = 0
-                    pcall(function()
-                        local network = game:GetService("Stats"):FindFirstChild("Network")
-                        if network then
-                            local si = network:FindFirstChild("ServerStatsItem")
-                            if si then
-                                local pl = si:FindFirstChild("Data Packets Lost")
-                                if pl then packetLoss = math.floor(pl:GetValue() * 10) / 10 end
-                            end
-                        end
-                    end)
-                    local sendRate, recvRate = 0, 0
-                    pcall(function()
-                        local network = game:GetService("Stats"):FindFirstChild("Network")
-                        if network then
-                            local si = network:FindFirstChild("ServerStatsItem")
-                            if si then
-                                local sent = si:FindFirstChild("Data Send")
-                                local recv = si:FindFirstChild("Data Receive")
-                                if sent then sendRate = sent:GetValue() end  
-                                if recv then recvRate = recv:GetValue() end
-                            end
-                        end
-                    end)
-                    if sendRate > 100 and (now - highSendWarnedAt) > 10 then
-                        highSendWarnedAt = now
-                        if UI and UI.setStatus then
-                            UI.setStatus("[!] HIGH SEND RATE: " .. math.floor(sendRate) .. " KB/s - Risk of security kick!", Color3.fromRGB(239, 68, 68))
-                        end
-                        pcall(function()
-                            tween(islandStroke, {Color = Color3.fromRGB(239, 68, 68), Transparency = 0}, 0.15)
-                            task.delay(2, function()
-                                tween(islandStroke, {Color = Color3.fromRGB(80, 80, 100), Transparency = 0.5}, 0.3)
-                            end)
-                        end)
-                    end
-                    pingValue.Text = ping .. "ms"
-                    pingValue.TextColor3 = getColor(ping, 80, 150)
-                    lossValue.Text = string.format("%.1f%%", packetLoss)
-                    lossValue.TextColor3 = getColor(packetLoss, 1, 5)
-                    fpsValue.Text = tostring(currentFps)
-                    fpsValue.TextColor3 = getColor(60 - currentFps, 0, 30)
-                end
-            end)
-            UI.DynamicIsland = island
-        end
-        local configBgUrl = (Config and Config.get("Background")) or ""
-        local bgAsset = getImageUrl(configBgUrl, true) 
-        local bgImage = Instance.new("ImageLabel")
-        bgImage.Name = "FullBackground"
-        bgImage.BackgroundTransparency = 1
-        bgImage.Position = UDim2.new(0, 0, 0, 0)
-        bgImage.Size = UDim2.new(1, 0, 1, 0)
-        bgImage.Image = bgAsset
-        bgImage.ScaleType = Enum.ScaleType.Crop
-        bgImage.ZIndex = 1
-        bgImage.Parent = mainFrame
-        createCorner(bgImage, Layout.radius)
-        UI.BackgroundImage = bgImage
-        UI.BackgroundUrl = configBgUrl
-        local glassOverlay = Instance.new("Frame")
-        glassOverlay.Name = "GlassOverlay"
-        glassOverlay.BackgroundColor3 = Colors.Background
-        glassOverlay.BackgroundTransparency = 0.4
-        glassOverlay.BorderSizePixel = 0
-        glassOverlay.Position = UDim2.new(0, 0, 0, 0)
-        glassOverlay.Size = UDim2.new(1, 0, 1, 0)
-        glassOverlay.ZIndex = 2
-        glassOverlay.Parent = mainFrame
-        createCorner(glassOverlay, Layout.radius)
-        local dragHandle = Instance.new("Frame")
-        dragHandle.Name = "DragHandle"
-        dragHandle.BackgroundColor3 = Colors.SurfaceLight
-        dragHandle.BackgroundTransparency = 0.8
-        dragHandle.BorderSizePixel = 0
-        dragHandle.Position = UDim2.new(0, Layout.leftPanelWidth, 0, 0)
-        dragHandle.Size = UDim2.new(1, -Layout.leftPanelWidth, 0, 40)
-        dragHandle.ZIndex = 100
-        dragHandle.Parent = mainFrame
-        local dragIndicator = Instance.new("Frame")
-        dragIndicator.Name = "Indicator"
-        dragIndicator.BackgroundColor3 = Color3.fromRGB(160, 160, 180)
-        dragIndicator.BorderSizePixel = 0
-        dragIndicator.AnchorPoint = Vector2.new(0.5, 0.5)
-        dragIndicator.Position = UDim2.new(0.5, -30, 0.5, 0)
-        dragIndicator.Size = UDim2.new(0, 50, 0, 5)
-        dragIndicator.Parent = dragHandle
-        createCorner(dragIndicator, 3)
-        task.defer(function()
-            if UI.createMinimizeBtn then
-                UI.createMinimizeBtn(dragHandle, UDim2.new(1, -38, 0.5, -14), UDim2.new(0, 30, 0, 28), 105)
-            end
-        end)
-        task.defer(function()
-            if UI.createDiscordIcon then
-                UI.createDiscordIcon(dragHandle, UDim2.new(1, -74, 0.5, -14), UDim2.new(0, 30, 0, 28), 105)
-            end
-        end)
-        do
-            local dragging, dragStart, startPos = false, nil, nil
-            dragHandle.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or 
-                   input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    dragStart = input.Position
-                    startPos = mainFrame.Position
-                    input.Changed:Connect(function()
-                        if input.UserInputState == Enum.UserInputState.End then
-                            dragging = false
-                        end
-                    end)
-                end
-            end)
-            dragHandle.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                   input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
-            end)
-            local dragConn = UserInputService.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
-                                 input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - dragStart
-                    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, 
-                        startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-                end
-            end)
-            table.insert(UI.Connections, dragConn)
-        end
-        do
-            local resizeHandle = Instance.new("Frame")
-            resizeHandle.Name = "ResizeHandle"
-            resizeHandle.BackgroundTransparency = 1
-            resizeHandle.BorderSizePixel = 0
-            resizeHandle.AnchorPoint = Vector2.new(1, 1)
-            resizeHandle.Position = UDim2.new(1, -4, 1, -4)
-            resizeHandle.Size = UDim2.new(0, 16, 0, 16)
-            resizeHandle.ZIndex = 150
-            resizeHandle.Parent = mainFrame
-            local lineColors = {Colors.TextMuted, Colors.TextMuted, Colors.TextMuted}
-            local linePositions = {
-                {x1 = 12, y1 = 16, x2 = 16, y2 = 12},  
-                {x1 = 7, y1 = 16, x2 = 16, y2 = 7},    
-                {x1 = 2, y1 = 16, x2 = 16, y2 = 2},    
-            }
-            for i = 1, 3 do
-                local line = Instance.new("Frame")
-                line.Name = "GripLine" .. i
-                line.BackgroundColor3 = Colors.TextMuted
-                line.BackgroundTransparency = 0.3
-                line.BorderSizePixel = 0
-                line.Rotation = -45
-                line.AnchorPoint = Vector2.new(0.5, 0.5)
-                local offset = (i - 1) * 4
-                line.Position = UDim2.new(1, -4 - offset, 1, -4 - offset)
-                line.Size = UDim2.new(0, 8 + (i * 2), 0, 2)
-                line.ZIndex = 151
-                line.Parent = resizeHandle
-                local corner = Instance.new("UICorner")
-                corner.CornerRadius = UDim.new(0, 1)
-                corner.Parent = line
-            end
-            local resizing = false
-            local resizeStart = nil
-            local startSize = nil
-            resizeHandle.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                   input.UserInputType == Enum.UserInputType.Touch then
-                    resizing = true
-                    resizeStart = input.Position
-                    startSize = mainFrame.Size
-                    for _, child in ipairs(resizeHandle:GetChildren()) do
-                        if child:IsA("Frame") then
-                            tween(child, {BackgroundTransparency = 0}, 0.1)
-                        end
-                    end
-                    input.Changed:Connect(function()
-                        if input.UserInputState == Enum.UserInputState.End then
-                            resizing = false
-                            for _, child in ipairs(resizeHandle:GetChildren()) do
-                                if child:IsA("Frame") then
-                                    tween(child, {BackgroundTransparency = 0.3}, 0.1)
-                                end
-                            end
-                        end
-                    end)
-                end
-            end)
-            resizeHandle.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                   input.UserInputType == Enum.UserInputType.Touch then
-                    resizing = false
-                    for _, child in ipairs(resizeHandle:GetChildren()) do
-                        if child:IsA("Frame") then
-                            tween(child, {BackgroundTransparency = 0.3}, 0.1)
-                        end
-                    end
-                end
-            end)
-            local resizeConn = UserInputService.InputChanged:Connect(function(input)
-                if resizing and (input.UserInputType == Enum.UserInputType.MouseMovement or
-                                input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - resizeStart
-                    local newWidth = math.clamp(
-                        startSize.X.Offset + delta.X,
-                        Layout.minWidth,
-                        Layout.maxWidth
-                    )
-                    local newHeight = math.clamp(
-                        startSize.Y.Offset + delta.Y,
-                        Layout.minHeight,
-                        Layout.maxHeight
-                    )
-                    mainFrame.Size = UDim2.new(0, newWidth, 0, newHeight)
-                    local scaleX = newWidth / Layout.mainWidth
-                    local newLeftWidth = math.floor(Layout.leftPanelWidth * scaleX)
-                    newLeftWidth = math.clamp(newLeftWidth, 120, 250)
-                    local leftPanel = mainFrame:FindFirstChild("LeftPanel")
-                    if leftPanel then
-                        leftPanel.Size = UDim2.new(0, newLeftWidth, 1, 0)
-                    end
-                    local rightPanel = mainFrame:FindFirstChild("RightPanel")
-                    if rightPanel then
-                        rightPanel.Position = UDim2.new(0, newLeftWidth, 0, 0)
-                        rightPanel.Size = UDim2.new(1, -newLeftWidth, 1, 0)
-                    end
-                    local dragHandle = mainFrame:FindFirstChild("DragHandle")
-                    if dragHandle then
-                        dragHandle.Position = UDim2.new(0, newLeftWidth, 0, 0)
-                        dragHandle.Size = UDim2.new(1, -newLeftWidth, 0, 40)
-                    end
-                end
-            end)
-            table.insert(UI.Connections, resizeConn)
-            resizeHandle.MouseEnter:Connect(function()
-                for _, child in ipairs(resizeHandle:GetChildren()) do
-                    if child:IsA("Frame") then
-                        tween(child, {BackgroundTransparency = 0, BackgroundColor3 = Colors.Primary}, 0.15)
-                    end
-                end
-            end)
-            resizeHandle.MouseLeave:Connect(function()
-                if not resizing then
-                    for _, child in ipairs(resizeHandle:GetChildren()) do
-                        if child:IsA("Frame") then
-                            tween(child, {BackgroundTransparency = 0.3, BackgroundColor3 = Colors.TextMuted}, 0.15)
-                        end
-                    end
-                end
-            end)
-        end
-        local leftPanel = Instance.new("Frame")
-        leftPanel.Name = "LeftPanel"
-        leftPanel.BackgroundColor3 = Colors.Surface
-        leftPanel.BackgroundTransparency = 0.3
-        leftPanel.BorderSizePixel = 0
-        leftPanel.Position = UDim2.new(0, 0, 0, 0)
-        leftPanel.Size = UDim2.new(0, Layout.leftPanelWidth, 1, 0)
-        leftPanel.ClipsDescendants = true
-        leftPanel.ZIndex = 10
-        leftPanel.Parent = mainFrame
-        local leftCorner = Instance.new("UICorner")
-        leftCorner.CornerRadius = UDim.new(0, Layout.radius)
-        leftCorner.Parent = leftPanel
-        local profileContainer = Instance.new("Frame")
-        profileContainer.Name = "ProfileContainer"
-        profileContainer.BackgroundTransparency = 1
-        profileContainer.Position = UDim2.new(0, Layout.padding, 0, Layout.padding)
-        profileContainer.Size = UDim2.new(1, -Layout.padding*2, 1, -Layout.padding*2)
-        profileContainer.ZIndex = 15
-        profileContainer.Parent = leftPanel
-        local hideProfile = Config.get("HideProfile")
-        local avatarFrame = Instance.new("Frame")
-        avatarFrame.Name = "AvatarFrame"
-        avatarFrame.BackgroundColor3 = Colors.Primary
-        avatarFrame.BackgroundTransparency = 0.8
-        avatarFrame.BorderSizePixel = 0
-        avatarFrame.AnchorPoint = Vector2.new(0.5, 0)
-        avatarFrame.Position = UDim2.new(0.5, 0, 0, 15)
-        avatarFrame.Size = UDim2.new(0, 80, 0, 80)
-        avatarFrame.ZIndex = 16
-        avatarFrame.Parent = profileContainer
-        createCorner(avatarFrame, 40)
-        local avatarStroke = Instance.new("UIStroke")
-        avatarStroke.Name = "RGBGlow"
-        avatarStroke.Thickness = 2
-        avatarStroke.Transparency = 0
-        avatarStroke.Color = Colors.Primary
-        avatarStroke.Parent = avatarFrame
-        task.spawn(function()
-            local h = 0
-            while avatarFrame.Parent do
-                h = (h + 0.005) % 1
-                avatarStroke.Color = Color3.fromHSV(h, 0.8, 1)
-                task.wait(1/60)
-            end
-        end)
-        local avatarImage = Instance.new("ImageLabel")
-        avatarImage.Name = "Avatar"
-        avatarImage.BackgroundTransparency = 1
-        avatarImage.Size = UDim2.new(1, 0, 1, 0)
-        if hideProfile then
-            avatarImage.Image = LOGO_URL
-        else
-            avatarImage.Image = "rbxthumb://type=AvatarHeadShot&id=" .. tostring(lp.UserId) .. "&w=180&h=180"
-        end
-        avatarImage.ScaleType = Enum.ScaleType.Fit
-        avatarImage.ZIndex = 17
-        avatarImage.Parent = avatarFrame
-        createCorner(avatarImage, 40)
-        local usernameContainer = Instance.new("Frame")
-        usernameContainer.Name = "UsernameContainer"
-        usernameContainer.BackgroundTransparency = 1
-        usernameContainer.Position = UDim2.new(0, 0, 0, 100)
-        usernameContainer.Size = UDim2.new(1, 0, 0, 22)
-        usernameContainer.ZIndex = 16
-        usernameContainer.Parent = profileContainer
-        local displayName = hideProfile and "Leo Hub" or lp.DisplayName
-        local usernameLabel = createText(usernameContainer, displayName, {
-            position = UDim2.new(0, 0, 0, 0),
-            size = UDim2.new(1, 0, 1, 0),
-            variant = "Heading",
-            color = Colors.Text,
-        })
-        usernameLabel.TextXAlignment = Enum.TextXAlignment.Center
-        usernameLabel.ZIndex = 17
-        local showTag = hideProfile or (lp.DisplayName ~= lp.Name)
-        if showTag then
-            local tagText = hideProfile and "@LeoHub" or ("@" .. lp.Name)
-            local userTag = createText(usernameContainer, tagText, {
-                position = UDim2.new(0, 0, 1, -2),
-                size = UDim2.new(1, 0, 0, 12),
-                variant = "Small",
-                color = Colors.TextMuted,
-            })
-            userTag.TextXAlignment = Enum.TextXAlignment.Center
-            userTag.ZIndex = 17
-        end
-        local currentFaction = Config and Config.get("Faction") or "Pirate"
-        local factionPrefix = (currentFaction == "Marine") and "Honor: " or "Bounty: "
-        local statsContainer = Instance.new("Frame")
-        statsContainer.Name = "StatsContainer"
-        statsContainer.BackgroundTransparency = 1
-        statsContainer.Position = UDim2.new(0, 0, 0, 125)
-        statsContainer.Size = UDim2.new(1, 0, 0, 50) 
-        statsContainer.ZIndex = 16
-        statsContainer.Parent = profileContainer
-        local statsLayout = Instance.new("UIListLayout")
-        statsLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        statsLayout.Padding = UDim.new(0, 4)
-        statsLayout.Parent = statsContainer
-        local levelBadge = Instance.new("Frame")
-        levelBadge.Name = "LevelBadge"
-        levelBadge.BackgroundColor3 = Colors.Primary
-        levelBadge.BackgroundTransparency = 0.85
-        levelBadge.BorderSizePixel = 0
-        levelBadge.Size = UDim2.new(1, 0, 0, 22)
-        levelBadge.LayoutOrder = 1
-        levelBadge.ZIndex = 17
-        levelBadge.Parent = statsContainer
-        createCorner(levelBadge, 5)
-        local levelLabel = createText(levelBadge, "Level: --", {
-            position = UDim2.new(0, 0, 0, 0),
-            size = UDim2.new(1, 0, 1, 0),
-            variant = "Small",
-            color = Colors.Text,
-        })
-        levelLabel.TextXAlignment = Enum.TextXAlignment.Center
-        levelLabel.ZIndex = 18
-        UI.Elements.profileLevel = levelLabel
-        local bountyBadge = Instance.new("Frame")
-        bountyBadge.Name = "BountyBadge"
-        bountyBadge.BackgroundColor3 = (currentFaction == "Marine") and Colors.Primary or Colors.Success
-        bountyBadge.BackgroundTransparency = 0.85
-        bountyBadge.BorderSizePixel = 0
-        bountyBadge.Size = UDim2.new(1, 0, 0, 22)
-        bountyBadge.LayoutOrder = 2
-        bountyBadge.ZIndex = 17
-        bountyBadge.Parent = statsContainer
-        createCorner(bountyBadge, 5)
-        local bountyLabel = createText(bountyBadge, factionPrefix .. "0", {
-            position = UDim2.new(0, 0, 0, 0),
-            size = UDim2.new(1, 0, 1, 0),
-            variant = "Small",
-            color = Colors.Text,
-        })
-        bountyLabel.TextXAlignment = Enum.TextXAlignment.Center
-        bountyLabel.ZIndex = 18
-        UI.Elements.profileBounty = bountyLabel
-        task.spawn(function()
-            local level = 0
-            local bounty = 0
-            pcall(function()
-                local data = lp:FindFirstChild("Data")
-                if data then
-                    local levelValue = data:FindFirstChild("Level")
-                    if levelValue then
-                        level = levelValue.Value
-                    end
-                end
-                local leaderstats = lp:FindFirstChild("leaderstats")
-                if leaderstats then
-                    local b = leaderstats:FindFirstChild("Bounty/Honor")
-                    if b then
-                        bounty = b.Value
-                    end
-                end
-            end)
-            levelLabel.Text = "Lv: " .. tostring(level)
-            bountyLabel.Text = factionPrefix .. formatNumber(bounty)
-        end)
-        local separator = Instance.new("Frame")
-        separator.Name = "Separator"
-        separator.BackgroundColor3 = Colors.Border
-        separator.BackgroundTransparency = 0.6
-        separator.BorderSizePixel = 0
-        separator.Position = UDim2.new(0.15, 0, 0, 150)
-        separator.Size = UDim2.new(0.7, 0, 0, 1)
-        separator.ZIndex = 16
-        separator.Parent = profileContainer
-        local targetContainer = Instance.new("Frame")
-        targetContainer.Name = "TargetContainer"
-        targetContainer.BackgroundTransparency = 1
-        local targetY = 190
-        targetContainer.Position = UDim2.new(0, 0, 0, targetY)
-        targetContainer.Size = UDim2.new(1, 0, 1, -targetY - 40)
-        targetContainer.ZIndex = 16
-        targetContainer.Parent = profileContainer
-        local leftLayout = Instance.new("UIListLayout")
-        leftLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        leftLayout.Padding = UDim.new(0, 4)
-        leftLayout.Parent = targetContainer
-        local targetHeader = Instance.new("Frame")
-        targetHeader.Name = "TargetHeader"
-        targetHeader.BackgroundTransparency = 1
-        targetHeader.Size = UDim2.new(1, 0, 0, 16)
-        targetHeader.LayoutOrder = 1
-        targetHeader.ZIndex = 17
-        targetHeader.Parent = targetContainer
-        local targetLabel = createText(targetHeader, "[ HUNTING ]", {
-            position = UDim2.new(0, 0, 0, 0),
-            size = UDim2.new(1, 0, 1, 0),
-            variant = "Small",
-            color = Colors.Primary,
-        })
-        targetLabel.TextXAlignment = Enum.TextXAlignment.Left
-        targetLabel.ZIndex = 18
-        local targetNameFrame = Instance.new("Frame")
-        targetNameFrame.Name = "TargetNameFrame"
-        targetNameFrame.BackgroundColor3 = Colors.SurfaceLight
-        targetNameFrame.BackgroundTransparency = 0.7
-        targetNameFrame.BorderSizePixel = 0
-        targetNameFrame.Size = UDim2.new(1, 0, 0, 22)
-        targetNameFrame.LayoutOrder = 2
-        targetNameFrame.ZIndex = 17
-        targetNameFrame.Parent = targetContainer
-        createCorner(targetNameFrame, 4)
-        local profileTargetName = createText(targetNameFrame, "None", {
-            position = UDim2.new(0, 8, 0, 0),
-            size = UDim2.new(1, -16, 1, 0),
-            variant = "Small",
-            color = Colors.Text,
-        })
-        profileTargetName.TextXAlignment = Enum.TextXAlignment.Left
-        profileTargetName.ZIndex = 18
-        UI.Elements.profileTargetName = profileTargetName
-        local targetLevelFrame = Instance.new("Frame")
-        targetLevelFrame.Name = "TargetLevelFrame"
-        targetLevelFrame.BackgroundColor3 = Colors.SurfaceLight
-        targetLevelFrame.BackgroundTransparency = 0.7
-        targetLevelFrame.BorderSizePixel = 0
-        targetLevelFrame.Size = UDim2.new(1, 0, 0, 18)
-        targetLevelFrame.LayoutOrder = 3
-        targetLevelFrame.ZIndex = 17
-        targetLevelFrame.Parent = targetContainer
-        createCorner(targetLevelFrame, 4)
-        local profileTargetLevel = createText(targetLevelFrame, "Level: --", {
-            position = UDim2.new(0, 8, 0, 0),
-            size = UDim2.new(1, -16, 1, 0),
-            variant = "Small",
-            color = Colors.TextMuted,
-        })
-        profileTargetLevel.TextXAlignment = Enum.TextXAlignment.Left
-        profileTargetLevel.ZIndex = 18
-        UI.Elements.profileTargetLevel = profileTargetLevel
-        local spacer = Instance.new("Frame")
-        spacer.Name = "Spacer"
-        spacer.BackgroundTransparency = 1
-        spacer.Size = UDim2.new(1, 0, 0, 10)
-        spacer.LayoutOrder = 4
-        spacer.Parent = targetContainer
-        local currentFaction = Config and Config.get("Faction") or "Pirate"
-        local factionInfo = createText(targetContainer, "Faction: " .. currentFaction, {
-            size = UDim2.new(1, 0, 0, 14),
-            variant = "Small",
-            color = currentFaction == "Pirate" and Colors.Error or Colors.Primary,
-        })
-        factionInfo.Name = "FactionInfo"
-        factionInfo.LayoutOrder = 5
-        factionInfo.TextXAlignment = Enum.TextXAlignment.Left
-        UI.Elements.profileFaction = factionInfo
-        local currentRegion = Config and Config.get("Region") or "Brazil"
-        local regionInfo = createText(targetContainer, "Region: " .. currentRegion, {
-            size = UDim2.new(1, 0, 0, 14),
-            variant = "Small",
-            color = Colors.Success,
-        })
-        regionInfo.Name = "RegionInfo"
-        regionInfo.LayoutOrder = 6
-        regionInfo.TextXAlignment = Enum.TextXAlignment.Left
-        UI.Elements.profileRegion = regionInfo
-        local statusLabel = Instance.new("TextLabel")
-        statusLabel.Name = "StatusLabel"
-        statusLabel.BackgroundTransparency = 1
-        statusLabel.Position = UDim2.new(0, 0, 1, -38)
-        statusLabel.Size = UDim2.new(1, 0, 0, 14)
-        statusLabel.Font = Fonts.Body
-        statusLabel.Text = "Active"
-        statusLabel.TextColor3 = Colors.Success
-        statusLabel.TextSize = 11
-        statusLabel.TextXAlignment = Enum.TextXAlignment.Center
-        statusLabel.ZIndex = 16
-        statusLabel.Parent = profileContainer
-        UI.Elements.statusLabel = statusLabel
-        local credits = Instance.new("TextLabel")
-        credits.Name = "Credits"
-        credits.BackgroundTransparency = 1
-        credits.Position = UDim2.new(0, 0, 1, -18)
-        credits.Size = UDim2.new(1, 0, 0, 12)
-        credits.Font = Fonts.Small
-        credits.Text = "Leo Hub"
-        credits.TextColor3 = Colors.TextMuted
-        credits.TextSize = 9
-        credits.TextTransparency = 0.7
-        credits.TextXAlignment = Enum.TextXAlignment.Center
-        credits.ZIndex = 11
-        credits.Parent = profileContainer
-        local gradient = Instance.new("UIGradient")
-        gradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.new(0, 0, 0)),
-            ColorSequenceKeypoint.new(1, Color3.new(0, 0, 0)),
-        })
-        gradient.Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.9),
-            NumberSequenceKeypoint.new(0.6, 0.7),
-            NumberSequenceKeypoint.new(1, 0.3),
-        })
-        gradient.Rotation = 0
-        gradient.Parent = overlay
-        local rightPanel = Instance.new("Frame")
-        rightPanel.Name = "RightPanel"
-        rightPanel.BackgroundTransparency = 1
-        rightPanel.Position = UDim2.new(0, Layout.leftPanelWidth, 0, 0)
-        rightPanel.Size = UDim2.new(1, -Layout.leftPanelWidth, 1, 0)
-        rightPanel.Parent = mainFrame
-        UI.KeyScreen = createKeyScreen(rightPanel, function()
-            if Config and (Config.isFirstRun() or not Config.isConfigured()) and not getgenv().Config then
-                if UI.KeyScreen then UI.KeyScreen.Visible = false end
-                if UI.Dashboard then UI.Dashboard.Visible = true end
-                UI.startUpdateLoop()
-                task.delay(0.3, function()
-                    UI.openConfig()
-                    if Utils then Utils.notify("LeoBounty", "Please set up your configuration before starting!") end
-                end)
-            else
-                if UI.KeyScreen then UI.KeyScreen.Visible = false end
-                if UI.Dashboard then UI.Dashboard.Visible = true end
-                UI.startUpdateLoop()
-            end
-        end)
-        UI.Dashboard = createDashboard(rightPanel)
-        UI.setupCallbacks()
-        task.spawn(function()
-            task.wait(0.8)
-            if UI.MainFrame then
-                local scale = 0.80
-                local baseW, baseH = 550, 380
-                local newW = math.floor(baseW * scale)
-                local newH = math.floor(baseH * scale)
-                local newLeftW = math.max(80, math.floor(180 * scale))
-                tween(UI.MainFrame, {Size = UDim2.new(0, newW, 0, newH)}, 0.25)
-                task.wait(0.3)
-                local leftPanel = UI.MainFrame:FindFirstChild("LeftPanel")
-                if leftPanel then leftPanel.Size = UDim2.new(0, newLeftW, 1, 0) end
-                local rightPanel = UI.MainFrame:FindFirstChild("RightPanel")
-                if rightPanel then
-                    rightPanel.Position = UDim2.new(0, newLeftW, 0, 0)
-                    rightPanel.Size = UDim2.new(1, -newLeftW, 1, 0)
-                end
-            end
-        end)
-        local floatingLogo = Instance.new("ImageButton")
-        floatingLogo.Name = "FloatingLogo"
-        floatingLogo.BackgroundColor3 = Colors.Surface
-        floatingLogo.BackgroundTransparency = 0.2
-        floatingLogo.BorderSizePixel = 0
-        floatingLogo.Position = UDim2.new(0, 20, 0.5, -25)
-        floatingLogo.Size = UDim2.new(0, 50, 0, 50)
-        floatingLogo.Image = LOGO_URL 
-        floatingLogo.ScaleType = Enum.ScaleType.Fit
-        floatingLogo.Visible = false
-        floatingLogo.ZIndex = 200
-        floatingLogo.Parent = screenGui
-        createCorner(floatingLogo, 25) 
-        local logoText = Instance.new("TextLabel")
-        logoText.Name = "LogoText"
-        logoText.BackgroundTransparency = 1
-        logoText.Size = UDim2.new(1, 0, 1, 0)
-        logoText.Text = "N"
-        logoText.TextColor3 = Colors.Primary
-        logoText.TextSize = 28
-        logoText.Font = Enum.Font.GothamBlack
-        logoText.ZIndex = 201
-        logoText.Parent = floatingLogo
-        task.spawn(function()
-            task.wait(1) 
-            pcall(function()
-                if floatingLogo.Image and floatingLogo.Image ~= "" then
-                    if floatingLogo.IsLoaded or floatingLogo.Image:match("^rbx") or floatingLogo.Image:match("getcustomasset") then
-                        logoText.Visible = false
-                    end
-                end
-            end)
-        end)
-        local logoStroke = Instance.new("UIStroke")
-        logoStroke.Color = Colors.Border
-        logoStroke.Transparency = 0.5
-        logoStroke.Thickness = 1
-        logoStroke.Parent = floatingLogo
-        do
-            local dragging, dragStart, startPos = false, nil, nil
-            floatingLogo.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                   input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = true
-                    dragStart = input.Position
-                    startPos = floatingLogo.Position
-                end
-            end)
-            floatingLogo.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 or
-                   input.UserInputType == Enum.UserInputType.Touch then
-                    dragging = false
-                end
-            end)
-            local floatDragConn = UserInputService.InputChanged:Connect(function(input)
-                if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or
-                                input.UserInputType == Enum.UserInputType.Touch) then
-                    local delta = input.Position - dragStart
-                    floatingLogo.Position = UDim2.new(
-                        startPos.X.Scale, startPos.X.Offset + delta.X,
-                        startPos.Y.Scale, startPos.Y.Offset + delta.Y
-                    )
-                end
-            end)
-            table.insert(UI.Connections, floatDragConn)
-        end
-        floatingLogo.MouseButton1Click:Connect(function()
-            floatingLogo.Visible = false
-            mainFrame.Visible = true
-            tween(mainFrame, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.35)
-            tween(UI.Blur, {Size = 8}, 0.3)
-        end)
-        UI.FloatingLogo = floatingLogo
-        local minimizeBtn = Instance.new("TextButton")
-        minimizeBtn.Name = "MinimizeBtn"
-        minimizeBtn.BackgroundTransparency = 1
-        minimizeBtn.Position = UDim2.new(1, -35, 0.5, -10)
-        minimizeBtn.Size = UDim2.new(0, 20, 0, 20)
-        minimizeBtn.Text = "—"
-        minimizeBtn.TextColor3 = Colors.TextMuted
-        minimizeBtn.TextSize = 16
-        minimizeBtn.Font = Enum.Font.GothamBold
-        minimizeBtn.ZIndex = 101
-        minimizeBtn.Parent = mainFrame:FindFirstChild("DragHandle")
-        minimizeBtn.MouseButton1Click:Connect(function()
-            tween(mainFrame, {Position = UDim2.new(-0.5, 0, 0.5, 0)}, 0.35)
-            tween(UI.Blur, {Size = 0}, 0.3)
-            task.delay(0.35, function()
-                mainFrame.Visible = false
-                floatingLogo.Visible = true
-            end)
-        end)
-        if Auth then
-            Auth.tryCachedKey(function(success, message)
-                if success then
-                    if UI.KeyScreen then UI.KeyScreen.Visible = false end
-                    if UI.Dashboard then UI.Dashboard.Visible = true end
-                    UI.startUpdateLoop()
-                    if Utils then Utils.notify("LeoBounty", "Auto-logged in!", 3) end
-                    if Config and (Config.isFirstRun() or not Config.isConfigured()) and not getgenv().Config then
-                        task.delay(0.5, function()
-                            UI.openConfig()
-                            if Utils then Utils.notify("LeoBounty", "Please set up your configuration!") end
-                        end)
-                    end
-                else
-                    if UI.KeyScreen then UI.KeyScreen.Visible = true end
-                    if UI.Dashboard then UI.Dashboard.Visible = false end
-                end
-            end)
-        else
-            if UI.KeyScreen then UI.KeyScreen.Visible = true end
-        end
-        return UI
-    end
-    function UI.setupCallbacks()
-        if not UI.Elements then return end
-        if UI.Elements.serverHopBtn then
-            UI.Elements.serverHopBtn.MouseButton1Click:Connect(function()
-                spawn(function() Hop() end)
-            end)
-        end
-        if UI.Elements.stopBtn then
-            UI.Elements.stopBtn.MouseButton1Click:Connect(function()
-                getgenv().LeoBountyShuttingDown = true
-                if getgenv().LeoBounty then
-                    getgenv().LeoBounty.Running = false
-                end
-                UI.Elements.stopBtn.Text = "Stopped"
-                UI.Elements.stopBtn.BackgroundColor3 = Color3.fromRGB(90, 90, 105)
-            end)
-        end
-    end
-    function UI.minimize()
-        UI.IsMinimized = true
-        tween(UI.MainFrame, {Position = UDim2.new(-0.5, 0, 0.5, 0)}, 0.35)
-        tween(UI.Blur, {Size = 0}, 0.3)
-        task.wait(0.35)
-        UI.MainFrame.Visible = false
-    end
-    function UI.maximize()
-        UI.IsMinimized = false
-        UI.MainFrame.Visible = true
-        UI.MainFrame.Position = UDim2.new(1.5, 0, 0.5, 0)
-        tween(UI.MainFrame, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.4)
-        tween(UI.Blur, {Size = 6}, 0.4)
-    end
-    function UI.toggle()
-        if UI.IsMinimized then
-            UI.maximize()
-        else
-            UI.minimize()
-        end
-    end
-    function UI.showDashboard()
-        if UI.KeyScreen then UI.KeyScreen.Visible = false end
-        if UI.Dashboard then UI.Dashboard.Visible = true end
-        UI.startUpdateLoop()
-    end
-    function UI.startUpdateLoop()
-        local stats = Utils and Utils.loadStats()
-        local sessionStart = stats and stats.sessionStartTime or os.time()
-        if stats and stats.killFeed and UI.Elements and UI.Elements.killFeedScroll then
-            for _, entry in ipairs(stats.killFeed) do
-                pcall(function()
-                    local killEntry = Instance.new("Frame")
-                    killEntry.Name = "KillEntry"
-                    killEntry.BackgroundColor3 = Colors.Surface
-                    killEntry.BackgroundTransparency = 0.3
-                    killEntry.Size = UDim2.new(1, 0, 0, 22)
-                    killEntry.LayoutOrder = -(entry.time or 0)
-                    killEntry.Parent = UI.Elements.killFeedScroll
-                    createCorner(killEntry, 4)
-                    local entryText = Instance.new("TextLabel")
-                    entryText.BackgroundTransparency = 1
-                    entryText.Position = UDim2.new(0, 6, 0, 0)
-                    entryText.Size = UDim2.new(1, -12, 1, 0)
-                    entryText.Font = Fonts.Small
-                    entryText.Text = "[+] " .. (entry.name or "Target") .. " +" .. formatNumber(entry.bounty or 0)
-                    entryText.TextColor3 = Colors.Success
-                    entryText.TextSize = 10
-                    entryText.TextXAlignment = Enum.TextXAlignment.Left
-                    entryText.Parent = killEntry
-                end)
-            end
-        end
-        task.spawn(function()
-            while UI.Gui and UI.Gui.Parent do
-                task.wait(1)
-                local elapsed = os.time() - sessionStart
-                if UI.Elements and UI.Elements.sessionLabel then
-                    local h = math.floor(elapsed / 3600)
-                    local m = math.floor((elapsed % 3600) / 60)
-                    local s = elapsed % 60
-                    UI.Elements.sessionLabel.Text = string.format("Session: %02d:%02d:%02d", h, m, s)
-                end
-                if UI.Elements and UI.Elements.timeValue then
-                    UI.Elements.timeValue.Text = formatTime(elapsed)
-                end
-                if Utils then
-                    UI.updateStats()
-                end
-            end
-        end)
-    end
-    function UI.updateStats()
-        if not UI.Elements or not Utils then return end
-        UI.Stats = Utils.loadStats()
-        local prefix = (UI.Elements.statPrefix) or "₿"
-        if UI.Elements.killsValue then
-            UI.Elements.killsValue.Text = tostring(UI.Stats.sessionKills or 0)
-        end
-        if UI.Elements.bountyValue then
-            UI.Elements.bountyValue.Text = prefix .. formatNumber(UI.Stats.sessionBounty or 0)
-        end
-        if UI.Elements.hopsValue then
-            UI.Elements.hopsValue.Text = tostring(UI.Stats.serversHopped or 0)
-        end
-        if UI.Elements.profileBounty then
-            pcall(function()
-                local leaderstats = lp:FindFirstChild("leaderstats")
-                if leaderstats then
-                    local b = leaderstats:FindFirstChild("Bounty/Honor")
-                    if b then
-                        UI.Elements.profileBounty.Text = prefix .. " " .. formatNumber(b.Value)
-                    end
-                end
-            end)
-        end
-    end
-    function UI.setTarget(name, level)
-        if UI.Elements then
-            if UI.Elements.targetName then
-                UI.Elements.targetName.Text = name or "Searching..."
-            end
-            if UI.Elements.targetLevel then
-                UI.Elements.targetLevel.Text = level and ("$ " .. formatNumber(level)) or ""
-            end
-            if UI.Elements.profileTargetName then
-                UI.Elements.profileTargetName.Text = name or "Searching..."
-            end
-            if UI.Elements.profileTargetLevel then
-                UI.Elements.profileTargetLevel.Text = level and ("$ " .. formatNumber(level)) or ""
-            end
-        end
-    end
-    function UI.setStatus(text, color)
-        if UI.Elements and UI.Elements.statusLabel then
-            UI.Elements.statusLabel.Text = text or "Active"
-            if color then
-                UI.Elements.statusLabel.TextColor3 = color
-            end
-        end
-    end
-    function UI.addKill(bountyGained, targetName)
-        if Utils then
-            UI.Stats = Utils.updateStats(bountyGained or 0, 1)
-            UI.updateStats()
-            Utils.addKillFeedEntry({
-                name = targetName,
-                bounty = bountyGained,
-                time = os.time()
-            })
-        end
-        if UI.Elements and UI.Elements.killFeedScroll then
-            local killEntry = Instance.new("Frame")
-            killEntry.Name = "KillEntry"
-            killEntry.BackgroundColor3 = Colors.Surface
-            killEntry.BackgroundTransparency = 0.3
-            killEntry.Size = UDim2.new(1, 0, 0, 22)
-            killEntry.LayoutOrder = -os.time() 
-            killEntry.Parent = UI.Elements.killFeedScroll
-            createCorner(killEntry, 4)
-            local entryText = Instance.new("TextLabel")
-            entryText.BackgroundTransparency = 1
-            entryText.Position = UDim2.new(0, 6, 0, 0)
-            entryText.Size = UDim2.new(1, -12, 1, 0)
-            entryText.Font = Fonts.Small
-            entryText.Text = "[+] " .. (targetName or "Target") .. " +" .. formatNumber(bountyGained or 0)
-            entryText.TextColor3 = Colors.Success
-            entryText.TextSize = 10
-            entryText.TextXAlignment = Enum.TextXAlignment.Left
-            entryText.Parent = killEntry
-            local children = UI.Elements.killFeedScroll:GetChildren()
-            local entryCount = 0
-            for _, child in ipairs(children) do
-                if child:IsA("Frame") then
-                    entryCount = entryCount + 1
-                end
-            end
-            if entryCount > 20 then
-                local sorted = {}
-                for _, child in ipairs(children) do
-                    if child:IsA("Frame") then
-                        table.insert(sorted, child)
-                    end
-                end
-                table.sort(sorted, function(a, b) return a.LayoutOrder > b.LayoutOrder end)
-                for i = 21, #sorted do
-                    sorted[i]:Destroy()
-                end
-            end
-            killEntry.BackgroundTransparency = 1
-            tween(killEntry, {BackgroundTransparency = 0.3}, 0.3)
-        end
-        if Config then
-            local webhook = Config.get("Webhook")
-            local webhookOnKill = Config.get("WebhookOnKill")
-            if webhook and webhook ~= "" and webhookOnKill and Utils then
-                local extraInfo = {
-                    fruit = Config.get("Fruit") or "Unknown",
-                    region = Config.get("Region") or "Unknown",
-                    faction = Config.get("Faction") or "Unknown"
-                }
-                Utils.notifyKill(webhook, targetName or "Unknown", bountyGained or 0, UI.Stats, extraInfo)
-            end
-        end
-    end
-    UI._notifQueue = {}
-    UI._notifActive = false
-    UI._notifOverlay = nil  
-    UI._islandDefaultSize = nil  
-    local NotifTypes = {
-        success = { icon = "✓", color = Color3.fromRGB(52, 211, 153), accent = Color3.fromRGB(16, 185, 129) },
-        warning = { icon = "⚠", color = Color3.fromRGB(251, 191, 36), accent = Color3.fromRGB(245, 158, 11) },
-        error   = { icon = "✕", color = Color3.fromRGB(239, 68, 68),  accent = Color3.fromRGB(220, 38, 38) },
-        info    = { icon = "ℹ", color = Color3.fromRGB(96, 165, 250), accent = Color3.fromRGB(59, 130, 246) },
-    }
-    function UI.showIslandNotification(text, notifType, duration)
-        notifType = notifType or "info"
-        duration = duration or 3
-        if UI._notifActive then
-            table.insert(UI._notifQueue, {text = text, notifType = notifType, duration = duration})
-            return
-        end
-        local island = UI.DynamicIsland
-        if not island or not island.Parent then
-            print("[LeoBounty]", text)
-            return
-        end
-        UI._notifActive = true
-        if not UI._islandDefaultSize then
-            UI._islandDefaultSize = island.Size
-        end
-        local config = NotifTypes[notifType] or NotifTypes.info
-        local isMobile = UI._isMobile
-        local screenGui = island.Parent
-        local overlay = Instance.new("Frame")
-        overlay.Name = "NotifOverlay"
-        overlay.BackgroundColor3 = Color3.fromRGB(10, 10, 14)
-        overlay.BackgroundTransparency = 0.15
-        overlay.BorderSizePixel = 0
-        overlay.AnchorPoint = Vector2.new(0.5, 0)
-        overlay.Position = island.Position
-        overlay.Size = island.Size  
-        overlay.ZIndex = 210
-        overlay.ClipsDescendants = true
-        overlay.Parent = screenGui
-        local overlayCorner = Instance.new("UICorner")
-        overlayCorner.CornerRadius = UDim.new(0, 15)
-        overlayCorner.Parent = overlay
-        local overlayGradient = Instance.new("UIGradient")
-        overlayGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(40, 42, 55)),
-            ColorSequenceKeypoint.new(0.3, Color3.fromRGB(18, 18, 24)),
-            ColorSequenceKeypoint.new(0.7, Color3.fromRGB(14, 14, 18)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 26, 35)),
-        })
-        overlayGradient.Rotation = 135
-        overlayGradient.Parent = overlay
-        local glowBar = Instance.new("Frame")
-        glowBar.Name = "AccentGlow"
-        glowBar.BackgroundColor3 = config.accent
-        glowBar.BackgroundTransparency = 0.7
-        glowBar.BorderSizePixel = 0
-        glowBar.Size = UDim2.new(1, 0, 0, 2)
-        glowBar.Position = UDim2.new(0, 0, 0, 0)
-        glowBar.ZIndex = 211
-        glowBar.Parent = overlay
-        local iconBg = Instance.new("Frame")
-        iconBg.Name = "IconBg"
-        iconBg.BackgroundColor3 = config.accent
-        iconBg.BackgroundTransparency = 1  
-        iconBg.BorderSizePixel = 0
-        iconBg.AnchorPoint = Vector2.new(0, 0.5)
-        iconBg.Position = UDim2.new(0, 10, 0.5, 0)
-        iconBg.Size = UDim2.new(0, 24, 0, 24)
-        iconBg.ZIndex = 212
-        iconBg.Parent = overlay
-        local iconCorner = Instance.new("UICorner")
-        iconCorner.CornerRadius = UDim.new(1, 0)
-        iconCorner.Parent = iconBg
-        local iconLabel = Instance.new("TextLabel")
-        iconLabel.Name = "Icon"
-        iconLabel.BackgroundTransparency = 1
-        iconLabel.Size = UDim2.new(1, 0, 1, 0)
-        iconLabel.Font = Enum.Font.GothamBold
-        iconLabel.Text = config.icon
-        iconLabel.TextColor3 = config.color
-        iconLabel.TextSize = 14
-        iconLabel.TextTransparency = 1  
-        iconLabel.ZIndex = 213
-        iconLabel.Parent = iconBg
-        local notifText = Instance.new("TextLabel")
-        notifText.Name = "NotifText"
-        notifText.BackgroundTransparency = 1
-        notifText.AnchorPoint = Vector2.new(0, 0.5)
-        notifText.Position = UDim2.new(0, 42, 0.5, 0)
-        notifText.Size = UDim2.new(1, -52, 0, 16)
-        notifText.Font = Enum.Font.GothamSemibold
-        notifText.Text = text
-        notifText.TextColor3 = Color3.fromRGB(235, 235, 245)
-        notifText.TextSize = isMobile and 10 or 11
-        notifText.TextXAlignment = Enum.TextXAlignment.Left
-        notifText.TextTruncate = Enum.TextTruncate.AtEnd
-        notifText.ZIndex = 212
-        notifText.TextTransparency = 1  
-        notifText.Parent = overlay
-        local progressBar = Instance.new("Frame")
-        progressBar.Name = "ProgressBar"
-        progressBar.BackgroundColor3 = config.accent
-        progressBar.BackgroundTransparency = 0.5
-        progressBar.BorderSizePixel = 0
-        progressBar.AnchorPoint = Vector2.new(0, 1)
-        progressBar.Position = UDim2.new(0, 0, 1, 0)
-        progressBar.Size = UDim2.new(1, 0, 0, 2)
-        progressBar.ZIndex = 211
-        progressBar.Parent = overlay
-        UI._notifOverlay = overlay
-        local expandedWidth = isMobile and 280 or 360
-        local expandedHeight = 36
-        tween(overlay, {Size = UDim2.new(0, expandedWidth, 0, expandedHeight)}, 0.35, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-        task.delay(0.1, function()
-            if iconBg and iconBg.Parent then
-                tween(iconBg, {BackgroundTransparency = 0.6}, 0.2)
-                tween(iconLabel, {TextTransparency = 0}, 0.2)
-            end
-        end)
-        task.delay(0.15, function()
-            if notifText and notifText.Parent then
-                tween(notifText, {TextTransparency = 0}, 0.25)
-            end
-        end)
-        task.delay(0.35, function()
-            if progressBar and progressBar.Parent then
-                local progressInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-                TweenService:Create(progressBar, progressInfo, {Size = UDim2.new(0, 0, 0, 2)}):Play()
-            end
-        end)
-        task.delay(0.35 + duration, function()
-            if not overlay or not overlay.Parent then return end
-            pcall(function()
-                tween(notifText, {TextTransparency = 1}, 0.15)
-                tween(iconBg, {BackgroundTransparency = 1}, 0.15)
-                tween(iconLabel, {TextTransparency = 1}, 0.15)
-                tween(glowBar, {BackgroundTransparency = 1}, 0.1)
-                tween(progressBar, {BackgroundTransparency = 1}, 0.1)
-            end)
-            task.delay(0.15, function()
-                local defaultSize = UI._islandDefaultSize or UDim2.new(0, isMobile and 220 or 280, 0, 30)
-                tween(overlay, {Size = defaultSize, BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
-                task.delay(0.35, function()
-                    pcall(function() overlay:Destroy() end)
-                    UI._notifOverlay = nil
-                    UI._notifActive = false
-                    if #UI._notifQueue > 0 then
-                        local next = table.remove(UI._notifQueue, 1)
-                        task.defer(function()
-                            UI.showIslandNotification(next.text, next.notifType, next.duration)
-                        end)
-                    end
-                end)
-            end)
-        end)
-    end
-    function UI.notify(title, message, notifType, duration)
-        local text = message or title
-        if title and message and title ~= "" then
-            text = message
-        end
-        if not notifType then
-            if text:find("%[%+%]") or text:find("success") or text:find("saved") or text:find("started") then
-                notifType = "success"
-            elseif text:find("%[!%]") or text:find("warning") or text:find("failed") or text:find("Blacklisted") then
-                notifType = "warning"
-            elseif text:find("error") or text:find("Error") then
-                notifType = "error"
-            else
-                notifType = "info"
-            end
-        end
-        text = text:gsub("%[%+%]%s*", ""):gsub("%[!%]%s*", ""):gsub("%[%*%]%s*", "")
-        UI.showIslandNotification(text, notifType, duration or 3)
-    end
-    function UI.destroy()
-        if Utils and Utils.flushStats then
-            pcall(Utils.flushStats)
-        end
-        for _, conn in pairs(UI.Connections) do
-            pcall(function() conn:Disconnect() end)
-        end
-        UI.Connections = {}
-        print("[LeoBounty] [*] UI connections cleaned up")
-        pcall(function() 
-            tween(UI.Blur, {Size = 0}, 0.3)
-            tween(UI.MainFrame, {BackgroundTransparency = 1}, 0.3)
-        end)
-        task.wait(0.3)
-        pcall(function() UI.Blur:Destroy() end)
-        pcall(function() UI.Gui:Destroy() end)
-    end
-    function UI.refreshBackground()
-        local configBgUrl = UI.BackgroundUrl
-        if not configBgUrl or configBgUrl == "" then return end
-        task.spawn(function()
-            pcall(function()
-                local newAsset = getImageUrl(configBgUrl, true) 
-                if UI.BackgroundImage and newAsset and newAsset ~= "" then
-                    UI.BackgroundImage.Image = newAsset
-                end
-            end)
-        end)
-    end
-    function UI.openConfig()
-        if not UI.Gui then return end
-        local popup = createConfigPopup(UI.Gui)
-        if popup then
-        end
-    end
-    function UI.killAllGraphics()
-        pcall(function()
-            for _, gui in ipairs(lp.PlayerGui:GetChildren()) do
-                if gui:IsA("ScreenGui") and gui.Name ~= "LeoBountyUI" then
-                    pcall(function() gui:Destroy() end)
-                end
-            end
-            pcall(function()
-                for _, gui in ipairs(CoreGui:GetChildren()) do
-                    if gui:IsA("ScreenGui") and gui.Name ~= "LeoBountyUI" and gui.Name ~= "RobloxGui" then
-                        pcall(function() gui.Enabled = false end)
-                    end
-                end
-            end)
-            pcall(function()
-                Lighting.GlobalShadows = false
-                Lighting.FogEnd = 9e9
-                Lighting.Brightness = 1
-            end)
-            pcall(function()
-                for _, effect in ipairs(Lighting:GetChildren()) do
-                    if effect:IsA("PostEffect") and effect.Name ~= "LeoBountyBlur" then
-                        pcall(function() effect:Destroy() end)
-                    end
-                end
-            end)
-            pcall(function()
-                for _, child in ipairs(Lighting:GetChildren()) do
-                    if child:IsA("Atmosphere") or child:IsA("Sky") then
-                        pcall(function() child:Destroy() end)
-                    end
-                end
-            end)
-            pcall(function()
-                local settings = settings()
-                if settings and settings.Rendering then
-                    settings.Rendering.QualityLevel = Enum.QualityLevel.Level01
-                end
-            end)
-            pcall(function()
-                settings().Rendering.QualityLevel = 1
-            end)
-            pcall(function()
-                for _, desc in ipairs(workspace:GetDescendants()) do
-                    pcall(function()
-                        if desc:IsA("ParticleEmitter") or desc:IsA("Beam") or 
-                           desc:IsA("Trail") or desc:IsA("Fire") or 
-                           desc:IsA("Smoke") or desc:IsA("Sparkles") or
-                           desc:IsA("Explosion") then
-                            desc.Enabled = false
-                        end
-                        if desc:IsA("Decal") or desc:IsA("Texture") then
-                            desc.Transparency = 1
-                        end
-                    end)
-                end
-            end)
-            pcall(function()
-                local terrain = workspace:FindFirstChildOfClass("Terrain")
-                if terrain then
-                    terrain.WaterWaveSize = 0
-                    terrain.WaterWaveSpeed = 0
-                    terrain.WaterReflectance = 0
-                    terrain.WaterTransparency = 0
-                end
-            end)
-            pcall(function()
-                for _, desc in ipairs(workspace:GetDescendants()) do
-                    pcall(function()
-                        if desc:IsA("MeshPart") then
-                            desc.RenderFidelity = Enum.RenderFidelity.Performance
-                        end
-                    end)
-                end
-            end)
-            if Utils then
-                Utils.notify("LeoBounty", "[*] Graphics killed! Maximum FPS mode.")
-                Utils.logDebug(Utils.DEBUG_LEVELS.INFO, "UI", "Kill All Graphics executed (enhanced)")
-            end
-        end)
-    end
-    function UI.showNetworkWarning(message)
-        if not UI.Gui then return end
-        if UI._networkWarning then return end 
-        local overlay = Instance.new("Frame")
-        overlay.Name = "NetworkWarning"
-        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        overlay.BackgroundTransparency = 0.3
-        overlay.BorderSizePixel = 0
-        overlay.Size = UDim2.new(1, 0, 1, 0)
-        overlay.ZIndex = 500
-        overlay.Parent = UI.Gui
-        local warningBox = Instance.new("Frame")
-        warningBox.Name = "WarningBox"
-        warningBox.BackgroundColor3 = Colors.Surface
-        warningBox.BackgroundTransparency = 0.1
-        warningBox.BorderSizePixel = 0
-        warningBox.AnchorPoint = Vector2.new(0.5, 0.5)
-        warningBox.Position = UDim2.new(0.5, 0, 0.5, 0)
-        warningBox.Size = UDim2.new(0, 320, 0, 180)
-        warningBox.ZIndex = 501
-        warningBox.Parent = overlay
-        createCorner(warningBox, 12)
-        local warnStroke = Instance.new("UIStroke")
-        warnStroke.Color = Colors.Warning or Color3.fromRGB(255, 180, 40)
-        warnStroke.Transparency = 0.3
-        warnStroke.Thickness = 2
-        warnStroke.Parent = warningBox
-        local warnIcon = createText(warningBox, "\xE2\x9A\xA0", {
-            position = UDim2.new(0.5, 0, 0, 20),
-            size = UDim2.new(0, 40, 0, 40),
-            variant = "Title",
-            color = Colors.Warning or Color3.fromRGB(255, 180, 40),
-        })
-        warnIcon.AnchorPoint = Vector2.new(0.5, 0)
-        warnIcon.TextXAlignment = Enum.TextXAlignment.Center
-        warnIcon.ZIndex = 502
-        local warnTitle = createText(warningBox, "Connection Unstable", {
-            position = UDim2.new(0, 20, 0, 65),
-            size = UDim2.new(1, -40, 0, 20),
-            variant = "Heading",
-            color = Colors.Warning or Color3.fromRGB(255, 180, 40),
-        })
-        warnTitle.TextXAlignment = Enum.TextXAlignment.Center
-        warnTitle.ZIndex = 502
-        local warnMsg = createText(warningBox, message or "High ping or packet loss detected. Try again with a better internet connection.", {
-            position = UDim2.new(0, 20, 0, 90),
-            size = UDim2.new(1, -40, 0, 36),
-            variant = "Small",
-            color = Colors.TextMuted,
-        })
-        warnMsg.TextWrapped = true
-        warnMsg.TextXAlignment = Enum.TextXAlignment.Center
-        warnMsg.ZIndex = 502
-        local retryBtn = createButton(warningBox, "Retry",
-            UDim2.new(0.5, -50, 1, -45), UDim2.new(0, 100, 0, 32),
-            {color = Colors.Primary, hoverColor = Colors.PrimaryMuted})
-        retryBtn.ZIndex = 503
-        retryBtn.AnchorPoint = Vector2.new(0, 0)
-        retryBtn.MouseButton1Click:Connect(function()
-            UI.hideNetworkWarning()
-        end)
-        UI._networkWarning = overlay
-        overlay.BackgroundTransparency = 1
-        tween(overlay, {BackgroundTransparency = 0.3}, 0.3)
-        warningBox.Position = UDim2.new(0.5, 0, 0.6, 0)
-        tween(warningBox, {Position = UDim2.new(0.5, 0, 0.5, 0)}, 0.35)
-    end
-    function UI.hideNetworkWarning()
-        if UI._networkWarning then
-            local overlay = UI._networkWarning
-            UI._networkWarning = nil
-            pcall(function()
-                tween(overlay, {BackgroundTransparency = 1}, 0.2)
-                task.delay(0.25, function() overlay:Destroy() end)
-            end)
-        end
-    end
-    do
-        local notifQueue = {}
-        local isShowingNotif = false
-        local NOTIF_HEIGHT = 56
-        local ISLAND_HEIGHT = 30
-        local isMobile = UI._isMobile
-        local function autoIcon(text)
-            if text:find("%[%+%]") or text:find("started") or text:find("saved") or text:find("successful") then
-                return "✓"
-            elseif text:find("%[!%]") or text:find("Failed") or text:find("failed") or text:find("error") then
-                return "✕"
-            elseif text:find("%[%*%]") or text:find("stopped") then
-                return "■"
-            elseif text:find("%[~%]") or text:find("hopping") or text:find("Switching") then
-                return "↻"
-            elseif text:find("copied") or text:find("Copied") then
-                return "⎘"
-            elseif text:find("logged") or text:find("Logged") then
-                return "→"
-            elseif text:find("configure") or text:find("Configure") or text:find("settings") then
-                return "⚙"
-            elseif text:find("60M") or text:find("30M") or text:find("ACHIEVED") then
-                return "★"
-            elseif text:find("Blacklisted") or text:find("blacklisted") then
-                return "⊘"
-            elseif text:find("Debug") or text:find("debug") then
-                return "◉"
-            elseif text:find("GFX") or text:find("Graphics") then
-                return "◈"
-            else
-                return "●"
-            end
-        end
-        local function autoColor(text)
-            if text:find("%[%+%]") or text:find("started") or text:find("saved") or text:find("successful") or text:find("logged") then
-                return Color3.fromRGB(52, 211, 153) 
-            elseif text:find("%[!%]") or text:find("Failed") or text:find("failed") or text:find("Blacklisted") then
-                return Color3.fromRGB(239, 68, 68) 
-            elseif text:find("%[~%]") or text:find("hopping") or text:find("Switching") then
-                return Color3.fromRGB(99, 102, 241) 
-            elseif text:find("60M") or text:find("30M") or text:find("ACHIEVED") then
-                return Color3.fromRGB(251, 191, 36) 
-            elseif text:find("%[%*%]") or text:find("stopped") then
-                return Color3.fromRGB(170, 130, 255) 
-            elseif text:find("configure") or text:find("Configure") then
-                return Color3.fromRGB(220, 180, 80) 
-            else
-                return Color3.fromRGB(170, 130, 255) 
-            end
-        end
-        local function processQueue()
-            if isShowingNotif or #notifQueue == 0 then return end
-            isShowingNotif = true
-            local notif = table.remove(notifQueue, 1)
-            local text = notif.text
-            local accentColor = notif.color or autoColor(text)
-            local duration = notif.duration or 3.5
-            local icon = notif.icon or autoIcon(text)
-            text = text:gsub("^%[LeoBounty%]%s*", ""):gsub("^LeoBounty%s*", "")
-            local island = UI.DynamicIsland
-            if not island or not island.Parent then
-                isShowingNotif = false
-                return
-            end
-            local screenGui = island.Parent
-            local highlightOverlay = screenGui:FindFirstChild("HighlightOverlay")
-            local origSize = island.Size
-            local origPos = island.Position
-            local expandedWidth = isMobile and 280 or 340
-            local expandedHeight = ISLAND_HEIGHT + NOTIF_HEIGHT
-            local notifFrame = Instance.new("Frame")
-            notifFrame.Name = "NotifContent"
-            notifFrame.BackgroundTransparency = 1
-            notifFrame.BorderSizePixel = 0
-            notifFrame.Size = UDim2.new(1, 0, 0, NOTIF_HEIGHT)
-            notifFrame.Position = UDim2.new(0, 0, 0, ISLAND_HEIGHT)
-            notifFrame.ZIndex = 204
-            notifFrame.ClipsDescendants = true
-            notifFrame.Parent = island
-            local accentLine = Instance.new("Frame")
-            accentLine.Name = "AccentLine"
-            accentLine.BackgroundColor3 = accentColor
-            accentLine.BorderSizePixel = 0
-            accentLine.Size = UDim2.new(0, 3, 0, 0)
-            accentLine.Position = UDim2.new(0, 10, 0.5, 0)
-            accentLine.AnchorPoint = Vector2.new(0, 0.5)
-            accentLine.ZIndex = 206
-            accentLine.Parent = notifFrame
-            createCorner(accentLine, 2)
-            local accentGlow = Instance.new("Frame")
-            accentGlow.Name = "AccentGlow"
-            accentGlow.BackgroundColor3 = accentColor
-            accentGlow.BackgroundTransparency = 0.85
-            accentGlow.BorderSizePixel = 0
-            accentGlow.Size = UDim2.new(0, 8, 0, 0)
-            accentGlow.Position = UDim2.new(0, 8, 0.5, 0)
-            accentGlow.AnchorPoint = Vector2.new(0, 0.5)
-            accentGlow.ZIndex = 205
-            accentGlow.Parent = notifFrame
-            createCorner(accentGlow, 4)
-            local iconLabel = Instance.new("TextLabel")
-            iconLabel.Name = "Icon"
-            iconLabel.BackgroundTransparency = 1
-            iconLabel.Size = UDim2.new(0, 22, 0, 22)
-            iconLabel.Position = UDim2.new(0, 20, 0.5, 0)
-            iconLabel.AnchorPoint = Vector2.new(0, 0.5)
-            iconLabel.Font = Enum.Font.GothamBold
-            iconLabel.Text = icon
-            iconLabel.TextColor3 = accentColor
-            iconLabel.TextSize = 16
-            iconLabel.TextTransparency = 1
-            iconLabel.ZIndex = 206
-            iconLabel.Parent = notifFrame
-            local textLabel = Instance.new("TextLabel")
-            textLabel.Name = "NotifText"
-            textLabel.BackgroundTransparency = 1
-            textLabel.Size = UDim2.new(1, -56, 0, 32)
-            textLabel.Position = UDim2.new(0, 46, 0.5, 0)
-            textLabel.AnchorPoint = Vector2.new(0, 0.5)
-            textLabel.Font = Enum.Font.GothamMedium
-            textLabel.Text = text
-            textLabel.TextColor3 = Color3.fromRGB(225, 225, 235)
-            textLabel.TextSize = isMobile and 11 or 12
-            textLabel.TextXAlignment = Enum.TextXAlignment.Left
-            textLabel.TextWrapped = true
-            textLabel.TextTransparency = 1
-            textLabel.ZIndex = 206
-            textLabel.Parent = notifFrame
-            local separator = Instance.new("Frame")
-            separator.Name = "Separator"
-            separator.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
-            separator.BackgroundTransparency = 0.6
-            separator.BorderSizePixel = 0
-            separator.Size = UDim2.new(0.8, 0, 0, 1)
-            separator.Position = UDim2.new(0.1, 0, 0, 0)
-            separator.ZIndex = 205
-            separator.Parent = notifFrame
-            island.ClipsDescendants = true
-            tween(island, {
-                Size = UDim2.new(0, expandedWidth, 0, expandedHeight),
-            }, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-            if highlightOverlay then
-                tween(highlightOverlay, {
-                    Size = UDim2.new(0, expandedWidth, 0, expandedHeight),
-                }, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-            end
-            local islandStroke = island:FindFirstChildWhichIsA("UIStroke")
-            if islandStroke then
-                tween(islandStroke, {Color = accentColor, Transparency = 0.1}, 0.2)
-            end
-            task.delay(0.15, function()
-                tween(accentLine, {Size = UDim2.new(0, 3, 0, 30)}, 0.3, Enum.EasingStyle.Quint)
-                tween(accentGlow, {Size = UDim2.new(0, 8, 0, 30)}, 0.35, Enum.EasingStyle.Quint)
-                tween(iconLabel, {TextTransparency = 0}, 0.25)
-                tween(textLabel, {TextTransparency = 0}, 0.3)
-            end)
-            local progressBar = Instance.new("Frame")
-            progressBar.Name = "Progress"
-            progressBar.BackgroundColor3 = accentColor
-            progressBar.BackgroundTransparency = 0.4
-            progressBar.BorderSizePixel = 0
-            progressBar.Size = UDim2.new(0.9, 0, 0, 2)
-            progressBar.Position = UDim2.new(0.05, 0, 1, -4)
-            progressBar.ZIndex = 206
-            progressBar.Parent = notifFrame
-            createCorner(progressBar, 1)
-            task.delay(0.5, function()
-                tween(progressBar, {Size = UDim2.new(0, 0, 0, 2)}, duration - 0.8, Enum.EasingStyle.Linear)
-            end)
-            task.wait(duration)
-            tween(textLabel, {TextTransparency = 1}, 0.2)
-            tween(iconLabel, {TextTransparency = 1}, 0.2)
-            tween(accentLine, {Size = UDim2.new(0, 3, 0, 0)}, 0.2)
-            tween(accentGlow, {Size = UDim2.new(0, 8, 0, 0)}, 0.2)
-            tween(progressBar, {BackgroundTransparency = 1}, 0.15)
-            task.wait(0.2)
-            tween(island, {
-                Size = origSize,
-            }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-            if highlightOverlay then
-                tween(highlightOverlay, {
-                    Size = origSize,
-                }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-            end
-            if islandStroke then
-                tween(islandStroke, {Color = Color3.fromRGB(80, 80, 100), Transparency = 0.5}, 0.3)
-            end
-            task.wait(0.4)
-            pcall(function() notifFrame:Destroy() end)
-            isShowingNotif = false
-            if #notifQueue > 0 then
-                task.defer(processQueue)
-            end
-        end
-        function UI.showDynamicNotification(text, color, duration, icon)
-            if not text or text == "" then return end
-            table.insert(notifQueue, {
-                text = text,
-                color = color,
-                duration = duration or 3.5,
-                icon = icon,
-            })
-            if not isShowingNotif then
-                task.spawn(processQueue)
-            end
-        end
-    end
-    pcall(function() getgenv()._LeoUI = UI end)
-    return UI
 end
-_modules["main"] = function()
-    local Main = {}
-    local Utils, Config, UI
-    local SELECTED_TEAM = "Pirates"
-    local Selected_Region = "Singapore"
-    local SELECTED_FRUIT = "T-Rex"
-    local SessionStartTime = tick()
-    local TotalKills = 0
-    local SessionKills = 0
-    local SessionHops = 0
-    local InitialBounty = 0
-    local SessionBountyGained = 0
-    local EliminatedPlayers = {}
-    Main.Running = false
-    Main.Connections = {}
-    local EVENT_WEBHOOKS = {
-        FullMoon     = "", 
-        Boss         = "", 
-        MirageIsland = "", 
-        CastleRaid   = "", 
-    }
-    local _eventNotifiedThisServer = {}
-    local function SendEventNotify(url, title)
-        if not url or url == "" then return end
-        if _eventNotifiedThisServer[title] then return end 
-        _eventNotifiedThisServer[title] = true
-        local JobId = game.JobId
-        local HttpService = game:GetService("HttpService")
-        local data = {
-            ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. JobId .. "\")`",
-            ["username"] = "Leo Event Monitor"
-        }
-        pcall(function()
-            local reqFn = request or http_request or (syn and syn.request) or (http and http.request)
-            if reqFn then
-                reqFn({
-                    Url = url,
-                    Method = "POST",
-                    Headers = {["Content-Type"] = "application/json"},
-                    Body = HttpService:JSONEncode(data)
-                })
-            end
-        end)
-    end
-    local function CheckGameEvents()
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
-        pcall(function()
-            local state = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState")
-            if state and state.MoonProgress and state.MoonProgress >= 5 then
-                SendEventNotify(EVENT_WEBHOOKS.FullMoon, "Full Moon")
-            end
-        end)
-        pcall(function()
-            if workspace.Map:FindFirstChild("Mirage Island") then
-                SendEventNotify(EVENT_WEBHOOKS.MirageIsland, "Mirage Island")
-            end
-        end)
-        pcall(function()
-            local enemies = workspace:FindFirstChild("Enemies")
-            if enemies then
-                for _, v in pairs(enemies:GetChildren()) do
-                    if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
-                        SendEventNotify(EVENT_WEBHOOKS.Boss, v.Name)
-                    end
-                end
-            end
-        end)
-    end
-    function Main.getSessionKills() return TotalKills end
-    function Main.getSessionTime() return tick() - SessionStartTime end
-    function Main.getSessionHops() return SessionHops end
-    function Main.getKillFeed() return {} end
-    function Main.getSessionBounty()
-        local Players = game:GetService("Players")
-        if not Players.LocalPlayer then return 0 end
-        local leaderstats = Players.LocalPlayer:FindFirstChild("leaderstats")
-        local current = 0
-        if leaderstats and leaderstats:FindFirstChild("Bounty/Honor") then
-            current = tonumber(leaderstats["Bounty/Honor"].Value) or 0
-        end
-        if InitialBounty == 0 then InitialBounty = current end
-        return math.max(0, current - InitialBounty)
-    end
-    function Main.getModeName() return "HYPER" end
-    function Main.init(utilsModule, configModule, uiModule)
-        Utils = utilsModule
-        Config = configModule
-        UI = uiModule
-        if Config and Config.Values then
-            SELECTED_TEAM = Config.Values.Faction or "Pirates"
-            local _rawRegion = Config.Values.Region or "Singapore"
-            Selected_Region = (_rawRegion == "Auto" or _rawRegion == "" or _rawRegion == nil) and "Singapore" or _rawRegion
-            SELECTED_FRUIT = Config.Values.Fruit or "T-Rex"
-        end
-        if SELECTED_TEAM == "Pirate" then SELECTED_TEAM = "Pirates" end
-        if SELECTED_TEAM == "Marine" then SELECTED_TEAM = "Marines" end
-    end
-    function Main.cleanup()
-        pcall(function()
-            local _env = getgenv()
-            _env.LeoBountyShuttingDown = true
-        end)
-    end
-    function Main.start()
-        Main.Running = true
-        print("[LeoBounty] [HYPER] Main.start() called")
-        task.spawn(function()
-            local ok, err = xpcall(function()
-            print("[LeoBounty] [HYPER] task.spawn started")
-            local Players = game:GetService("Players")
-            local RunService = game:GetService("RunService")
-            local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local TweenService = game:GetService("TweenService")
-            local HttpService = game:GetService("HttpService")
-            local TeleportService = game:GetService("TeleportService")
-            local Stats = game:GetService("Stats")
-            local UIS = game:GetService("UserInputService")
-            local CoreGui = game:GetService("CoreGui")
-            local SoundService = game:GetService("SoundService")
-            local VirtualInputManager = game:GetService("VirtualInputManager")
-            print("[LeoBounty] [HYPER] Services loaded")
-                        local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
-            print("[LeoBounty] [HYPER] LocalPlayer: " .. tostring(lp))
-            local _env = getgenv()
-            _env.LeoBountyShuttingDown = false
-            _env.IsServerHopping = false
-            local CurrentJobId = game.JobId
-            local CurrentPlaceId = game.PlaceId
-            if Utils and Utils.loadStats then
-                pcall(function()
-                    local pStats = Utils.loadStats()
-                    if pStats then
-                        TotalKills = pStats.sessionKills or 0
-                        SessionHops = pStats.serversHopped or 0
-                        SessionBountyGained = pStats.sessionBounty or 0
-                    end
-                end)
-            end
-            print("[LeoBounty] [HYPER] Stats synced")
-            local function AutoHopOnKick()
-                if getgenv().IsServerHopping then return end
-                print("[LeoBounty] [!] Bị kick/error — đang tự động hop server mới...")
-                if Utils then pcall(function() Utils.notify("LeoBounty", "[!] Bị kick! Đang hop server mới...", "warning", 4) end) end
-                local hopDone = false
-                pcall(function()
-                    local HttpService = game:GetService("HttpService")
-                    local PlaceId = game.PlaceId
-                    local JobId   = game.JobId
-                    local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-                    local ok, result = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
-                    if ok and result and result.data then
-                        for _, s in pairs(result.data) do
-                            if s.playing < s.maxPlayers and s.id ~= JobId then
-                                pcall(function()
-                                    ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
-                                end)
-                                hopDone = true
-                                task.wait(3)
-                                break
-                            end
-                        end
-                    end
-                end)
-                if not hopDone then
-                    pcall(function()
-                        local HttpService = game:GetService("HttpService")
-                        local PlaceId = game.PlaceId
-                        local JobId   = game.JobId
-                        local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-                        local ok, result = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
-                        if ok and result and result.data then
-                            for _, s in pairs(result.data) do
-                                if s.playing < s.maxPlayers and s.id ~= JobId then
-                                    TeleportService:TeleportToPlaceInstance(PlaceId, s.id, lp)
-                                    task.wait(3)
-                                    break
-                                end
-                            end
-                        end
-                    end)
-                end
-            end
-            pcall(function()
-                CoreGui.RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(child)
-                    if child.Name == "ErrorPrompt" and child:FindFirstChild("MessageArea") and child.MessageArea:FindFirstChild("ErrorFrame") then
-                        task.spawn(AutoHopOnKick)
-                    end
-                end)
-                task.spawn(function()
-                    while not getgenv().LeoBountyShuttingDown do
-                        task.wait(0.5)
-                        pcall(function()
-                            local sources = {CoreGui, lp.PlayerGui}
-                            for _, src in ipairs(sources) do
-                                for _, gui in ipairs(src:GetDescendants()) do
-                                    if gui:IsA("TextLabel") and (
-                                        gui.Text:find("773") or
-                                        gui.Text:lower():find("teleport failed") or
-                                        gui.Text:lower():find("restricted") or
-                                        gui.Text:lower():find("reconnect was unsuccessful") or
-                                        gui.Text:lower():find("please rejoin") or
-                                        gui.Text:lower():find("security") or
-                                        gui.Text:lower():find("kicked")
-                                    ) then
-                                        pcall(function()
-                                            for _, btn in ipairs(src:GetDescendants()) do
-                                                if btn:IsA("TextButton") and (
-                                                    btn.Text:lower():find("ok") or
-                                                    btn.Text:lower():find("leave") or
-                                                    btn.Text:lower():find("close")
-                                                ) then
-                                                    btn:Activate()
-                                                end
-                                            end
-                                        end)
-                                        task.wait(0.3)
-                                        task.spawn(AutoHopOnKick)
-                                        break
-                                    end
-                                end
-                            end
-                        end)
-                    end
-                end)
-            end)
-            print("[LeoBounty] [HYPER] Kick detection setup")
-            if not (lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")) then
-                print("[LeoBounty] [HYPER] Character not spawned — handling team selection")
-                local playerGui = lp:WaitForChild("PlayerGui")
-                local mainGui = playerGui:WaitForChild("Main (minimal)")
-                local btn
-                repeat
-                    task.wait()
-                    if SELECTED_TEAM == "Pirates" then
-                        btn = mainGui:FindFirstChild("ChooseTeam")
-                            and mainGui.ChooseTeam:FindFirstChild("Container")
-                            and mainGui.ChooseTeam.Container:FindFirstChild("Pirates")
-                            and mainGui.ChooseTeam.Container.Pirates:FindFirstChild("Frame")
-                            and mainGui.ChooseTeam.Container.Pirates.Frame:FindFirstChild("TextButton")
-                    elseif SELECTED_TEAM == "Marines" then
-                        btn = mainGui:FindFirstChild("ChooseTeam")
-                            and mainGui.ChooseTeam:FindFirstChild("Container")
-                            and mainGui.ChooseTeam.Container:FindFirstChild("Marines")
-                            and mainGui.ChooseTeam.Container.Marines:FindFirstChild("Frame")
-                            and mainGui.ChooseTeam.Container.Marines.Frame:FindFirstChild("TextButton")
-                    end
-                until btn
-                repeat
-                    task.wait(0.25)
-                    pcall(function()
-                        firesignal(btn.Activated)
-                    end)
-                    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
-                        break
-                    end
-                until false
-                local char, hum
-                repeat
-                    task.wait()
-                    if lp.Character then
-                        char = lp.Character
-                        hum = char:FindFirstChild("Humanoid")
-                    end
-                until char and hum
-                local hrp
-                repeat
-                    task.wait()
-                    hrp = char:FindFirstChild("HumanoidRootPart")
-                until hrp
-            else
-                print("[LeoBounty] [HYPER] Character already exists — skipping team selection")
-            end
-            print("[LeoBounty] [HYPER] Character ready — initializing combat systems")
-            task.spawn(function()
-                pcall(function()
-                    local util = ReplicatedStorage:WaitForChild("Util", 15)
-                    if not util then return end
-                    local camShaker = util:WaitForChild("CameraShaker", 15)
-                    if not camShaker then return end
-                    local main = camShaker:WaitForChild("Main", 15)
-                    if not main then return end
-                    local CameraShaker = require(main)
-                    local noop = function() end
-                    CameraShaker.StartShake = noop
-                    CameraShaker.ShakeOnce = noop
-                    CameraShaker.ShakeSustain = noop
-                    CameraShaker.CameraShakeInstance = noop
-                    CameraShaker.Shake = noop
-                    CameraShaker.Start = noop
-                end)
-            end)
-            local AntiSeatConnection
-            local AntiSeatConnection2
-            local function StartAntiSeat()
-                if AntiSeatConnection then AntiSeatConnection:Disconnect() end
-                if AntiSeatConnection2 then AntiSeatConnection2:Disconnect() end
-                local char = lp.Character
-                if not char then return end
-                local humanoid = char:WaitForChild("Humanoid", 10)
-                if not humanoid then return end
-                AntiSeatConnection = RunService.Heartbeat:Connect(function()
-                    if humanoid.Sit then
-                        humanoid.Sit = false
-                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                    end
-                end)
-                AntiSeatConnection2 = humanoid.StateChanged:Connect(function(_, new)
-                    if new == Enum.HumanoidStateType.Seated then
-                        humanoid.Sit = false
-                        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                    end
-                end)
-            end
-            StartAntiSeat()
-            local MIN_PLAYER_LEVEL = 2300
-            local PREDICTION_TIME = 0.25
-            local YOffset = 1
-            local FruitAttackRange = 100
-            local LOW_HEALTH_THRESHOLD = 5000
-            local SAFE_HEALTH_THRESHOLD = 9000
-            local ESCAPE_HEIGHT = 273861
-            local InstaTpConnection = nil
-            local SelectedPlayer = nil
-            local CurrentTargetPlayer = nil
-            local PREDICTION_SAMPLES = 3
-            local PlayerPositionHistory = {}
-            local V_KEY_DELAY = 1
-            local StartInstaTeleport
-            local function PerformHealthEscape()
-                if InstaTpConnection then
-                    InstaTpConnection:Disconnect()
-                    InstaTpConnection = nil
-                end
-                local escapeActive = true
-                task.spawn(function()
-                    while escapeActive do
-                        pcall(function()
-                            local char = lp.Character
-                            if char then
-                                local hrp = char:FindFirstChild("HumanoidRootPart")
-                                if hrp then
-                                    local pos = hrp.Position
-                                    hrp.CFrame = CFrame.new(pos.X, pos.Y + ESCAPE_HEIGHT, pos.Z)
-                                end
-                            end
-                        end)
-                        task.wait(0.05)
-                    end
-                end)
-                while true do
-                    task.wait(0.5)
-                    local char = lp.Character
-                    if char then
-                        local humanoid = char:FindFirstChild("Humanoid")
-                        if humanoid and humanoid.Health >= SAFE_HEALTH_THRESHOLD then
-                            break
-                        end
-                    end
-                end
-                escapeActive = false
-                task.wait(0.2)
-                StartInstaTeleport()
-            end
-            local function IsHealthLow()
-                local char = lp.Character
-                if not char then return false end
-                local humanoid = char:FindFirstChild("Humanoid")
-                if not humanoid then return false end
-                return humanoid.Health <= LOW_HEALTH_THRESHOLD
-            end
-            local function GetPlayerLevel(player)
-                local data = player:FindFirstChild("Data")
-                if data then
-                    local level = data:FindFirstChild("Level")
-                    if level and level.Value then return tonumber(level.Value) end
-                end
-                return 0
-            end
-            local function IsPlayerInSafeZone(player)
-                if not player.Character then return false end
-                local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-                if not hrp then return false end
-                local inCombat = player.Character:GetAttribute("InCombat")
-                if inCombat == "0" or inCombat == "1" then return false end
-                local SafeZonesFolder = workspace._WorldOrigin:FindFirstChild("SafeZones")
-                if not SafeZonesFolder then return false end
-                local function getSafeZoneRadius(zone)
-                    local mesh = zone:FindFirstChild("Mesh")
-                    if mesh and mesh:IsA("SpecialMesh") then
-                        local realDiameter = zone.Size.X * mesh.Scale.X
-                        return realDiameter / 2
-                    end
-                    return nil
-                end
-                for _, zone in pairs(SafeZonesFolder:GetChildren()) do
-                    local radius = getSafeZoneRadius(zone)
-                    if radius then
-                        local dist = (zone.Position - hrp.Position).Magnitude
-                        if dist <= radius then return true end
-                    end
-                end
-                return false
-            end
-            local function PvpEnable()
-                pcall(function()
-                    local args = { "EnablePvp" }
-                    ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args))
-                end)
-            end
-            local function IsPlayerValid(player)
-                if player == lp then return false end
-                if lp.Team and lp.Team.Name == "Marines" and player.Team and player.Team == lp.Team then return false end
-                if not player.Character then return false end
-                local humanoid = player.Character:FindFirstChild("Humanoid")
-                if not humanoid or humanoid.Health <= 0 then return false end
-                local pvpDisabled = player:GetAttribute("PvpDisabled")
-                if pvpDisabled == true then return false end
-                local raiding = player:GetAttribute("IslandRaiding")
-                if raiding == true then return false end
-                local level = GetPlayerLevel(player)
-                if level < MIN_PLAYER_LEVEL then return false end
-                if IsPlayerInSafeZone(player) then return false end
-                return true
-            end
-            local function GetCurrentBounty()
-                local leaderstats = lp:FindFirstChild("leaderstats")
-                if leaderstats then
-                    local bounty = leaderstats:FindFirstChild("Bounty/Honor")
-                    if bounty then return tonumber(bounty.Value) or 0 end
-                end
-                return 0
-            end
-            local function IsInCombat()
-                local playerGui = lp:FindFirstChild("PlayerGui")
-                if not playerGui then return false end
-                local mg = playerGui:FindFirstChild("Main")
-                if not mg then return false end
-                local bottomHUD = mg:FindFirstChild("BottomHUDList")
-                if not bottomHUD then return false end
-                local inCombatUI = bottomHUD:FindFirstChild("InCombat")
-                if not inCombatUI then return false end
-                if not inCombatUI.Visible then return false end
-                if inCombatUI:IsA("TextLabel") and inCombatUI.Text and string.find(inCombatUI.Text, "risk") then return true end
-                return false
-            end
-            local function FakeIsInCombat()
-                local playerGui = lp:FindFirstChild("PlayerGui")
-                if not playerGui then return false end
-                local mg = playerGui:FindFirstChild("Main")
-                if not mg then return false end
-                local bottomHUD = mg:FindFirstChild("BottomHUDList")
-                if not bottomHUD then return false end
-                local inCombatUI = bottomHUD:FindFirstChild("InCombat")
-                if not inCombatUI then return false end
-                return inCombatUI.Visible == true
-            end
-            local function WaitForCombatEnd(timeout)
-                timeout = timeout or 30
-                local startTime = tick()
-                while IsInCombat() and (tick() - startTime) < timeout do
-                    task.wait(1)
-                end
-                return not IsInCombat()
-            end
-            local function BusoKen()
-                pcall(function()
-                    local args = { "Ken", true }
-                    ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommE"):FireServer(unpack(args))
-                    local char = lp.Character
-                    if char then
-                        local hasBuso = char:FindFirstChild("HasBuso")
-                        if not hasBuso then
-                            local args2 = { "Buso" }
-                            ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(unpack(args2))
-                        end
-                    end
-                end)
-            end
-            local function CheckDragonRage()
-                if SELECTED_FRUIT ~= "Dragon" then return end
-                pcall(function()
-                    local char = lp.Character
-                    if not char then return end
-                    local dragonHybrid = char:FindFirstChild("DragonHybrid")
-                    if dragonHybrid then return end
-                    local rage = char:FindFirstChild("Rage")
-                    if not rage or not rage:IsA("NumberValue") then return end
-                    local rageValue = rage.Value
-                    if rageValue > 50 and rageValue < 60 then
-                        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.V, false, game)
-                        task.wait(0.05)
-                        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.V, false, game)
-                    end
-                end)
-            end
-            task.spawn(function()
-                while not getgenv().LeoBountyShuttingDown do
-                    CheckDragonRage()
-                    task.wait(1)
-                end
-            end)
-            task.spawn(function()
-                while not getgenv().LeoBountyShuttingDown do
-                    pcall(function() BusoKen() end)
-                    task.wait(5)
-                end
-            end)
-            local WEBHOOKS = {
-                FullMoon          = "https://ptb.discord.com/api/webhooks/1489972659373473935/5SYjVIIUGTeSxeqU6i8GwmUcsdByVJFGEala98-xYqgOszr2wEZZ9tU3Ypz9jAy2j9re",
-                NearFullMoon      = "https://ptb.discord.com/api/webhooks/1489972504176099548/Ax0SiWkikITemgrt21lIYbAfvVEp98n0DOxbiqSibPvsZiApiiAscrWT9ZTL5oXaxjjF",
-                Boss              = "https://ptb.discord.com/api/webhooks/1489972397867012146/KgWF45FYWCl_Ymij8tSvbVgWO-3z1Sppd53BbXRUUiNgXYB_paP-0CBFMO4IbTC4WWuW",
-                Haki              = "https://ptb.discord.com/api/webhooks/1489973503254855814/A617qsd9cKAvZQ6NU5X3ARo5g0DUNw74ZKot2Stp_EsJH5ESPh3jkEP_uXQxZoLAfToe",
-                Sword             = "https://ptb.discord.com/api/webhooks/1489973638613696706/j6-LxX8XqxDhOAbzjUk8b-1kov1e6yJ6EATqIdC3VgFxVYqMQn4vp03e93wZ9-Km9vwj",
-                Fruit             = "https://ptb.discord.com/api/webhooks/1489973826115600434/lzjBgkBJf_v1eN8WQffPCuiB21HUAj9Dhl78_PKgO209xobvZ3Y0Jhevn6PmMEza4Tfi",
-                KitsuneIsland     = "https://ptb.discord.com/api/webhooks/1489973949025489027/XfVkV0NOmFUyWJKPTn73QX78K6uJpwLmN70Fg3x6jzDfX8HZdOSUUuvv43mIfy9RMf4N",
-                PrehistoricIsland = "https://ptb.discord.com/api/webhooks/1489974105422823565/0vww7YWpr0MBKyRc9HeCmS3wIPATqA5HbD_pmCHw5T6z4FtOW0yWk2iNc1oewmuA0wrt",
-                MirageIsland      = "https://ptb.discord.com/api/webhooks/1489974271991218176/IUd9ZrDhXJvO2VNZkvejqBQQGJuTNf5gTIZ_kWo4w7ViLf6FUALJemTs95Ot7LO_IhCp",
-                Berry             = "https://ptb.discord.com/api/webhooks/1489974383437942927/Gcvhc8pBcYRcKR4rRck1uKrm0Hlmbgu0tDT_1VqdWMDjka06m1HpnqEAULOUUq6fTQpE",
-                Elites            = "https://ptb.discord.com/api/webhooks/1489974517903392808/p6IyMsPgpytvc0D9nq_cFgbS0X_88K0po8brbQSeLH57KK4blW1DAqytFZf0eIAjCcrG",
-                CastleRaid        = "https://ptb.discord.com/api/webhooks/1489974864025485322/gREVMfyINYpvqNxovgxLc-jrZ9IRWTj6LJJPG3PcbQUrfRsiK07ZgnWWswdodqXYArHj",
-            }
-            local function SendNotify(url, title)
-                local data = {
-                    ["content"] = "🚀 **" .. title .. " Detected!**\n`game:GetService(\"ReplicatedStorage\").__ServerBrowser:InvokeServer(\"teleport\", \"" .. game.JobId .. "\")`",
-                    ["username"] = "Michael Monitor"
-                }
-                pcall(function()
-                    local response = request or http_request or syn.request
-                    response({
-                        Url = url,
-                        Method = "POST",
-                        Headers = {["Content-Type"] = "application/json"},
-                        Body = HttpService:JSONEncode(data)
-                    })
-                end)
-            end
-            local function CheckEvents()
-                local hasEvent = false
-                pcall(function()
-                    local moonProgress = ReplicatedStorage.Remotes.CommF_:InvokeServer("GetGameState").MoonProgress
-                    if moonProgress >= 5 then
-                        SendNotify(WEBHOOKS.FullMoon, "Full Moon")
-                        hasEvent = true
-                    end
-                end)
-                if game.Workspace.Map:FindFirstChild("Mirage Island") then
-                    SendNotify(WEBHOOKS.MirageIsland, "Mirage Island")
-                    hasEvent = true
-                end
-                for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                    if v.Name == "Rip Indra" or v.Name == "Cake Prince" then
-                        SendNotify(WEBHOOKS.Boss, v.Name)
-                        hasEvent = true
-                    end
-                end
-                return hasEvent
-            end
-            local function Hop()
-                local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100&_rnd=" .. math.random(1, 9999)
-                local success, result = pcall(function()
-                    return HttpService:JSONDecode(game:HttpGet(url))
-                end)
-                if success and result.data then
-                    for _, s in pairs(result.data) do
-                        if s.playing < s.maxPlayers and s.id ~= game.JobId then
-                            pcall(function()
-                                ReplicatedStorage.__ServerBrowser:InvokeServer("teleport", s.id)
-                            end)
-                            task.wait(2)
-                        end
-                    end
-                end
-            end
-            spawn(function()
-                while true do
-                    CheckEvents()
-                    task.wait(30)
-                end
-            end)
 
-            function Main.serverHop()
-                SessionHops = SessionHops + 1
-                if Utils and Utils.saveStats then
-                    pcall(function()
-                        local stats = Utils.loadStats() or {}
-                        stats.serversHopped = SessionHops
-                        Utils.saveStats(stats)
-                    end)
-                end
-                local _env = getgenv()
-                _env.IsServerHopping = true
-                if InstaTpConnection then
-                    InstaTpConnection:Disconnect(); InstaTpConnection = nil
-                end
-                local flag = Instance.new("BoolValue")
-                flag.Name = "CombatEscape"
-                flag.Parent = workspace
-                task.spawn(function()
-                    while flag.Parent do
-                        local char = lp.Character
-                        if char then
-                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                local pos = hrp.Position
-                                hrp.CFrame = CFrame.new(pos.X, pos.Y + 273861, pos.Z)
-                            end
-                        end
-                        task.wait(0.05)
-                    end
-                end)
-                WaitForCombatEnd(30)
-                task.wait(1)
-                if Utils and Utils.flushStats then
-                    pcall(function() Utils.flushStats() end)
-                end
-                local PlayerGui = lp.PlayerGui
-                if not PlayerGui:FindFirstChild("ServerBrowser") then
-                    local _env2 = getgenv()
-                    _env2.IsServerHopping = false
-                    return
-                end
-                PlayerGui.ServerBrowser.Enabled = true
-                task.wait(0.1)
-                local Filters = PlayerGui.ServerBrowser.Frame:FindFirstChild("Filters")
-                local SearchRegion = Filters and Filters:FindFirstChild("SearchRegion")
-                local TextBox = SearchRegion and SearchRegion:FindFirstChild("TextBox")
-                if not TextBox then
-                    local _env3 = getgenv()
-                    _env3.IsServerHopping = false
-                    return
-                end
-                TextBox.Text = Selected_Region
-                task.wait(3)
-                local ScrollingFrame = PlayerGui.ServerBrowser.Frame.ScrollingFrame
-                local FakeScroll = PlayerGui.ServerBrowser.Frame.FakeScroll
-                local Inside = FakeScroll.Inside
-                ScrollingFrame.CanvasPosition = Vector2.new(0, math.random(100, 4000))
-                task.wait(0.1)
-                local currentJobId = game.JobId
-                task.spawn(function()
-                    while _env.IsServerHopping do
-                        task.wait(0.3)
-                        pcall(function()
-                            local ErrorGui = game:GetService("CoreGui"):FindFirstChild("RobloxPromptGui")
-                                or game:GetService("CoreGui"):FindFirstChild("ErrorGui")
-                                or game:GetService("CoreGui"):FindFirstChild("TeleportGui")
-                            if ErrorGui then
-                                for _, btn in ipairs(ErrorGui:GetDescendants()) do
-                                    if btn:IsA("TextButton") and (
-                                        btn.Text:lower():find("ok") or
-                                        btn.Text:lower():find("close") or
-                                        btn.Text:lower():find("dismiss")
-                                    ) then
-                                        btn:Activate()
-                                        task.wait(0.2)
-                                    end
-                                end
-                            end
-                            local teleportFailed = game:GetService("CoreGui"):FindFirstChildWhichIsA("ScreenGui", true)
-                            if teleportFailed then
-                                for _, lbl in ipairs(teleportFailed:GetDescendants()) do
-                                    if lbl:IsA("TextLabel") and lbl.Text:find("773") then
-                                        for _, btn in ipairs(teleportFailed:GetDescendants()) do
-                                            if btn:IsA("TextButton") then btn:Activate() end
-                                        end
-                                    end
-                                end
-                            end
-                        end)
-                    end
-                end)
-                local failedJobs = {}
-                while true do
-                    task.wait(0.5)
-                    for _, template in ipairs(Inside:GetChildren()) do
-                        if template.Name == "Template" then
-                            local joinButton = template:FindFirstChild("Join")
-                            if joinButton then
-                                local job = joinButton:GetAttribute("Job")
-                                if job and tostring(job):find("-", 1, true) then
-                                    job = tostring(job)
-                                    if job ~= currentJobId and not failedJobs[job] then
-                                        local success = pcall(function()
-                                            TeleportService:TeleportToPlaceInstance(game.PlaceId, job)
-                                        end)
-                                        if not success then
-                                            pcall(function()
-                                                TeleportService:TeleportToServer(job)
-                                            end)
-                                        end
-                                        task.wait(5)
-                                        if game.JobId == currentJobId then
-                                            failedJobs[job] = true
-                                        end
-                                    end
-                                end
-                            end
-                        end
+local function startHunter()
+    if isRunning then return end
+    isRunning        = true
+    sessionStartTime = os.time()
+    local sweepHitTracker = {}
+    task.spawn(function()
+        while isRunning do pcall(equipAndCache); task.wait(0.3) end
+    end)
+    task.spawn(function()
+        while isRunning do pcall(ghostReset); task.wait(CONFIG.GhostResetInterval) end
+    end)
+    task.spawn(function()
+        while isRunning do
+            local validTargets = {}
+            for _, other in pairs(Players:GetPlayers()) do
+                if other ~= player then
+                    local char = other.Character
+                    local hum  = char and char:FindFirstChild("Humanoid")
+                    if hum and hum.Health > 0 and not shouldIgnore(other, char) then
+                        table.insert(validTargets, other)
                     end
                 end
             end
-            local FruitConfigs = {
-                ["Dragon"]   = { ToolName = "Dragon-Dragon",                         RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
-                ["T-Rex"]    = { ToolName = "T-Rex-T-Rex",                           RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 3 } end },
-                ["Empyrean"] = { ToolName = "Empyrean (Kitsune)-Empyrean (Kitsune)", RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
-                ["Kitsune"]  = { ToolName = "Kitsune-Kitsune",                       RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
-                ["Pain"]     = { ToolName = "Pain-Pain",                              RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
-                ["Control"]  = { ToolName = "Control-Control",                        RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
-                ["Mammoth"]  = { ToolName = "Mammoth-Mammoth",                        RemoteName = "LeftClickRemote", Args = function(d) return { Vector3.new(d.X, d.Y, d.Z), 1 } end },
-            }
-            local function ResolveFruitConfig()
-                return FruitConfigs[SELECTED_FRUIT]
-            end
-            local function EquipFruit()
-                local config = ResolveFruitConfig()
-                if not config then return false end
-                local character = lp.Character
-                local backpack = lp.Backpack
-                if not character then return false end
-                local equippedTool = character:FindFirstChild(config.ToolName)
-                if equippedTool then return true end
-                local tool = backpack:FindFirstChild(config.ToolName)
-                if tool then
-                    character.Humanoid:EquipTool(tool)
-                    task.wait(0.1)
-                    return true
-                end
-                return false
-            end
-            local function FruitAttackPlayer()
-                local config = ResolveFruitConfig()
-                if not config then return end
-                local myChar = lp.Character
-                if not myChar then return end
-                local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-                if not myHRP then return end
-                local direction = Vector3.new(0, -0.9, 0.03)
-                local tool = myChar:FindFirstChild(config.ToolName)
-                if not tool then
-                    EquipFruit()
-                    task.wait(0.1)
-                    tool = myChar:FindFirstChild(config.ToolName)
-                    if not tool then return end
-                end
-                local remote = tool:FindFirstChild(config.RemoteName)
-                if not remote then return end
-                pcall(function()
-                    local args = config.Args(direction)
-                    remote:FireServer(unpack(args))
-                end)
-            end
-            local function GetAllValidPlayers()
-                local validPlayers = {}
-                for _, player in pairs(Players:GetPlayers()) do
-                    if IsPlayerValid(player) then
-                        table.insert(validPlayers, player)
-                    end
-                end
-                return validPlayers
-            end
-            function StartInstaTeleport()
-                if InstaTpConnection then InstaTpConnection:Disconnect() end
-                InstaTpConnection = RunService.Stepped:Connect(function()
-                    if not SelectedPlayer then return end
-                    pcall(function()
-                        local char = lp.Character
-                        local target = Players:FindFirstChild(SelectedPlayer)
-                        if char and target and target.Character then
-                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                            local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-                            if hrp and targetHRP then
-                                if not PlayerPositionHistory[SelectedPlayer] then
-                                    PlayerPositionHistory[SelectedPlayer] = { positions = {}, timestamps = {}, lastUpdate =
-                                    tick() }
-                                end
-                                local history = PlayerPositionHistory[SelectedPlayer]
-                                local currentTime = tick()
-                                local currentPos = targetHRP.Position
-                                table.insert(history.positions, currentPos)
-                                table.insert(history.timestamps, currentTime)
-                                while #history.positions > PREDICTION_SAMPLES do
-                                    table.remove(history.positions, 1)
-                                    table.remove(history.timestamps, 1)
-                                end
-                                local predictedPos = currentPos
-                                if #history.positions >= 2 then
-                                    local totalDisplacement = Vector3.new(0, 0, 0)
-                                    local totalTime = 0
-                                    for i = 2, #history.positions do
-                                        local displacement = history.positions[i] - history.positions[i - 1]
-                                        local deltaTime = history.timestamps[i] - history.timestamps[i - 1]
-                                        if deltaTime > 0 then
-                                            totalDisplacement = totalDisplacement + displacement
-                                            totalTime = totalTime + deltaTime
-                                        end
-                                    end
-                                    if totalTime > 0 then
-                                        local calculatedVelocity = totalDisplacement / totalTime
-                                        predictedPos = currentPos + (calculatedVelocity * PREDICTION_TIME)
-                                    end
-                                end
-                                hrp.CFrame = CFrame.new(predictedPos) * CFrame.new(0, YOffset, 0)
-                            end
+            if #validTargets > 0 then
+                noTargetSince = nil
+                for _, target in ipairs(validTargets) do
+                    if not isRunning then break end
+                    currentTarget = target
+                    local tc = target.Character
+                    local hum = tc and tc:FindFirstChild("Humanoid")
+                    if hum and cachedRemote then
+                        local tName = target.Name
+                        local curHP = hum.Health
+                        local data  = sweepHitTracker[tName]
+                        if not data then
+                            sweepHitTracker[tName] = { lastHealth = curHP, lastDamageTime = tick() }
                         else
-                            if PlayerPositionHistory[SelectedPlayer] then
-                                PlayerPositionHistory[SelectedPlayer] = nil
-                            end
-                        end
-                    end)
-                end)
-            end
-            local function OnCharacterDeath()
-                if InstaTpConnection then
-                    InstaTpConnection:Disconnect(); InstaTpConnection = nil
-                end
-                if AntiSeatConnection then
-                    AntiSeatConnection:Disconnect(); AntiSeatConnection = nil
-                end
-                if AntiSeatConnection2 then
-                    AntiSeatConnection2:Disconnect(); AntiSeatConnection2 = nil
-                end
-                SelectedPlayer = nil
-                CurrentTargetPlayer = nil
-                PlayerPositionHistory = {}
-                if Utils and Utils.flushStats then
-                    pcall(function() Utils.flushStats() end)
-                end
-                local newChar = lp.Character or lp.CharacterAdded:Wait()
-                local newHRP = newChar:WaitForChild("HumanoidRootPart", 10)
-                local newHumanoid = newChar:WaitForChild("Humanoid", 10)
-                if newHRP and newHumanoid then
-                    task.wait(1)
-                    StartAntiSeat()
-                    StartInstaTeleport()
-                    newHumanoid.Died:Connect(function() OnCharacterDeath() end)
-                end
-            end
-            lp.CharacterAdded:Connect(function(character)
-                local humanoid = character:WaitForChild("Humanoid", 10)
-                if humanoid then
-                    humanoid.Died:Connect(function() OnCharacterDeath() end)
-                end
-            end)
-            if lp.Character then
-                local humanoid = lp.Character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid.Died:Connect(function() OnCharacterDeath() end)
-                end
-            end
-            StartInstaTeleport()
-            if InitialBounty == 0 then InitialBounty = GetCurrentBounty() end
-            local LastKnownBounty = GetCurrentBounty()
-            pcall(function()
-                local leaderstats = lp:WaitForChild("leaderstats", 5)
-                if not leaderstats then return end
-                local bountyValue = leaderstats:FindFirstChild("Bounty/Honor")
-                if not bountyValue then return end
-                LastKnownBounty = tonumber(bountyValue.Value) or 0
-                bountyValue.Changed:Connect(function(newValue)
-                    local newBounty = tonumber(newValue) or 0
-                    local bountyGain = newBounty - LastKnownBounty
-                    if bountyGain > 0 then
-                        TotalKills = TotalKills + 1
-                        SessionKills = SessionKills + 1
-                        SessionBountyGained = SessionBountyGained + bountyGain
-                        if Utils and Utils.saveStats then
-                            pcall(function()
-                                local stats = Utils.loadStats() or {}
-                                stats.sessionKills = SessionKills
-                                stats.sessionBounty = SessionBountyGained
-                                Utils.saveStats(stats)
-                            end)
-                        end
-                        if UI and UI.addKill then
-                            pcall(function()
-                                local targetName = CurrentTargetPlayer and CurrentTargetPlayer.Name or "Unknown"
-                                UI.addKill(bountyGain, targetName)
-                            end)
-                        end
-                    end
-                    LastKnownBounty = newBounty
-                end)
-            end)
-            print("[LeoBounty] [HYPER] All systems initialized — starting combat loops")
-            print("[LeoBounty] [HYPER] Starting M1 attack loop")
-            task.spawn(function()
-                while true do
-                    task.wait(0.01)
-                    pcall(function()
-                        EquipFruit()
-                        FruitAttackPlayer()
-                    end)
-                end
-            end)
-            print("[LeoBounty] [HYPER] Starting target cycle loop")
-            task.spawn(function()
-                task.wait(3)
-                local currentIndex = 1
-                while true do
-                    if IsHealthLow() then
-                        PerformHealthEscape()
-                        task.wait(1)
-                    end
-                    local validPlayers = GetAllValidPlayers()
-                    if #validPlayers > 0 then
-                        if currentIndex > #validPlayers or currentIndex < 1 then currentIndex = 1 end
-                        local targetPlayer = validPlayers[currentIndex]
-                        if targetPlayer and targetPlayer.Parent and targetPlayer.Character then
-                            local humanoid = targetPlayer.Character:FindFirstChild("Humanoid")
-                            if humanoid and humanoid.Health <= 0 then
-                                if not table.find(EliminatedPlayers, targetPlayer.Name) then
-                                    table.insert(EliminatedPlayers, targetPlayer.Name)
-                                    TotalKills = TotalKills + 1
-                                end
-                            end
-                            SelectedPlayer = targetPlayer.Name
-                            CurrentTargetPlayer = targetPlayer
-                        end
-                        currentIndex = currentIndex + 1
-                    else
-                        currentIndex = 1
-                        Main.serverHop()
-                    end
-                    task.wait(0.4)
-                end
-            end)
-            local function antimover()
-                local character = lp.Character
-                if character and not character:FindFirstChild("AntiMover") then
-                    Instance.new("Folder", character).Name = "AntiMover"
-                end
-            end
-            local function v4()
-                local args = { true }
-                lp:WaitForChild("Backpack"):WaitForChild("Awakening"):WaitForChild("RemoteFunction"):InvokeServer(unpack(
-                args))
-                VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.T, false, game)
-                task.wait(0.05)
-                VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.T, false, game)
-            end
-            print("[LeoBounty] [HYPER] Starting T-Rex combat loop")
-            local Buso = { "Buso" }
-            local SafeZoneActive = false
-            task.spawn(function()
-                while true do
-                    task.wait(0.001)
-                    local player = Players.LocalPlayer
-                    local char = player.Character
-                    if not char then continue end
-                    local hrp = char:FindFirstChild("HumanoidRootPart")
-                    if not hrp then continue end
-                    local humanoid = char:FindFirstChild("Humanoid")
-                    if not humanoid then continue end
-                    pcall(function()
-                        local trex = player.Backpack:FindFirstChild("T-Rex-T-Rex")
-                        if trex then
-                            humanoid:EquipTool(trex)
-                        end
-                    end)
-                    pcall(function()
-                        if SelectedPlayer then
-                            local target = Players:FindFirstChild(SelectedPlayer)
-                            if target and target.Character then
-                                local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-                                if targetHRP then
-                                    local trex = char:FindFirstChild("T-Rex-T-Rex")
-                                    if trex then
-                                        local remote = trex:FindFirstChild("LeftClickRemote")
-                                        if remote then
-                                            local direction = (targetHRP.Position - hrp.Position).Unit
-                                            remote:FireServer(
-                                                vector.create(direction.X, direction.Y, direction.Z),
-                                                1
-                                            )
-                                        end
-                                    end
+                            if curHP < data.lastHealth then
+                                sweepHitTracker[tName].lastHealth = curHP
+                                sweepHitTracker[tName].lastDamageTime = tick()
+                            else
+                                if tick() - sweepHitTracker[tName].lastDamageTime > 15 then
+                                    hitTracker[tName] = hitTracker[tName] or {}
+                                    hitTracker[tName].blacklistedUntil = os.time() + CONFIG.BlacklistTimeout
+                                    sweepHitTracker[tName] = nil
+                                    continue
                                 end
                             end
                         end
-                    end)
-                    pcall(function()
-                        ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_"):InvokeServer(Buso)
-                    end)
+                        pcall(function()
+                            local pct = math.clamp(curHP/hum.MaxHealth,0,1)
+                            local lv  = getPlayerLevel(target)
+                            TargetNameL.Text = target.Name .. "  [Lv." .. lv .. "]"
+                            TargetInfoL.Text = math.floor(curHP) .. " / " .. math.floor(hum.MaxHealth) .. " HP"
+                            HPBar.Size       = UDim2.new(pct, 0, 1, 0)
+                            HPBar.BackgroundColor3 = Color3.fromRGB(math.floor(255*(1-pct)), math.floor(200*pct+55), 50)
+                            HPText.Text = math.floor(pct*100) .. "%"
+                            TargetStroke.Color = Color3.fromRGB(255,80,80)
+                        end)
+                        normalAttack(tc)
+                    end
+                    task.wait(CONFIG.SweepSpeed)
                 end
-            end)
-            print("[LeoBounty] [HYPER] Starting PvP/utility loop — SCRIPT IS NOW FULLY ACTIVE")
-            task.spawn(function()
-                task.wait(10) 
-                while not getgenv().LeoBountyShuttingDown do
-                    pcall(CheckGameEvents)
-                    task.wait(30) 
+                for name, _ in pairs(sweepHitTracker) do
+                    local found = false
+                    for _, v in ipairs(validTargets) do if v.Name == name then found = true; break end end
+                    if not found then sweepHitTracker[name] = nil end
                 end
-            end)
-            while wait(1) do
-                pcall(function()
-                    PvpEnable()
-                    antimover()
-                    v4()
-                end)
+            else
+                currentTarget = nil
+                if not noTargetSince then noTargetSince = os.time()
+                elseif os.time()-noTargetSince >= CONFIG.HopDelay then
+                    noTargetSince = nil; hopServer()
+                end
+                task.wait(CONFIG.SweepSpeed)
             end
-            end, function(e)
-                return tostring(e) .. "\n" .. debug.traceback()
-            end)
-            if not ok then
-                warn("[LeoBounty] [HYPER] FATAL ERROR: " .. tostring(err))
-            end
-        end) 
-    end
-    function Main.stop()
-        Main.Running = false
-        getgenv().LeoBountyShuttingDown = true
-        for _, conn in pairs(Main.Connections) do
-            pcall(function() conn:Disconnect() end)
         end
-        Main.Connections = {}
-        if Utils and Utils.flushStats then
-            pcall(function() Utils.flushStats() end)
-        end
-        print("[LeoBounty] [*] Script stopped - all connections cleaned up")
-    end
-    return Main
+    end)
 end
-repeat task.wait() until game:IsLoaded()
-local Players = game:GetService("Players")
-local lp = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait() and Players.LocalPlayer
-local _loadErrors = {}
-local function loadModule(name)
-    if _modules[name] then
-        local ok, result = pcall(_modules[name])
-        if ok then
-            print("[LeoBounty] [+] Module loaded: " .. name)
-            return result
-        else
-            local errMsg = "[LeoBounty] [!] Module error (" .. name .. "): " .. tostring(result)
-            warn(errMsg)
-            table.insert(_loadErrors, { module = name, error = tostring(result), time = os.time() })
-            error(errMsg)
-        end
-    end
-    local errMsg = "[LeoBounty] [!] Module not found: " .. name
-    warn(errMsg)
-    table.insert(_loadErrors, { module = name, error = "not found", time = os.time() })
-    error(errMsg)
+
+local function stopHunter()
+    isRunning = false; currentTarget = nil
+    targetStartTime = nil; targetStartHealth = nil; noTargetSince = nil
 end
-print("[LeoBounty] Loading modules...")
-local Utils = loadModule("utils")
-local Config = loadModule("config")
-local Auth = loadModule("auth")
-local UI = loadModule("ui")
-local Main = loadModule("main")
-print("[LeoBounty] Modules loaded!")
-Config.init()
-Auth.init(Utils)
-print("[LeoBounty] Config: Fruit=" .. Config.get("Fruit") .. ", Region=" .. Config.get("Region") .. ", Faction=" .. Config.get("Faction"))
-print("[LeoBounty] Initializing UI...")
-UI.init(Utils, Config, Auth)
-print("[LeoBounty] UI ready! Waiting for authentication...")
+local _ok, _cg = pcall(function() return game:GetService("CoreGui") end)
+local guiParent = (_ok and _cg) or player:WaitForChild("PlayerGui")
+if guiParent:FindFirstChild("TRexHunterUI") then guiParent.TRexHunterUI:Destroy() end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "TRexHunterUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = guiParent
+
+local C = {
+    BG       = Color3.fromRGB(10, 10, 14),
+    Panel    = Color3.fromRGB(17, 17, 24),
+    Card     = Color3.fromRGB(22, 22, 32),
+    AccentG  = Color3.fromRGB(46, 213, 115),
+    AccentR  = Color3.fromRGB(235, 59, 90),
+    AccentB  = Color3.fromRGB(72, 126, 255),
+    Text     = Color3.fromRGB(230, 230, 240),
+    Muted    = Color3.fromRGB(110, 110, 140),
+    Line     = Color3.fromRGB(30, 30, 44),
+}
+
+local W, H = 300, 420
+local MainFrame = Instance.new("Frame")
+MainFrame.Name             = "Main"
+MainFrame.Size             = UDim2.new(0, W, 0, H)
+MainFrame.Position         = UDim2.new(0.5, -W/2, 0.5, -H/2)
+MainFrame.BackgroundColor3 = C.BG
+MainFrame.BorderSizePixel  = 0
+MainFrame.Active           = true
+MainFrame.Draggable        = true
+MainFrame.Parent           = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 16)
+
+local OuterStroke = Instance.new("UIStroke")
+OuterStroke.Color     = C.AccentG
+OuterStroke.Thickness = 1.5
+OuterStroke.Transparency = 0.4
+OuterStroke.Parent    = MainFrame
+
+local function corner(parent, r)
+    Instance.new("UICorner", parent).CornerRadius = UDim.new(0, r or 10)
+end
+local function stroke(parent, col, thick)
+    local s = Instance.new("UIStroke"); s.Color = col; s.Thickness = thick or 1; s.Parent = parent; return s
+end
+local function label(parent, txt, size, col, font, ax)
+    local l = Instance.new("TextLabel")
+    l.BackgroundTransparency = 1
+    l.Text = txt; l.TextSize = size
+    l.TextColor3 = col or C.Text
+    l.Font = font or Enum.Font.GothamSemibold
+    l.TextXAlignment = ax or Enum.TextXAlignment.Left
+    l.Parent = parent; return l
+end
+
+-- Header
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 52)
+Header.Position = UDim2.new(0, 0, 0, 0)
+Header.BackgroundColor3 = C.Panel
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+corner(Header, 16)
+local HeaderFill = Instance.new("Frame")
+HeaderFill.Size = UDim2.new(1, 0, 0.5, 0)
+HeaderFill.Position = UDim2.new(0, 0, 0.5, 0)
+HeaderFill.BackgroundColor3 = C.Panel
+HeaderFill.BorderSizePixel = 0
+HeaderFill.Parent = Header
+
+local TitleL = label(Header, "ZEROX", 16, C.Text, Enum.Font.GothamBold, Enum.TextXAlignment.Left)
+TitleL.Size = UDim2.new(0, 100, 1, 0)
+TitleL.Position = UDim2.new(0, 16, 0, 0)
+
+local SubL = label(Header, "T-Rex Hunter  v5", 10, C.Muted, Enum.Font.Gotham, Enum.TextXAlignment.Left)
+SubL.Size = UDim2.new(0, 160, 0, 14)
+SubL.Position = UDim2.new(0, 16, 1, -18)
+
+local StatusDot = Instance.new("Frame")
+StatusDot.Size = UDim2.new(0, 8, 0, 8)
+StatusDot.Position = UDim2.new(1, -20, 0.5, -4)
+StatusDot.BackgroundColor3 = C.AccentR
+StatusDot.BorderSizePixel = 0
+StatusDot.Parent = Header
+corner(StatusDot, 4)
+
+-- Stat row
+local StatRow = Instance.new("Frame")
+StatRow.Size = UDim2.new(1, -24, 0, 36)
+StatRow.Position = UDim2.new(0, 12, 0, 60)
+StatRow.BackgroundColor3 = C.Panel
+StatRow.BorderSizePixel = 0
+StatRow.Parent = MainFrame
+corner(StatRow, 10)
+
+local function statCell(txt, col, posX)
+    local f = Instance.new("Frame")
+    f.Size = UDim2.new(0.33, 0, 1, 0)
+    f.Position = UDim2.new(posX, 0, 0, 0)
+    f.BackgroundTransparency = 1
+    f.Parent = StatRow
+    local l = label(f, txt, 12, col, Enum.Font.GothamBold, Enum.TextXAlignment.Center)
+    l.Size = UDim2.new(1, 0, 1, 0)
+    return l
+end
+
+local TimeLabel   = statCell("00:00",  C.AccentB,  0)
+local BountyLabel = statCell("0 Kill", Color3.fromRGB(255, 200, 60), 0.33)
+local ModeStat    = statCell("Sep",    C.AccentG,  0.66)
+
+-- Divider
+local function divider(y)
+    local d = Instance.new("Frame")
+    d.Size = UDim2.new(1, -24, 0, 1)
+    d.Position = UDim2.new(0, 12, 0, y)
+    d.BackgroundColor3 = C.Line
+    d.BorderSizePixel = 0
+    d.Parent = MainFrame
+end
+divider(104)
+
+-- Target Card
+local TargetBox = Instance.new("Frame")
+TargetBox.Size = UDim2.new(1, -24, 0, 64)
+TargetBox.Position = UDim2.new(0, 12, 0, 112)
+TargetBox.BackgroundColor3 = C.Card
+TargetBox.BorderSizePixel = 0
+TargetBox.Parent = MainFrame
+corner(TargetBox, 10)
+
+local TargetStroke = stroke(TargetBox, C.Muted, 1)
+
+local DotIcon = Instance.new("Frame")
+DotIcon.Size = UDim2.new(0, 6, 0, 6)
+DotIcon.Position = UDim2.new(0, 10, 0, 13)
+DotIcon.BackgroundColor3 = C.Muted
+DotIcon.BorderSizePixel = 0
+DotIcon.Parent = TargetBox
+corner(DotIcon, 3)
+
+local TargetNameL = label(TargetBox, "Scanning...", 12, C.Text, Enum.Font.GothamSemibold, Enum.TextXAlignment.Left)
+TargetNameL.Size = UDim2.new(1, -32, 0, 22)
+TargetNameL.Position = UDim2.new(0, 22, 0, 6)
+
+local TargetInfoL = label(TargetBox, "", 10, C.Muted, Enum.Font.Gotham, Enum.TextXAlignment.Left)
+TargetInfoL.Size = UDim2.new(1, -22, 0, 14)
+TargetInfoL.Position = UDim2.new(0, 22, 0, 28)
+
+local HPBG = Instance.new("Frame")
+HPBG.Size = UDim2.new(1, -20, 0, 6)
+HPBG.Position = UDim2.new(0, 10, 0, 50)
+HPBG.BackgroundColor3 = C.Line
+HPBG.BorderSizePixel = 0
+HPBG.Parent = TargetBox
+corner(HPBG, 3)
+
+local HPBar = Instance.new("Frame")
+HPBar.Size = UDim2.new(0, 0, 1, 0)
+HPBar.BackgroundColor3 = C.AccentG
+HPBar.BorderSizePixel = 0
+HPBar.Parent = HPBG
+corner(HPBar, 3)
+
+local HPText = label(HPBG, "", 7, C.Text, Enum.Font.Gotham, Enum.TextXAlignment.Center)
+HPText.Size = UDim2.new(1, 0, 1, 0)
+
+divider(184)
+
+-- Player list title
+local ListTitle = label(MainFrame, "Targets: 0", 11, C.Muted, Enum.Font.GothamSemibold, Enum.TextXAlignment.Left)
+ListTitle.Size = UDim2.new(1, -24, 0, 18)
+ListTitle.Position = UDim2.new(0, 12, 0, 192)
+
+-- Scroll
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, -24, 0, 136)
+ScrollFrame.Position = UDim2.new(0, 12, 0, 214)
+ScrollFrame.BackgroundColor3 = C.Panel
+ScrollFrame.BorderSizePixel = 0
+ScrollFrame.ScrollBarThickness = 2
+ScrollFrame.ScrollBarImageColor3 = C.AccentG
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.Parent = MainFrame
+corner(ScrollFrame, 10)
+
+local ScrollPad = Instance.new("UIPadding")
+ScrollPad.PaddingLeft = UDim.new(0, 4)
+ScrollPad.PaddingTop  = UDim.new(0, 3)
+ScrollPad.PaddingRight = UDim.new(0, 4)
+ScrollPad.Parent = ScrollFrame
+
+local ScrollLayout = Instance.new("UIListLayout")
+ScrollLayout.SortOrder = Enum.SortOrder.Name
+ScrollLayout.Padding = UDim.new(0, 3)
+ScrollLayout.Parent = ScrollFrame
+
+divider(358)
+
+-- Buttons
+local function makeBtn(txt, col, x, w)
+    local b = Instance.new("TextButton")
+    b.Size = UDim2.new(0, w, 0, 36)
+    b.Position = UDim2.new(0, x, 0, 366)
+    b.BackgroundColor3 = col
+    b.Text = txt
+    b.TextColor3 = C.Text
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12
+    b.BorderSizePixel = 0
+    b.Parent = MainFrame
+    corner(b, 9)
+    return b
+end
+
+local ToggleBtn = makeBtn("START", C.AccentG, 12, 136)
+local ModeBtn   = makeBtn("SEP", C.AccentB, 156, 64)
+local HopBtn    = makeBtn("HOP", Color3.fromRGB(90, 30, 140), 228, 64)
+
+-- Toggle logic
+ToggleBtn.MouseButton1Click:Connect(function()
+    if isRunning then
+        stopHunter()
+        ToggleBtn.Text = "START"
+        ToggleBtn.BackgroundColor3 = C.AccentR
+        OuterStroke.Color = C.AccentR
+        StatusDot.BackgroundColor3 = C.AccentR
+        DotIcon.BackgroundColor3 = C.AccentR
+    else
+        startHunter()
+        ToggleBtn.Text = "RUNNING"
+        ToggleBtn.BackgroundColor3 = C.AccentG
+        OuterStroke.Color = C.AccentG
+        StatusDot.BackgroundColor3 = C.AccentG
+        DotIcon.BackgroundColor3 = C.AccentG
+    end
+end)
+
+ModeBtn.MouseButton1Click:Connect(function()
+    CONFIG.SeparatorMode = not CONFIG.SeparatorMode
+    if CONFIG.SeparatorMode then
+        ModeBtn.Text = "SEP"; ModeBtn.BackgroundColor3 = C.AccentB; ModeStat.Text = "Sep"
+    else
+        ModeBtn.Text = "TEL"; ModeBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 130); ModeStat.Text = "Tele"
+    end
+end)
+
+HopBtn.MouseButton1Click:Connect(function() hopServer() end)
+
+-- Player rows
+local playerRows = {}
+Players.PlayerRemoving:Connect(function(p)
+    if playerRows[p.Name] then
+        playerRows[p.Name]:Destroy(); playerRows[p.Name] = nil
+    end
+end)
+
+local function getOrCreateRow(name)
+    if playerRows[name] and playerRows[name].Parent then return playerRows[name] end
+    local row = Instance.new("Frame")
+    row.Name = name
+    row.Size = UDim2.new(1, -6, 0, 32)
+    row.BackgroundColor3 = C.Card
+    row.BorderSizePixel = 0
+    row.Parent = ScrollFrame
+    corner(row, 7)
+
+    local nl = label(row, name, 11, C.Text, Enum.Font.GothamSemibold, Enum.TextXAlignment.Left)
+    nl.Name = "Name"; nl.Size = UDim2.new(0.55, 0, 0, 18); nl.Position = UDim2.new(0, 7, 0, 2)
+
+    local ll = label(row, "Lv.?", 10, Color3.fromRGB(255, 210, 60), Enum.Font.Gotham, Enum.TextXAlignment.Left)
+    ll.Name = "Lv"; ll.Size = UDim2.new(0.22, 0, 0, 18); ll.Position = UDim2.new(0.55, 0, 0, 2)
+
+    local hl = label(row, "?HP", 9, C.Muted, Enum.Font.Gotham, Enum.TextXAlignment.Right)
+    hl.Name = "HP"; hl.Size = UDim2.new(0.22, 0, 0, 18); hl.Position = UDim2.new(0.77, 0, 0, 2)
+
+    local bg = Instance.new("Frame"); bg.Name = "BarBG"
+    bg.Size = UDim2.new(1, -14, 0, 5); bg.Position = UDim2.new(0, 7, 0, 24)
+    bg.BackgroundColor3 = C.Line; bg.BorderSizePixel = 0; bg.Parent = row
+    corner(bg, 3)
+
+    local bar = Instance.new("Frame"); bar.Name = "Bar"
+    bar.Size = UDim2.new(1, 0, 1, 0); bar.BackgroundColor3 = C.AccentG
+    bar.BorderSizePixel = 0; bar.Parent = bg
+    corner(bar, 3)
+
+    playerRows[name] = row; return row
+end
+
+-- Update loop
 task.spawn(function()
-    while not Auth.isAuthenticated() do
-        task.wait(0.5)
-    end
-    print("[LeoBounty] Authenticated! Loading character...")
-    Main.init(Utils, Config, UI)
-    while not Config.isConfigured() do
-        task.wait(0.5)
-    end
-    print("[LeoBounty] Fully configured! Proceeding...")
-    local playerGui
-    repeat
-        task.wait()
-        playerGui = lp:FindFirstChild("PlayerGui")
-    until playerGui
-    local mainGui
-    repeat
-        task.wait()
-        mainGui = playerGui:FindFirstChild("Main (minimal)")
-    until mainGui
-    local btn
-    local faction = Config.get("Faction") or "Pirate"
-    local factionContainer = faction == "Marine" and "Marines" or "Pirates"
-    repeat
-        task.wait()
-        btn = mainGui:FindFirstChild("ChooseTeam")
-            and mainGui.ChooseTeam:FindFirstChild("Container")
-            and mainGui.ChooseTeam.Container:FindFirstChild(factionContainer)
-            and mainGui.ChooseTeam.Container[factionContainer]:FindFirstChild("Frame")
-            and mainGui.ChooseTeam.Container[factionContainer].Frame:FindFirstChild("TextButton")
-    until btn
-    local char, hum
-    local attempt = 0
-    repeat
-        task.wait(0.5)
-        attempt = attempt + 1
-        pcall(function()
-            if firesignal then
-                firesignal(btn.Activated)
-                firesignal(btn.MouseButton1Click)
-                firesignal(btn.MouseButton1Down)
-                firesignal(btn.MouseButton1Up)
+    while task.wait(0.5) do
+        if isRunning then
+            TimeLabel.Text = formatTime(totalTimeGlobal + (os.time()-sessionStartTime))
+        end
+        BountyLabel.Text = totalBountyGlobal .. " Kill"
+        if currentTarget and currentTarget.Character then
+        else
+            if noTargetSince and isRunning then
+                local rem = math.max(0, CONFIG.HopDelay-(os.time()-noTargetSince))
+                TargetNameL.Text = "No targets → Hop in " .. math.floor(rem) .. "s"
+                DotIcon.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+            else
+                TargetNameL.Text = "Scanning..."
+                DotIcon.BackgroundColor3 = C.Muted
             end
-            if getconnections then
-                for _, conn in pairs(getconnections(btn.Activated)) do
-                    conn:Fire()
-                end
-                for _, conn in pairs(getconnections(btn.MouseButton1Click)) do
-                    conn:Fire()
+            TargetInfoL.Text = ""; HPBar.Size = UDim2.new(0,0,1,0); HPText.Text = ""
+            TargetStroke.Color = C.Line
+        end
+
+        local validNames = {}
+        for _, other in pairs(Players:GetPlayers()) do
+            if other ~= player then
+                local char = other.Character
+                local hum  = char and char:FindFirstChild("Humanoid")
+                if hum and hum.Health > 0 and not shouldIgnore(other, char) then
+                    table.insert(validNames, other.Name)
+                    local row   = getOrCreateRow(other.Name)
+                    local lv    = getPlayerLevel(other)
+                    local pct   = math.clamp(hum.Health/hum.MaxHealth, 0, 1)
+                    local isCur = (currentTarget == other)
+                    row.BackgroundColor3 = isCur and Color3.fromRGB(18, 40, 22) or C.Card
+                    row:FindFirstChild("Name").Text = other.Name
+                    row:FindFirstChild("Lv").Text   = "Lv." .. lv
+                    row:FindFirstChild("HP").Text   = math.floor(hum.Health).."HP"
+                    local bar = row:FindFirstChild("BarBG"):FindFirstChild("Bar")
+                    bar.Size = UDim2.new(pct, 0, 1, 0)
+                    bar.BackgroundColor3 = Color3.fromRGB(math.floor(255*(1-pct)), math.floor(200*pct+55), 50)
                 end
             end
-        end)
-        if lp.Character then
-            char = lp.Character
-            hum = char:FindFirstChild("Humanoid")
         end
-        if attempt > 10 then
-            print("[LeoBounty] [!] Auto-team selection taking too long. Click it manually!")
+        for name, row in pairs(playerRows) do
+            local found = false
+            for _, n in ipairs(validNames) do if n==name then found=true; break end end
+            if not found then row:Destroy(); playerRows[name] = nil end
         end
-    until (char and hum) or getgenv().LeoBountyShuttingDown
-    local hrp
-    repeat
-        task.wait()
-        hrp = char:FindFirstChild("HumanoidRootPart")
-    until hrp
-    print("[LeoBounty] Character loaded! Starting main logic...")
-    Main.start()
-end)
-local UserInputService = game:GetService("UserInputService")
-UserInputService.InputBegan:Connect(function(input, processed)
-    if processed then return end
-    if input.KeyCode == Enum.KeyCode.RightControl then
-        UI.toggle()
+        ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ScrollLayout.AbsoluteContentSize.Y + 4)
+        ListTitle.Text = "Targets: " .. #validNames
     end
 end)
-print("[LeoBounty] Ready! Press RightControl to toggle UI.")
+
+-- Status dot pulse
+task.spawn(function()
+    local t = 0
+    while task.wait(0.05) do
+        t = t + 0.05
+        if isRunning then
+            local a = (math.sin(t*4)+1)/2
+            StatusDot.BackgroundColor3 = Color3.new(a*0.1, 0.8+a*0.2, a*0.3)
+        end
+    end
+end)
+
+startHunter()
