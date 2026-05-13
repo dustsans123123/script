@@ -224,32 +224,7 @@ local function equipAndCache()
 end
 
 local function ghostReset()
-    local char = player.Character
-    if not char then return end
-    local hum = char:FindFirstChild("Humanoid")
-    if not hum or hum.Health <= 0 then return end
-    local myRoot = char:FindFirstChild("HumanoidRootPart")
-    if not myRoot then return end
-    if not currentTarget then return end
-    hum.Health = 0
-    if currentTarget then
-        local targetChar = currentTarget.Character
-        local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-        if targetRoot then
-            lastTargetPos = targetRoot.Position
-            pcall(function()
-                myRoot.CFrame = CFrame.new(
-                    targetRoot.Position + Vector3.new(0, 0, CONFIG.TeleportDistance),
-                    targetRoot.Position
-                )
-            end)
-            lastTargetDir = (targetRoot.Position - myRoot.Position).Unit
-            if cachedRemote then
-                pcall(function() cachedRemote:FireServer(lastTargetDir, 1) end)
-            end
-        end
-    end
-    pcall(function() hum:BreakJoints() end)
+    -- Disabled: was killing player every 0.5s preventing attacks
 end
 
 local function fireRemote(dir)
@@ -376,12 +351,16 @@ local function startHunter()
     isRunning        = true
     sessionStartTime = os.time()
     local sweepHitTracker = {}
+    -- Re-cache remote on respawn
+    player.CharacterAdded:Connect(function()
+        cachedRemote = nil; cachedTool = nil; cachedM1Active = nil
+        task.wait(1)
+        equipAndCache()
+    end)
     task.spawn(function()
         while isRunning do pcall(equipAndCache); task.wait(0.3) end
     end)
-    task.spawn(function()
-        while isRunning do pcall(ghostReset); task.wait(CONFIG.GhostResetInterval) end
-    end)
+
     task.spawn(function()
         while isRunning do
             local validTargets = {}
